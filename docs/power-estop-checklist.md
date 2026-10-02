@@ -11,7 +11,7 @@ the 230 V side is only inspected here.
 ---
 
 ## 1. The power supplies
-Per active module (A left, B front, C right; D is out of service). Counts to be confirmed on site.
+Per mounted module (2026-10-02: A left, C right, D back; B front not installed). Counts to be confirmed on site.
 
 | Unit | Qty | Mains input (label / datasheet) | Output | Feeds |
 |---|---|---|---|---|

@@ -11,7 +11,7 @@ Same connections as `docs/diagrams/cabling-4-modules.png`, plus a protection net
 |---|---|
 | U1 Teensy 4.1 (socket, USB at the left edge) | enable T27–30, force T14–17, I²C T18 SDA / T19 SCL, 3V3, GND. **VIN/5V not connected** |
 | U2 Adafruit MCP4728 (socket) | VA–VD → setpoint of modules A–D, VCC 3.3 V from the Teensy |
-| J1–J4 terminals, one per module (A left, B front, C right, D) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
+| J1–J4 terminals, one per module (A left, B front, C right, D back) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
 | R1–R4 1 kΩ (series), R5–R8 1 MΩ (pull-down), D1–D4 BAT85 (clamp to 3.3 V) | per force input: terminal F → 1 kΩ → Teensy pin; 1 MΩ to GND; BAT85 to 3.3 V |
 
 Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), ground fill on both layers, 4 × M3 holes.

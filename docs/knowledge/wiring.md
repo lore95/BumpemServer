@@ -15,7 +15,7 @@ Diagram: `docs/diagrams/cabling-4-modules.png`.
 | Teensy USB | lab PC | Powers Teensy + DAC |
 
 ## Per module
-| Signal | A (left) | B (front) | C (right) | D (out of service) |
+| Signal | A (left) | B (front) | C (right) | D (back) |
 |---|---|---|---|---|
 | Teensy → ESCON **DigIn2** (enable, **J5 pin 2**) | pin **27** | pin **28** | pin **29** | pin **30** |
 | DAC → ESCON **AnIn2+** (setpoint, **J6 pin 3**) | **VA** | **VB** | **VC** | **VD** |

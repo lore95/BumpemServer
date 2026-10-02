@@ -8,11 +8,11 @@ Sources: `docs/thesis/thesis.pdf` §2.3–2.9, §3.1; `docs/thesis/manual.pdf` �
 | 1 | A | left  | A0 (pin 14) | 27 | A |
 | 2 | B | front | A1 (pin 15) | 28 | B |
 | 3 | C | right | A2 (pin 16) | 29 | C |
-| 4 | D | not stated (presumably back) | A3 (pin 17) | 30 | D |
+| 4 | D | back (not in the thesis; confirmed by the project lead 2026-10-02) | A3 (pin 17) | 30 | D |
 
 Diagonals: `ab` = front-left, `bc` = front-right (thesis Fig. 11 d/e). `cd`, `da` exist in firmware, untested.
 
-**Module 4 status: out of service.** Thesis §7 says "mechanical damage"; manual §2 says "a new motor driver needs to be purchased". Resolve which is true.
+**Setup 2026-10-02:** A (left), C (right) and D (back) mounted and run in the open-loop test; B (front) not installed. Earlier, D was out of service (thesis §7: "mechanical damage"; manual §2: "a new motor driver needs to be purchased"). Firmware still boots with `ch_D = 0`: `bumpem set ch_D 1` after each power-up.
 
 ## Per-module chain
 Teensy 4.1 → I²C (SDA 18, SCL 19) → MCP4728 DAC (12-bit, 0–3.3 V) → ESCON 70/10 AnIn2 (J6.3) → Maxon BLDC (EC) motor → reel drum → rope → DYMH-103 load cell → Futek IAA100 → Teensy ADC.

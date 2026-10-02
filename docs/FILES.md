@@ -39,8 +39,9 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
 | `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers) |
 | `bumpem/vicon.py` | Vicon DataStream client (stub) |
-| `bumpem/cli.py` | `bumpem` command (incl. `bumpem serve`) |
-| `bumpem/server.py` | FastAPI server: `board` endpoints of `docs/API.md` + WebSocket stream |
+| `bumpem/geometry.py` | Perturbation angle → per-module amplitudes (Vicon axes, D16), reachable directions |
+| `bumpem/cli.py` | `bumpem` command (incl. `bumpem serve`, `bumpem perturb ANGLE AMPLITUDE`) |
+| `bumpem/server.py` | FastAPI server: `board` and `host` endpoints of `docs/API.md` (incl. `/perturbation`, `/geometry`) + WebSocket stream |
 | `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |

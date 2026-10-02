@@ -77,7 +77,7 @@ Ask them to send these if they still have them:
 **3.1** Why is module D out of service? The thesis says **mechanical damage**; the manual says **a new motor driver needs to be bought**. Which is it?
 > Answer:
 
-**3.2** Which direction was D meant to pull: backwards?
+**3.2** ~~Which direction was D meant to pull: backwards?~~ Answered 2026-10-02: back (project lead), in `knowledge/hardware.md`.
 > Answer:
 
 *(→ `docs/knowledge/hardware.md`)*

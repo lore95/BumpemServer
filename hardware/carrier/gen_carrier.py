@@ -48,7 +48,7 @@ def net(name):
     return NETS[name]
 
 MODS = "ABCD"
-ROLE = {"A": "left", "B": "front", "C": "right", "D": ""}      # D's pull direction not confirmed (docs/knowledge/hardware.md)
+ROLE = {"A": "left", "B": "front", "C": "right", "D": "back"}
 
 # ---------------------------------------------------------------- geometry log (for stitching-via clearance)
 SEGS, DOTS = [], []          # (x1,y1,x2,y2,halfwidth,layer) ; (x,y,radius,layers)

@@ -1026,7 +1026,7 @@
   
   (instances (project "bumpem-carrier" (path "/59954970-40fd-5ce1-8984-f1894c2a73a3" (reference "H4") (unit 1))))
 )
-(text "Bump'em carrier board: Teensy 4.1 + MCP4728 DAC -> 4 cable modules (A left, B front, C right, D)" (exclude_from_sim no) (at 20.32 20.32 0) (effects (font (size 2.0 2.0)) (justify left bottom)) (uuid "1d9e3a6a-5b57-524e-b9b3-869e1977bf0e"))
+(text "Bump'em carrier board: Teensy 4.1 + MCP4728 DAC -> 4 cable modules (A left, B front, C right, D back)" (exclude_from_sim no) (at 20.32 20.32 0) (effects (font (size 2.0 2.0)) (justify left bottom)) (uuid "1d9e3a6a-5b57-524e-b9b3-869e1977bf0e"))
 (text "Pins as in firmware/src/main.ino and docs/diagrams/cabling-4-modules.png: enable T27-30, setpoint DAC VA-VD, force T14-17 (A0-A3), I2C T18 SDA / T19 SCL" (exclude_from_sim no) (at 20.32 26.67 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "57e127a8-2d9d-5c44-a03a-e93957c6a94d"))
 (text "Teensy VIN (5 V) is never connected. Teensy and DAC plug into female headers. DAC VCC fed on pad 12; pad 1 (VCC) is the same net on the breakout, left open here." (exclude_from_sim no) (at 20.32 31.75 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "72dd7a14-7c63-5a35-b6bd-08409a989dca"))
 (text "Force input protection per module: R1-R4 series (1k) | R5-R8 pull-down (1M, unplugged input reads 0 N) | D1-D4 BAT85 clamp to 3.3 V." (exclude_from_sim no) (at 255.27 20.32 0) (effects (font (size 1.27 1.27)) (justify left bottom)) (uuid "05ae25a8-ddc9-5031-9ea1-27247886647d"))

@@ -43,7 +43,7 @@ When code and thesis disagree, code is what ran. Flag the conflict in STATUS.md.
 - Force clamp (≤ 200 N) and stop must live in firmware, never only in the UI.
 - Stopping control while the treadmill moves = loss of tension = safety risk. Stop ≠ release.
 - The host owns the single serial port. Stop must always be reachable from the host UI/CLI.
-- Modules active: A(left) B(front) C(right). D out of service.
+- Modules mounted (2026-10-02): A (left), C (right), D (back). B (front) not installed. Angles: Vicon axes, 0 front, +90 left (`docs/API.md`).
 - ESCON config stays in ESCON Studio (one-time, Windows). Parameter file versioned in `escon/`.
 - Everything must run without hardware via `bumpem/sim.py`.
 - The UI (`../BumpemUI`) talks to the server only through `docs/API.md`. Any API change: update API.md first.

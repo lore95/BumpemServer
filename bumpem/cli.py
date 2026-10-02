@@ -44,6 +44,7 @@ def main(argv=None):
     specs = {
         "info": "board info", "get": "read parameters", "set": "set a parameter",
         "arm": "enable drivers, ramp to baseline", "pulse": "one pulse (amplitudes relative to baseline)",
+        "perturb": "one pulse by direction: 0 front, +90 left, -90 right, 180 back (split over the cables)",
         "abort": "cancel pulse", "release": "ramp to 0 and disable (stop treadmill first)",
         "estop": "drivers off now (stop treadmill first)", "clear": "clear FAULT",
         "stats": "loop timing", "monitor": "print telemetry and events",
@@ -66,7 +67,15 @@ def main(argv=None):
             p.add_argument("--rise", type=float, default=50)
             p.add_argument("--dur", type=float, default=600)
             p.add_argument("--fall", type=float, default=0)
-        if name in ("pulse", "arm"):
+        if name == "perturb":
+            p.add_argument("angle", type=float, help="pull direction in degrees (Vicon axes)")
+            p.add_argument("amplitude", type=float, help="resultant force above baseline, N")
+            p.add_argument("--id", type=int, default=int(time.time()) % 1_000_000 + 1)
+            p.add_argument("--delay", type=float, default=0)
+            p.add_argument("--phase1", type=float, default=50, help="ramp up, ms")
+            p.add_argument("--dur", type=float, default=600, help="start to end incl. ramps, ms")
+            p.add_argument("--phase2", type=float, default=0, help="ramp down, ms")
+        if name in ("pulse", "perturb", "arm"):
             p.add_argument("--watch", type=float, default=0, help="then monitor for N seconds")
     sv = sub.add_parser("serve", help="HTTP/WebSocket API server (docs/API.md); test page at /docs")
     sv.add_argument("--host", default="127.0.0.1")
@@ -106,6 +115,12 @@ def main(argv=None):
             elif args.cmd == "pulse":
                 b.pulse(args.id, _amps(args.amps), delay_ms=args.delay, rise_ms=args.rise,
                         dur_ms=args.dur, fall_ms=args.fall)
+            elif args.cmd == "perturb":
+                from .geometry import MODULE_ANGLE_DEG, split
+                params = b.get()
+                amps = split(args.angle, args.amplitude, {m for m in MODULE_ANGLE_DEG if params.get(f"ch_{m}", 0) >= 1})
+                print("amps:", " ".join(f"{m}={v:g}" for m, v in amps.items()))
+                b.pulse(args.id, amps, delay_ms=args.delay, rise_ms=args.phase1, dur_ms=args.dur, fall_ms=args.phase2)
             elif args.cmd == "abort":
                 b.abort()
             elif args.cmd == "release":

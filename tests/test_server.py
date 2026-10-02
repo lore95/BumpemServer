@@ -97,3 +97,46 @@ def test_stream_telemetry_and_estop(sim):
                 break
         else:
             pytest.fail("no ESTOP event")
+
+
+def test_geometry_without_board(client):
+    g = client.get("/api/v1/geometry").json()
+    assert g["modules"]["D"] == {"angle_deg": 180.0, "enabled": None} and g["reachable"] is None
+
+
+def test_perturbation_split_and_reach(sim):
+    # setup 2026-10-02: A left, C right, D back; B (front) not installed
+    sim.patch("/api/v1/params", json={"ch_A": 1, "ch_B": 0, "ch_C": 1, "ch_D": 1, "arm_ms": 0})
+    g = sim.get("/api/v1/geometry").json()
+    assert g["reachable"] == [{"from_deg": 90.0, "to_deg": -90.0}] and g["modules"]["B"]["enabled"] is False
+
+    r = sim.post("/api/v1/perturbation", json={"angle_deg": 45, "amplitude_n": 20,
+                                               "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50})
+    assert r.status_code == 422 and err(r) == "invalid" and "module B" in r.json()["error"]["message"]
+
+    sim.post("/api/v1/arm")
+    wait_state(sim, "ARMED")
+    base = sim.get("/api/v1/params").json()["baseline_n"]
+    r = sim.post("/api/v1/perturbation", json={"angle_deg": 135, "amplitude_n": 20,
+                                               "phase1_ms": 0, "dur_ms": 300, "phase2_ms": 0})
+    assert r.status_code == 200
+    assert r.json() == {"pulse_id": 1, "amps": {"A": 14.14, "D": 14.14}}
+    end = time.time() + 2
+    while time.time() < end:                       # board target reaches baseline + split amplitude
+        t = sim.get("/api/v1/status").json()["telemetry"]["target"]
+        if t["D"] > base + 14 and t["A"] > base + 14:
+            break
+        time.sleep(0.02)
+    else:
+        pytest.fail(f"pulse not seen in targets: {t}")
+    assert t["B"] == pytest.approx(0, abs=0.01) or t["B"] <= base     # B untouched
+
+    r = sim.post("/api/v1/perturbation", json={"angle_deg": 135, "amplitude_n": 20,
+                                               "phase1_ms": 0, "dur_ms": 300, "phase2_ms": 0})
+    assert r.status_code == 409 and r.json()["error"]["message"] == "busy"   # one pulse at a time (firmware)
+    time.sleep(0.4)
+    wait_state(sim, "ARMED")
+    r = sim.post("/api/v1/perturbation", json={"angle_deg": 270, "amplitude_n": 10,
+                                               "phase1_ms": 0, "dur_ms": 100, "phase2_ms": 0})
+    assert r.status_code == 200, r.json()
+    assert r.json()["amps"] == {"C": 10}

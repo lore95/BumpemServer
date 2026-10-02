@@ -3,17 +3,19 @@
 The contract between the bumpem server and every client (the web UI in `BumpemUI`, MATLAB, scripts,
 future apps). Clients use only this API, never the Python internals (DECISIONS D10).
 
-**Version:** 1.0-draft. **`board` endpoints implemented** in `bumpem/server.py` (server 0.1.0, 2026-10-02; tests `tests/test_server.py`, simulator only so far). `planned` endpoints not implemented. Breaking changes bump the major
+**Version:** 1.0-draft. Server 0.2.0 (2026-10-02): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
 version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 **Status tags:** `board` = maps directly onto protocol v1 (`docs/PROTOCOL.md`), **implemented**. Interactive test page: `http://127.0.0.1:8000/docs`.
-`planned` = needs the host layer (angle, PTO, trials); schema is a proposal.
+`host` = computed by the server, then sent as protocol v1 commands, **implemented**.
+`planned` = needs gait events / trials (PTO, scheduling); schema is a proposal.
 
 ## Basics
 - Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). Other hosts only if started with `--host`.
 - One server per PC. The server alone opens the Teensy's serial port (or the simulator).
 - JSON everywhere. Units: force N, time ms, angle degrees.
-- Angle: 0 = front, +90 = left, −90 = right (Vicon Forward/Left/Up axes). Reachable: −90…+90 (D out of service).
+- Angle (Vicon Forward/Left/Up axes, counter-clockwise seen from above): **0 = front, +90 = left, −90 = right, 180 = back**. Any value is accepted and normalised to (−180, 180]. The angle is the direction the subject is pulled.
+- Modules: A +90 (left), B 0 (front), C −90 (right), D 180 (back). A module is available when its channel is on (`ch_A`…`ch_D` = 1). Setup 2026-10-02: A, C, D mounted, B not installed → reachable +90 … 180 … −90 (left, back, right and the back diagonals).
 - Pulse terms follow `docs/knowledge/perturbation_definitions.md`: amplitude is relative to baseline; duration runs start → end, ramps included.
 
 ## Errors
@@ -66,14 +68,22 @@ POST /api/v1/pulse
 {"amps": {"A": 65.71, "B": 65.71}, "delay_ms": 0, "rise_ms": 50, "dur_ms": 600, "fall_ms": 0}
 → {"pulse_id": 12}
 ```
-Perturbation form (`planned`): the server converts angle → channel amplitudes.
+Perturbation form (`host`): the server converts angle → channel amplitudes, then sends one `PULSE`.
 ```json
 POST /api/v1/perturbation
-{"angle_deg": 45, "amplitude_n": 100, "phase1_ms": 50, "dur_ms": 600, "phase2_ms": 0,
- "pto": {"mode": "ms" | "stance_pct", "value": 20}, "trigger": {"event": "FS", "side": "any"}}
-→ {"pulse_id": 13, "amps": {"A": 70.71, "B": 70.71}, "scheduled": "same_fs" | "predicted_fs"}
+{"angle_deg": 135, "amplitude_n": 20, "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50, "delay_ms": 0}
+→ {"pulse_id": 13, "amps": {"A": 14.14, "D": 14.14}}
 ```
-Without `pto`, it fires now. With `pto`, it waits for the next matching gait event.
+- `amplitude_n`: resultant force above baseline along `angle_deg`. `phase1_ms` / `phase2_ms`: ramp up / ramp down (acceleration phases one and two, `perturbation_definitions.md`); `dur_ms` start → end, ramps included; `delay_ms`: board-side delay before the start.
+- Split: on a module's axis that module alone gets `amplitude_n`. Between two neighbouring modules (90° apart) the first gets `amplitude_n·cos(Δ)`, the second `amplitude_n·sin(Δ)`, Δ = angle past the first module. At 45° each gets `amplitude_n/√2`, the rule of the original firmware (`legacy/Arduino_Script.ino:82`). Assumes horizontal cables at right angles.
+- An angle needing a module whose channel is off → 422 `invalid`, message names the module. Force limits stay on the board (`fmax_n` → 409 `board_rejected`).
+- At baseline the cables do not cancel when a module is missing: with B not installed, the subject feels a constant pull of `baseline_n` towards D (back).
+
+PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct", "value": 20}, "trigger": {"event": "FS", "side": "any"}` → waits for the next matching gait event, response adds `"scheduled": "same_fs" | "predicted_fs"`.
+
+| Method | Path | Returns | Status |
+|---|---|---|---|
+| GET | `/api/v1/geometry` | `{"convention": "...", "modules": {"A": {"angle_deg": 90, "enabled": true}, ...}, "reachable": [{"from_deg": 90, "to_deg": -90}]}` (arcs counter-clockwise from → to; `enabled`/`reachable` null when no board is connected) | host |
 
 ### Trials (`planned`)
 | Method | Path | Body |

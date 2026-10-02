@@ -1,4 +1,4 @@
-"""`bumpem serve`: HTTP + WebSocket API for the board (docs/API.md, `board` endpoints only).
+"""`bumpem serve`: HTTP + WebSocket API for the board (docs/API.md, `board` and `host` endpoints).
 
 The server owns the serial port. Clients (UI, MATLAB, scripts) use only this API.
 Interactive test page: http://127.0.0.1:8000/docs
@@ -16,10 +16,11 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field
 
+from . import geometry
 from . import protocol as P
 from .device import Board, BoardError
 
-SERVER_VERSION = "0.1.0"
+SERVER_VERSION = "0.2.0"
 API_VERSION = "1.0"
 
 
@@ -51,6 +52,16 @@ class PulseBody(BaseModel):
     rise_ms: float = Field(examples=[50])
     dur_ms: float = Field(description="Start to end, ramps included", examples=[600])
     fall_ms: float = Field(examples=[50])
+
+
+class PerturbationBody(BaseModel):
+    angle_deg: float = Field(description="Pull direction: 0 front, +90 left, -90 right, 180 back (Vicon axes)",
+                             examples=[135])
+    amplitude_n: float = Field(gt=0, description="Resultant force above baseline along angle_deg", examples=[20])
+    phase1_ms: float = Field(ge=0, description="Acceleration phase one (ramp up)", examples=[50])
+    dur_ms: float = Field(gt=0, description="Start to end, ramps included", examples=[400])
+    phase2_ms: float = Field(ge=0, description="Acceleration phase two (ramp down)", examples=[50])
+    delay_ms: float = Field(0, ge=0, description="Board-side delay before the start")
 
 
 # ---------- shared state ----------
@@ -241,14 +252,40 @@ def create_app(wd_ms: int = 1000, board: str | None = None) -> FastAPI:
         hub.call(hub.need().clear)
         return {}
 
-    @app.post("/api/v1/pulse")
-    def pulse(body: PulseBody):
+    def send_pulse(amps: dict[str, float], delay_ms: float, rise_ms: float, dur_ms: float, fall_ms: float) -> int:
         b = hub.need()
         pid = hub.next_pulse_id
-        hub.call(b.pulse, pid, {k.upper(): v for k, v in body.amps.items()}, delay_ms=body.delay_ms,
-                 rise_ms=body.rise_ms, dur_ms=body.dur_ms, fall_ms=body.fall_ms)
+        hub.call(b.pulse, pid, amps, delay_ms=delay_ms, rise_ms=rise_ms, dur_ms=dur_ms, fall_ms=fall_ms)
         hub.next_pulse_id += 1
+        return pid
+
+    def enabled_modules() -> set[str]:
+        p = hub.call(hub.need().get)
+        return {m for m in geometry.MODULE_ANGLE_DEG if p.get(f"ch_{m}", 0) >= 1}
+
+    @app.post("/api/v1/pulse")
+    def pulse(body: PulseBody):
+        pid = send_pulse({k.upper(): v for k, v in body.amps.items()}, body.delay_ms, body.rise_ms,
+                         body.dur_ms, body.fall_ms)
         return {"pulse_id": pid}
+
+    # --- host layer ---
+    @app.get("/api/v1/geometry")
+    def get_geometry():
+        on = enabled_modules() if hub.board is not None else None
+        return {"convention": geometry.CONVENTION,
+                "modules": {m: {"angle_deg": a, "enabled": None if on is None else m in on}
+                            for m, a in geometry.MODULE_ANGLE_DEG.items()},
+                "reachable": None if on is None else geometry.reachable(on)}
+
+    @app.post("/api/v1/perturbation")
+    def perturbation(body: PerturbationBody):
+        try:
+            amps = geometry.split(body.angle_deg, body.amplitude_n, enabled_modules())
+        except ValueError as e:
+            raise ApiError("invalid", 422, str(e)) from None
+        pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
+        return {"pulse_id": pid, "amps": amps}
 
     # --- live stream ---
     @app.websocket("/api/v1/stream")
