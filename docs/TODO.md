@@ -31,8 +31,7 @@ Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-
 
 ## 2. 🟠 Force sensing → closed loop · blocks real force control, logging, trials with people
 Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down: release → 48 V off → 24 V off.
-- [ ] Photo of an **IAA100 terminal block** → Claude confirms where 24 V +V / −V go (don't touch DIP switches / zero / span)
-- [ ] RS-15-24 **+V / −V → IAA100 Vin / GND** (one per module); 24 V output: no short before connecting
+- [ ] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)**, supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
 - [ ] **Amplifier range** per module: brown force wire **not** in the Teensy, pull the rope hard → output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N). Higher: stop, tell Claude
 - [ ] Then per module: remove the short wire from its force pin (T14 A, T16 C, T17 D) to the − rail, plug the brown wire in
 - [ ] **24 V only:** `bumpem monitor --port PORT`, pull each rope by hand → only that module's force rises

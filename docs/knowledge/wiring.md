@@ -25,7 +25,7 @@ Diagram: `docs/diagrams/cabling-4-modules.png`.
 | IAA100 **Vout** → Teensy (force) | pin **14** (A0) | pin **15** (A1) | pin **16** (A2) | pin **17** (A3) |
 | IAA100 **GND** | module's distributor board | ← | ← | ← |
 | Distributor board → Teensy **G** | one wire per module (white on the traced driver) | ← | ← | ← |
-| 24 V PSU **+V / −V** (Mean Well RS-15-24, 15 W; **4 units, one per amplifier**) | IAA100 Vin / GND | ← | ← | ← |
+| 24 V PSU **+V / −V** (Mean Well RS-15-24, 15 W; **4 units, one per amplifier**) | IAA100 power terminal **pin 1 (+Vin) / pin 2 (GND)** | ← | ← | ← |
 | 48 V PSU **+V / −V** (Mean Well RSP-2000-48, no power switch) | shunt regulator (maxon 235811) pins **4 / 5** (input); its pins **6 / 7** (output 1) → ESCON **J1** + / − | ← | ← | ← |
 | DYMH-103 load cell | IAA100 input | ← | ← | ← |
 | Maxon motor + Hall sensors | ESCON J2 motor (1–3 windings, 4 shield) / J3 Hall (1–3 Hall 1–3, **4 +5 V, 5 GND**) | ← | ← | ← |
@@ -57,7 +57,7 @@ Still to record: the same trace for modules A, B (and D); colours may differ.
 ## Not in the sources (look up before wiring)
 - ~~ESCON pin numbers~~: model is **ESCON 70/10** (422969); J5/J6 pins above are from its hardware reference (`escon/`). Never connect J5 pin 6 (+5 V) or J6 pins 5–6 (AnOUT, −4…+4 V) to the Teensy.
 - Which **wire colour** of the existing jumper cables sits in which J5/J6 position (2 sets per driver: 3 wires + 4 wires, `docs/hardware-photos/`). On the traced driver: 3 go to the ESCON (J5.2, J6.3, J6.4), 1 to the IAA100 Out, 1 to the frame board, 2 are spares (section above). Jumper-end colours still to map.
-- IAA100 terminal numbers, and load cell ↔ IAA100 excitation/signal wiring: Futek IAA100 and DYMH-103 datasheets.
+- IAA100 terminals (Futek IAA100/IAA200 quick start guide + product manual, media.futek.com): power side 5-way: **1 +Vin (12.5–26 V DC), 2 GND (power), 3 shunt cal (empty), 4 GND (output), 5 Vout**; sensor side 4-way: 1 +excitation, 2 +signal, 3 −signal, 4 −excitation/shield. Matches thesis Fig. 7 (signal on 5, ground on 4). Wire the 24 V with the supply unplugged. Still open: load cell ↔ IAA100 colours (DYMH-103 datasheet).
 - Shunt regulator ↔ ESCON power terminals; motor and Hall cables (Maxon standard cables).
 - Which load cell / sensor number belongs to which module (`calibration.md`: assumed S1 = A … S4 = D).
 
