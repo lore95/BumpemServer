@@ -11,10 +11,12 @@ Same connections as `docs/diagrams/cabling-4-modules.png`, plus a protection net
 |---|---|
 | U1 Teensy 4.1 (socket, USB at the left edge) | enable T27–30, force T14–17, I²C T18 SDA / T19 SCL, 3V3, GND. **VIN/5V not connected** |
 | U2 Adafruit MCP4728 (socket) | VA–VD → setpoint of modules A–D, VCC 3.3 V from the Teensy |
-| J1–J4 terminals, one per module (A left, B front, C right, D out of service) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
+| J1–J4 terminals, one per module (A left, B front, C right, D) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
 | R1–R4 1 kΩ (series), R5–R8 1 MΩ (pull-down), D1–D4 BAT85 (clamp to 3.3 V) | per force input: terminal F → 1 kΩ → Teensy pin; 1 MΩ to GND; BAT85 to 3.3 V |
 
-Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), 0.3 mm clearance, ground fill on both layers, 4 × M3 holes.
+Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), ground fill on both layers, 4 × M3 holes.
+Spacing (measured, edge to edge): ≥ 0.74 mm between any two nets; 0.74 mm is the gap between neighbouring socket pins (2.54 mm headers).
+The force tracks run under the Teensy and out past its right end, never between socket pins: ≥ 1.39 mm to any other net's pad, so a solder blob on a socket cannot reach a force signal.
 
 **Force inputs.** The IAA100 amplifiers are trimmed to 0–3.3 V = 0–200 N (`docs/knowledge/calibration.md`). With 1 kΩ / 1 MΩ the Teensy sees 99.9 % of that (no recalibration needed). An unplugged input reads 0 N, as the ground jumpers do today. The diode only acts on a fault (amplifier mis-set or miswired): the 1 kΩ limits the current, the BAT85 dumps it into 3.3 V. If an amplifier can only be set to 0–10 V, change the pair to a divider (e.g. 22 kΩ series / 10 kΩ pull-down → 3.1 V) and recalibrate.
 

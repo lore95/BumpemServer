@@ -107,7 +107,7 @@ def note(text, x, y, size=1.27):
     items.append(f'(text "{text}" (exclude_from_sim no) (at {x:.2f} {y:.2f} 0) '
                  f'(effects (font (size {size} {size})) (justify left bottom)) (uuid "{uid()}"))')
 
-note("Bump'em carrier board: Teensy 4.1 + MCP4728 DAC -> 4 cable modules (A left, B front, C right, D out of service)", 20.32, 20.32, 2.0)
+note("Bump'em carrier board: Teensy 4.1 + MCP4728 DAC -> 4 cable modules (A left, B front, C right, D)", 20.32, 20.32, 2.0)
 note("Pins as in firmware/src/main.ino and docs/diagrams/cabling-4-modules.png: enable T27-30, setpoint DAC VA-VD, force T14-17 (A0-A3), I2C T18 SDA / T19 SCL", 20.32, 26.67)
 note("Teensy VIN (5 V) is never connected. Teensy and DAC plug into female headers. DAC VCC fed on pad 12; pad 1 (VCC) is the same net on the breakout, left open here.", 20.32, 31.75)
 note("Force input protection per module: R1-R4 series (1k) | R5-R8 pull-down (1M, unplugged input reads 0 N) | D1-D4 BAT85 clamp to 3.3 V.", 255.27, 20.32)

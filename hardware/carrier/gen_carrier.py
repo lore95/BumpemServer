@@ -48,7 +48,7 @@ def net(name):
     return NETS[name]
 
 MODS = "ABCD"
-ROLE = {"A": "left", "B": "front", "C": "right", "D": "out of service"}
+ROLE = {"A": "left", "B": "front", "C": "right", "D": ""}      # D's pull direction not confirmed (docs/knowledge/hardware.md)
 
 # ---------------------------------------------------------------- geometry log (for stitching-via clearance)
 SEGS, DOTS = [], []          # (x1,y1,x2,y2,halfwidth,layer) ; (x,y,radius,layers)
@@ -197,7 +197,7 @@ for k, m in enumerate(MODS):
         tb[(m, PIN[i])] = (x, TB_Y)
         text(PIN[i], x + (1.6 if PIN[i] == "F" else 0), 80.9, 0.8, bold=True)
         text(COLOUR[i], x, 82.3, 0.8)
-    text(f"{m} · {ROLE[m]}", base + 12.5, 75.0, 1.1, bold=True)
+    text(f"{m} · {ROLE[m]}" if ROLE[m] else m, base + 12.5, 75.0, 1.1, bold=True)
 
 # ---------------------------------------------------------------- force-input protection, one column above each F terminal
 # FIN (terminal) -> R_series -> F_x node -> Teensy pin; node -> R_pulldown -> GND; node -> Schottky -> +3V3
@@ -219,27 +219,40 @@ for k, m in enumerate(MODS):
 BAND = {"F_D": 30.0, "F_C": 32.5, "F_B": 35.0, "F_A": 37.5, "SP_A": 40.0, "SP_B": 42.5, "SP_C": 45.0, "SP_D": 47.5,
         "EN_A": 50.0, "EN_B": 52.5, "EN_C": 55.0, "EN_D": 57.5}
 
-def manhattan(name, src, src_x, dst_x, dst_y, w=TRACK, jog=None):
-    """src pad -> B.Cu down (optional jog) -> via -> F.Cu horizontal on its band -> via -> B.Cu down to (dst_x, dst_y)."""
+def manhattan(name, src, src_x, dst_x, dst_y, w=TRACK, jog=None, dst_via_x=None, dst_jog_dy=1.5):
+    """src pad -> B.Cu down (optional jog) -> via -> F.Cu horizontal on its band -> via -> B.Cu down to (dst_x, dst_y).
+    dst_via_x: put the second via beside dst_x and jog back on B.Cu (keeps it clear of a neighbouring track)."""
     y = BAND[name]
+    vx = dst_x if dst_via_x is None else dst_via_x
     pts = [src] + (jog or []) + [(src_x, y)]
     track(name, "B", pts, w); via(name, src_x, y)
-    track(name, "F", [(src_x, y), (dst_x, y)], w); via(name, dst_x, y)
-    track(name, "B", [(dst_x, y), (dst_x, dst_y)], w)
+    track(name, "F", [(src_x, y), (vx, y)], w); via(name, vx, y)
+    back = [] if vx == dst_x else [(vx, y + dst_jog_dy), (dst_x, y + dst_jog_dy + abs(vx - dst_x))]
+    track(name, "B", [(vx, y)] + back + [(dst_x, dst_y)], w)
 
-# Teensy force inputs (top row) drop through the socket, between the unused bottom-row holes
+def jog_to(sx, y0, x):
+    """leave a pad straight down to y0, then 45 degrees to column x"""
+    return [(sx, y0), (x, y0 + abs(x - sx))] if abs(x - sx) > 1e-6 else []
+
+# Teensy force inputs (top row): along the free space under the Teensy, out past its right end, then down.
+# They pass no socket pin, so a solder blob on the socket cannot reach a force signal.
+F_CH_Y = {"A": 9.5, "B": 11.0, "C": 12.5, "D": 14.0}     # under the Teensy
+F_COL_X = {"D": 64.0, "C": 66.0, "B": 68.0, "A": 70.0}   # between the Teensy and the DAC
 for m, pin in zip("DCBA", ["17", "16", "15", "14"]):
     sx, sy = t_pin[("t", pin)]
-    manhattan(f"F_{m}", (sx, sy), sx + 1.27, tb[(m, "F")][0], NODE_Y, jog=[(sx, 17.6), (sx + 1.27, 18.87)])
-# enables (bottom row) straight down
+    manhattan(f"F_{m}", (sx, sy), F_COL_X[m], tb[(m, "F")][0], NODE_Y, jog=[(sx, F_CH_Y[m]), (F_COL_X[m], F_CH_Y[m])])
+# enables (bottom row) down; B and C shifted sideways to keep >= 0.6 mm from the neighbouring vias
+EN_COL_X = {"A": None, "B": 49.9, "C": 53.6, "D": None}
 for m, pin in zip(MODS, ["27", "28", "29", "30"]):
     sx, sy = t_pin[("b", pin)]
-    jog = [(sx, 23.6), (sx + 0.51, 24.11)] if m == "C" else None
-    manhattan(f"EN_{m}", (sx, sy), sx + (0.51 if m == "C" else 0), tb[(m, "EN")][0], TB_Y, jog=jog)
-# DAC outputs straight down
+    x = EN_COL_X[m] or sx
+    manhattan(f"EN_{m}", (sx, sy), x, tb[(m, "EN")][0], TB_Y, jog=jog_to(sx, 23.6, x),
+              dst_via_x=57.8 if m == "B" else None, dst_jog_dy=7.0)    # B rejoins its column below EN_D's via
+# DAC outputs down; D shifted sideways to keep >= 0.6 mm from F_D's via
 for m, nm in zip(MODS, ["VA", "VB", "VC", "VD"]):
     sx, sy = d_pin[("2", nm)]
-    manhattan(f"SP_{m}", (sx, sy), sx, tb[(m, "SP+")][0], TB_Y)
+    x = 88.0 if m == "D" else sx
+    manhattan(f"SP_{m}", (sx, sy), x, tb[(m, "SP+")][0], TB_Y, jog=jog_to(sx, 19.0, x))
 
 # I2C: Teensy 19 -> DAC SCL on F.Cu, Teensy 18 -> DAC SDA on B.Cu (they cross in plan, on different layers)
 sx, sy = t_pin[("t", "19")]; dx, dy = d_pin[("1", "SCL")]
@@ -261,7 +274,7 @@ for i, (x, y) in enumerate([(4.0, 32.0), (4.0, 58.0), (116.0, 10.0), (116.0, 45.
 rect(0, 0, W, H, pcbnew.Edge_Cuts, 0.1)
 BS = pcbnew.B_SilkS
 text("Bump'em carrier v1 · IBMS Offenburg", 60.0, 38.0, 1.5, BS, bold=True)
-text("Teensy 4.1 + MCP4728 → modules A-D (D out of service)", 60.0, 41.0, 1.0, BS)
+text("Teensy 4.1 + MCP4728 → modules A-D", 60.0, 41.0, 1.0, BS)
 text("R1-R4 1k series · R5-R8 1M pull-down · D1-D4 BAT85 clamp to 3.3 V", 60.0, 43.5, 1.0, BS)
 text("pinout: BumpemServer/docs/diagrams/cabling-4-modules.png", 60.0, 46.0, 1.0, BS)
 text("module wires enter here ↓ (bottom edge)", 60.0, 50.0, 1.0, BS)
@@ -275,10 +288,10 @@ def seg_dist(px, py, x1, y1, x2, y2):
 
 def free(x, y, r):
     for (x1, y1, x2, y2, hw, _) in SEGS:
-        if seg_dist(x, y, x1, y1, x2, y2) < r + hw + CLEAR + 0.1:
+        if seg_dist(x, y, x1, y1, x2, y2) < r + hw + 0.6:
             return False
     for (cx, cy, cr, _) in DOTS:
-        if math.hypot(x - cx, y - cy) < r + cr + CLEAR + 0.1:
+        if math.hypot(x - cx, y - cy) < r + cr + 0.6:
             return False
     return 2.0 < x < W - 2.0 and 2.0 < y < H - 7.0
 
