@@ -23,3 +23,9 @@ firmware/legacy/
 firmware/tools/
 docs/diagrams/*
 !docs/diagrams/cabling-4-modules.png
+
+# KiCad: local UI state, caches, backups, raw gerbers (the zip in fab/ is kept)
+*.kicad_prl
+fp-info-cache
+*-backups/
+hardware/carrier/fab/gerbers/

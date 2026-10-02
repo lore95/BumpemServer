@@ -72,3 +72,8 @@ Alternatives: check/auto-tune every driver first.
 Decision: the repo tracks code (`bumpem/`, `firmware/src`, `firmware/platformio.ini`), tests, `scripts/`, `.md` docs, ESCON `.edc` files and one diagram, `docs/diagrams/cabling-4-modules.png` (4 modules, same cabling per module). Thesis, reference PDFs, photos, `legacy/`, `firmware/legacy/`, `firmware/tools/` and diagram sources/exports stay on disk, listed in `.gitignore`. History squashed to one commit before the first push so the PDFs (≈ 30 MB) never reach the remote.
 Reason: project lead's choice: upload only what is used.
 Consequence: `legacy/` (MATLAB/v0 reference for rule 5) and the thesis must be shared separately with anyone who needs them.
+
+## D15 — 2026-10-02 — Carrier board: 2-layer PCB, generated from a netlist
+Decision: replace the breadboard with `hardware/carrier/`: Teensy 4.1 and MCP4728 on female headers, one 5-way terminal per module (pin order EN, SP+, SP−, GND, F), protection on each force input (1 kΩ series, 1 MΩ pull-down, BAT85 to 3.3 V). 2 layers, through-hole, ordered from a PCB maker; the makerspace helps with ordering and soldering. KiCad files are generated (`netlist.py` → `gen_schematic.py`, `gen_carrier.py`) and checked by `build.sh` (ERC, DRC, schematic parity).
+Reason: per-module terminals force the enable, setpoint and force wires to cross; single-sided would need ~10 wire jumpers. Sockets keep Teensy and DAC replaceable. Protection values keep the calibrated 0–3.3 V signal (99.9 %) and make an unplugged input read 0 N.
+Alternatives: single-sided milled board with jumpers; perfboard; direct force connection without protection.

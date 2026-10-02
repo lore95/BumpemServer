@@ -1,0 +1,4 @@
+(sym_lib_table
+  (version 7)
+  (lib (name "bumpem-carrier")(type "KiCad")(uri "${KIPRJMOD}/bumpem-carrier.kicad_sym")(options "")(descr "Teensy 4.1 and MCP4728 sockets"))
+)

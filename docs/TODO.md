@@ -108,6 +108,7 @@ Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down:
 ## 9. Afterwards / scheduled (not blocking the test)
 - [ ] 🟢 Call with the previous student, **week of 2026-10-05**: read `QUESTIONS.md`, bring the "Files to ask for" list
 - [ ] 🟠 Modules **A** and **B**: trace cables like C, then steps 2–5 for each
+- [ ] 🟢 Carrier board (`hardware/carrier/README.md`): check terminal orientation in KiCad's 3D viewer and a 1:1 print, then order (makerspace can help) and solder. Move the modules over one at a time, re-run `scripts/open_loop_test.sh` for each
 - [x] 🟢 `git init` both folders + first commit (2026-10-02)
 - [x] 🟢 Claude: `bumpem serve`, the server API: built + tested on the simulator (2026-10-02)
 
