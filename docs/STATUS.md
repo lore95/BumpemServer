@@ -1,0 +1,59 @@
+# Status
+
+## Done
+- Git repositories (2026-10-02): `BumpemServer` and `BumpemUI`, branch `main`, local only (not pushed). Repo filtered to the code and docs in use; thesis, reference PDFs, photos, `legacy/`, `firmware/legacy/`, `firmware/tools/` and diagram sources stay on disk, ignored (list in `docs/FILES.md`, D14). Cabling diagram: `docs/diagrams/cabling-4-modules.png` (A–D, same pattern).
+- **Modules A + C under Teensy control (2026-10-02):** open-loop tests passed for A alone, C alone and **A + C together** (`scripts/open_loop_test.sh AC`, same pulse started in the same control cycle). No force measured yet.
+- **Module A open-loop test passed (2026-10-02)** after fixing its J3 (green/grey swapped → too-strong pull). Test script now: 400 ms pulses (was 600), red/green 48 V banners before/after the dry run.
+- **First motor drive with firmware v1 (2026-10-02):** open-loop test of module C (`scripts/open_loop_test.sh`, kp = kd = 0, kff 2, baseline 2 N, fmax 30 N, only ch_C): **motor pulled correctly, tug grew with 5 → 10 → 20 N, release back to normal**; module A idle as intended. Chain Mac → USB → Teensy → DAC VC → ESCON → motor confirmed. No force measured (amplifier not connected).
+- **`bumpem serve` (2026-10-02):** `bumpem/server.py`, FastAPI, all `board` endpoints of `docs/API.md` + WebSocket stream (telemetry thinned, events, estop). Watchdog `wd_ms` (default 1000) + 300 ms ping when on real hardware. 31 tests pass (7 server tests on the simulator). Not yet run against the Teensy.
+- Project lead's Mac set up (2026-09-30): conda env `BumpemHome` (Python 3.12), `pip install -e ".[dev]"`, pytest 24 passed.
+- Repo scaffold. Legacy code archived in `legacy/` untouched.
+- Knowledge extracted from thesis + manual + legacy code → `docs/knowledge/`.
+- `docs/PROTOCOL.md` v0 documented from firmware.
+- Firmware builds with PlatformIO (not yet flashed). Pinned: platform teensy@6.0.0 (framework-arduinoteensy 1.162.0), Adafruit MCP4728@1.0.10, Adafruit BusIO@1.17.4.
+- **Firmware v1** (`firmware/src/main.ino`, protocol v1): compiles (PlatformIO, 2026-09-29), **not yet run on hardware**. v0 reference build: `firmware/legacy/`, compiles.
+- **Desk test on Teensy 16922250 passed (2026-09-29)**, no modules wired. Original calibration sketch output saved (`firmware/tools/loadcell_check/original_output_2026-09-29.txt`), then v1 flashed. Checked: `info` (proto 1, fw 1.0.0), 32 params at v0 defaults, disarmed pulse rejected, ARM/pulse/abort/ESTOP/re-ARM/release, rejections (disabled channel, > fmax_n), event order. DAC loopback (VA–VD jumpered to pins 14–17, open-loop kp = kd = 0): code 639 → 30.7–31.5 N (0.51 V, expected 31.2 N), code 3199 → 155.6–157.2 N (expected 156.2 N), each channel alone, order A–D correct, DAC supply ≈ 3.29 V. Loop max 1.76 ms, overruns 1 (boot), tx_drops only while no host reads. Board left DISARMED with defaults. System map (`docs/diagrams/`) updated to this state.
+- Wiring for 4 modules documented: `docs/knowledge/wiring.md` + `docs/diagrams/wiring-4-modules.*` (from manual p. 3 table + `main.ino` pins). ESCON connector pin numbers still unknown (need model).
+- Workspace split (D11): this folder = BumpemServer, UI in `../BumpemUI`. Tests (24) and both firmware builds re-checked after the move. System map updated.
+- `docs/API.md` 1.0-draft: server API contract (D9, D10). Not implemented.
+- Recovery hook: `bumpem/recovery.py` + `Scheduler(recovery=...)`, stand-in `FixedWaitRecovery` (D8). Search `TODO(recovery)` to insert the lab algorithm.
+- Python mirror of v1: `protocol.py`, `device.py` (`Board` client), `sim.py` (`SimLink`), CLI. 24 tests pass.
+- Python package skeleton: protocol parser, gait detector port, sequence generator, simulator, CLI. Tests pass (no hardware).
+
+## Next
+**Next session starts with:** e-stop wiring (RSP-2000 CN501 pins 7 + 11, `knowledge/wiring.md`) and test; then 24 V + IAA100 amplifiers (range ≤ 3.3 V check) → closed-loop test; repeat a pulse through `bumpem serve`. Before final testing: driver config uploads/auto-tuning, firmware `i_full` 9.9 and `kt` 0.231.
+
+Day-to-day checklist: `docs/TODO.md` (keep it in step with this list).
+
+0. ~~Desk test~~ **passed 2026-09-29** (see Done). Next hardware step: wire the modules (Blocked: ESCON pinout, wire identification). Remove the loopback jumpers (DAC VA–VD → pins 14–17) before connecting load cells.
+1. Bench, **no person attached**: `scripts/flash.sh legacy` → confirm 5 N baseline on A/B/C (v0 reference). Then `scripts/flash.sh` → `bumpem arm --port P --watch 5` → baseline matches v0.
+2. `bumpem pulse A=95 --rise 50 --dur 600 --fall 0 --port P --watch 2` (= v0 `a`). Compare peak/rise with `knowledge/results.md`. Check `bumpem stats` (loop overruns, tx_drops).
+3. ~~Server~~ done (sim). Next: run `bumpem serve --board <PORT>` against the Teensy (repeat the open-loop pulses via `/docs`).
+4. Minimal web UI in `../BumpemUI` (its own STATUS.md): connect, arm, pulse, stop, live force plot. Then the gait-phase picker (needs: walking or running? images?).
+5. Host layer (`planned` endpoints): angle → channel amplitudes, PTO scheduling, trials, measured-vs-commanded (±2 SD, baseline = first 3 s, D7). `experiment.py` still speaks v0 letters; port it then.
+6. Validate `bumpem/gait.py` against a recorded MATLAB `Log_event_data_*.csv`.
+
+## Blocked / needed
+- **Module C first power-on (2026-09-30):** power checks T0–T7 passed (`docs/tests/power-checks-module-C.md`); 2026-10-01: supply error at J1 fixed; ESCON Studio connects; current error **Hall Sensor Pattern Error**; Controller Monitor shows Stanford-equivalent config; Diagnostics: motor test OK, **Hall connection FAILED**, all 3 Hall states frozen. **J3 pin 5 (Hall GND) empty on module C and on a second module, same Hall error on both** → systematic. Motor catalog (500267, V1): 8 motor wires all present; **Fixed 2026-10-01:** blue (Hall GND) moved to J3 pin 5 → ESCON Diagnostics all passed, LED green blinking (disabled, ready). Same fix likely needed on the second module. Next: identify GND conductor via motor colour code (need motor label + J3 photo), connect, re-test; config backup.
+- **Power supplies disconnected, e-stop not installed (2026-09-30).** Module wiring otherwise as documented. Power chain + e-stop notes: `knowledge/wiring.md` → "Power supplies and e-stop". E-stop pins found: RSP-2000 **CN501 pin 7 + pin 11**, NO contact, short = 48 V off (datasheet in `docs/reference/`). No technician: mains side inspected only (no 230 V work by the project lead), faults via the university; checklist `docs/power-estop-checklist.md`; supervisor asked about DGUV V3. `docs/TODO.md` reordered by danger/blocking (2026-09-30); step 1 = technician.
+- **Call with the previous student (week of 2026-10-05):** all open questions in `docs/QUESTIONS.md`. After the call, move each answer into the doc named next to it and remove the matching items here.
+- **Control board found, unwired (2026-09-29).** Teensy 4.1 (USB serial number 16922250, macOS port `/dev/cu.usbmodem169222501`) sits on a breadboard with the MCP4728 only; no wires to any module. ESCON side: loose jumper cable (`docs/hardware-photos/`). The board runs an unknown single-channel load-cell test sketch (`ADC: … | Voltage: … | Force: … N`, ~6 lines/s, same 200 N / 3.3 V scaling); flashing erases it for good (source not in repo; ask the lab first).
+  Rewiring to modules needs: ESCON model (driver label) → connector pinout; each wire identified by continuity and labelled; wiring per thesis Fig. 7 + manual p. 3 table. Blocks Next 1–2 beyond the desk test.
+- **Cable traced on module C (2026-09-30, `knowledge/wiring.md`):** yellow J5.2 enable, blue J6.3 setpoint+, green J6.4 setpoint−, brown IAA100 Out (force), white → board in frame, 2 spares. Frame board = this module's **ground distributor** (ESCON J5.5 + J6.7 + IAA100 GND → white wire). All 7 wires traced to jumper ends: black = enable, red (F) = setpoint +, orange = setpoint −, blue = force, purple = GND, yellow/white spare. This driver = **module C** (right): black → Teensy 29, red → DAC VC, orange → DAC GND, blue → Teensy 16, purple → Teensy G. Next: trace A and B, label jumper ends. To do: module letter, jumper-end colours, other 3 drivers.
+- Stanford reference ESCON config (`escon/stanford/`): DigIN2 = Enable, AnIN2 = Set value, all other inputs unused, no analog outputs. So the 2 extra wires per driver, if on this config, go to unused pins. Colour ↔ pin still needs a continuity test.
+- **ESCON model known: 70/10 (422969)**; hardware reference + J5/J6 pin table in `escon/`. Still needed: wire colour ↔ J5/J6 position on each driver (each has 7 wires, 5 needed: J5.2, J5.5, J6.3, J6.4, J6.7); J5.6 (+5 V) and J6.5–6 (AnOUT, ±4 V) must never reach a Teensy pin.
+- ESCON parameter file → `escon/`: can be read back from each driver with ESCON Studio (Windows, USB J7) instead of waiting for the Drive link.
+- A recorded MATLAB log pair (event + perturbation CSV) → `tests/data/`.
+- Vicon DataStream SDK Python bindings (installed with the SDK; check version on lab PC).
+- **Balance-recovery algorithm** (D7): source code, language, inputs (which markers/segments, rate), output (recovered yes/no? score?), latency. Needed to define the hook.
+
+## Open issues found in legacy code
+- **Motor = maxon EC 90 flat 500267 (2026-10-01): kt = 0.231 Nm/A** (datasheet) vs firmware `kt = 0.1524`. Correct together with `i_full` after the first test.
+- **ESCON setpoint scaling CONFIRMED on module A's driver (2026-10-01): 0–10 V → 0–30 A** (`escon/moduleA_left_2026-10-01.edc`). Original note:  Stanford config (`escon/stanford/`) = 0–10 V → 0–30 A; firmware assumes 3.3 V → 30 A (`i_full`). If the IBMS drivers hold that config, real current = firmware value / 3.03 and the DAC ceiling is 9.9 A, which fits the thesis peak forces. Verify by uploading each driver's config (ESCON Studio) before touching `i_full`/`kff` (`knowledge/control.md`).
+- Impulse duration 600 ms in code vs 300 ms in thesis §4.3. Which was used for the thesis data?
+- Setup prints "baseline = 10 N" but `baselineForce = 5.0` (`.ino:119` vs `:36`).
+- DAC saturated from feedforward above ~32 N target (see `knowledge/control.md`).
+- No 200 N clamp; stop halts forever; serial port contention blocks the Serial Monitor stop (see `knowledge/safety.md`).
+- Module 4: mechanical damage (thesis) vs missing driver (manual).
+- Load cell sensor ↔ module mapping unconfirmed.
+- Firmware vs Stanford guide (`knowledge/controller.md`): feedforward ×7.5 (guide: ×1 with kt = 0.89·kt_nominal); no force filter (guide: 2nd-order Butterworth 60 Hz); D term on raw Δf/Δt in ms (guide: 3-step averaged derivative of error); one gain set (guide: separate gains for low-force tracking vs perturbation). Is `kt = 0.1524` nominal or measured?

@@ -1,0 +1,25 @@
+# build / tooling
+.pio/
+__pycache__/
+*.pyc
+*.egg-info/
+.pytest_cache/
+.venv/
+# OS
+.DS_Store
+# trial logs (data, not code)
+Logs/
+# iPhone originals: each photo has a .jpg copy in docs/hardware-photos/
+*.HEIC
+*.heic
+
+# Local only (on disk, not in git): reference material, photos, unused code, diagram sources/exports
+docs/thesis/
+docs/reference/
+docs/hardware-photos/
+escon/*.pdf
+legacy/
+firmware/legacy/
+firmware/tools/
+docs/diagrams/*
+!docs/diagrams/cabling-4-modules.png

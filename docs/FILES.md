@@ -1,0 +1,45 @@
+# File index
+
+In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. **Local only** (`.gitignore`, ask the project lead for copies): `docs/thesis/`, `docs/reference/`, `docs/hardware-photos/`, `escon/*.pdf`, `legacy/`, `firmware/legacy/`, `firmware/tools/`, other `docs/diagrams/` files.
+
+| Path | Purpose |
+|---|---|
+| `CLAUDE.md` | Agent instructions |
+| `docs/thesis/thesis.pdf` | Master thesis (Palanisamy, 2026). Primary reference |
+| `docs/thesis/manual.pdf` | Bumpem user manual |
+| `docs/knowledge/*.md` | Extracted facts with source citations |
+| `docs/knowledge/wiring.md` | Connection list for 4 modules (text source of the wiring diagram) |
+| `docs/knowledge/controller.md` | Stanford build guide, Controller section (reference design for controller API) |
+| `docs/knowledge/perturbation_definitions.md` | Lab-standard perturbation terms (PTO, start/end, phases, amplitude) |
+| `docs/diagrams/cabling-4-modules.png` | Final breadboard cabling, Teensy + MCP4728 → modules A–D, real wire colours (same pattern per module; D out of service) |
+| `docs/power-estop-checklist.md` | Power + e-stop checklist (self-check; no technician): supply ratings, mains inspection, capacity, earthing, e-stop, sign-off |
+| `docs/tests/open-loop-test-module-C.md` | Preliminary open-loop test: Teensy drives module C without force sensor (settings, wiring, steps) |
+| `docs/tests/power-checks-module-C.md` | Self-contained electrical test spec before first 48 V power-on (continuity, polarity, e-stop, shunt threshold, first power-on) |
+| `docs/TODO.md` | Daily checklist for lab and software work (ordered, with commands) |
+| `docs/QUESTIONS.md` | Open questions for the previous student (answers go back into the docs) |
+| `docs/API.md` | Server HTTP/WebSocket API, contract for every client (1.0-draft) |
+| `docs/hardware-photos/` | Lab photos with notes (`README.md` lists what each shows and what is unknown) |
+| `docs/PROTOCOL.md` | Serial protocol (v0 legacy, v1 plan) |
+| `legacy/Arduino_Script.ino` | Original firmware (read-only) |
+| `legacy/MATLAB_script.m` | Original gait detection + triggering (read-only) |
+| `firmware/` | PlatformIO project, Teensy 4.1, firmware v1 |
+| `firmware/tools/loadcell_check/` | Recreated calibration sketch (A1, 200 ms, `ADC \| Voltage \| Force`). `scripts/flash.sh loadcell` |
+| `firmware/legacy/` | PlatformIO project building `legacy/Arduino_Script.ino` (v0 reference) |
+| `escon/stanford/` | Stanford reference ESCON 70/10 config (`.edc`), decoded in `escon/README.md` |
+| `docs/reference/maxon-500267-catalog-page.pdf` | maxon EC 90 flat 260 W catalog page (motor data, 8-pin connector pinout V1) |
+| `docs/reference/meanwell-rsp-2000-spec.pdf` | Mean Well RSP-2000 datasheet (48 V supply: CN501 pins, remote ON-OFF for the e-stop) |
+| `docs/reference/stanford-bumpem-build-guide.pdf` | Stanford Bump'em build instructions (source of `knowledge/controller.md`) |
+| `escon/` | ESCON 70/10 notes + J5/J6 pin table (`README.md`), maxon hardware reference PDF; parameter file (missing) |
+| `bumpem/protocol.py` | v1 message types, parser, command builders (mirrors PROTOCOL.md) |
+| `bumpem/device.py` | `Board` client (request/ack, telemetry, estop) over `SerialLink` or sim |
+| `bumpem/sim.py` | `SimLink`: simulated board speaking protocol v1 |
+| `bumpem/gait.py` | FS/TO detector, port of MATLAB logic |
+| `bumpem/experiment.py` | Perturbation sequence + FS target generation |
+| `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
+| `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers) |
+| `bumpem/vicon.py` | Vicon DataStream client (stub) |
+| `bumpem/cli.py` | `bumpem` command (incl. `bumpem serve`) |
+| `bumpem/server.py` | FastAPI server: `board` endpoints of `docs/API.md` + WebSocket stream |
+| `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
+| `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
+| `scripts/flash.sh` | Build + upload firmware |
