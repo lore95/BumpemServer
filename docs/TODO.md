@@ -20,6 +20,7 @@ Server 0.2.0: board API + perturbation by angle (`bumpem perturb`), simulator-te
 - [ ] 🟢 `git push` in BumpemServer (3 commits ahead of GitHub); delete the empty clone `IBMS_Offenburg/BumpemServerGit`
 
 ## 1. 🔴 Safety · blocks long sessions and anything with a person attached
+- [ ] **Multimeter**: borrow one (lab / makerspace) or buy one. Needed for the e-stop test, the 24 V checks and the amplifier range check
 Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-checklist.md`.
 - [ ] Order a **Hirose DF11-12DS** housing + **DF11 crimp terminals** for each RSP-2000's CN501 (or plan to solder)
 - [ ] **Wire the e-stop**: CN501 pin 7 + pin 11, one NO contact per 48 V supply (A, C, D)
@@ -32,6 +33,7 @@ Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-
 ## 2. 🟠 Force sensing → closed loop · blocks real force control, logging, trials with people
 Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down: release → 48 V off → 24 V off.
 - [ ] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)**, supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
+- [ ] **C rests at ~73 N** (`scripts/force_check.py`, 2026-10-05; A 4.6 N, D 1.3 N): swap C/D brown wires (does it follow?), then jumper C's IAA100 pin 4 → − rail (ground?). Don't pull C hard meanwhile (3.3 V reached at ~127 N real force)
 - [ ] **Amplifier range** per module: brown force wire **not** in the Teensy, pull the rope hard → output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N). Higher: stop, tell Claude
 - [ ] Then per module: remove the short wire from its force pin (T14 A, T16 C, T17 D) to the − rail, plug the brown wire in
 - [ ] **24 V only:** `bumpem monitor --port PORT`, pull each rope by hand → only that module's force rises
