@@ -44,7 +44,6 @@ Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down:
 ⚠️ Diagnostics and auto-tuning turn the motor: rope slack, nobody near, hand on the strip switch.
 - [ ] Module A: Diagnostics (Hall test must pass) after its J3 recabling
 - [ ] Module D: Diagnostics; upload its config as `escon/moduleD_back_<date>.edc`
-- [ ] Confirm left/right are the **subject's** left/right, walking forward (A left, C right). Otherwise every angle is mirrored: tell Claude
 - [ ] Always: USB in before 48 V on; 48 V off before USB out
 
 ## 4. 🟢 Software (Claude builds, you test)
