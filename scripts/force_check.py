@@ -77,12 +77,13 @@ def main() -> None:
         for mod in a.mods:
             input(f"\n=== Module {mod} ({ROPE[mod]} rope). Hands off, then press Enter ")
             t0 = time.monotonic()
-            while time.monotonic() - t0 < ZERO_S:
+            while time.monotonic() - t0 < ZERO_S or (not since(t0) and time.monotonic() - t0 < 5.0):
                 show("zeroing, hands off", latest())
                 time.sleep(0.1)
             zero_rows = since(t0)
             if not zero_rows:
-                sys.exit("\nno telemetry received: is the Teensy running firmware v1 (bumpem info)?")
+                sys.exit("\nthe Teensy stopped sending data (reset or USB dropped?). Check `bumpem info`, "
+                         "replug the USB if needed, then run this script again.")
             zero = {c: statistics.fmean(r[c] for r in zero_rows) for c in SHOWN}
 
             done = threading.Event()
