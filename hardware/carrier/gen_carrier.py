@@ -25,7 +25,7 @@ PREVIEW = os.environ.get("PREVIEW")   # path: write a copy without pours/stitchi
 OUT = PREVIEW or os.path.join(HERE, "bumpem-carrier.kicad_pcb")
 LIB = os.path.join(HERE, "bumpem-carrier.pretty")
 
-W, H = 120.0, 93.5          # board size
+W, H = 154.0, 96.0          # board size
 TRACK, POWER = 0.5, 0.8     # track widths
 CLEAR = 0.3                 # copper clearance
 VIA_D, VIA_DRILL = 1.4, 0.8
@@ -199,24 +199,25 @@ for i, (nm, _) in enumerate(D_JP2):
     text(nm, DX + 6.35 + 2.54 * i, DY + 12.6, 0.8)
 text("MCP4728", DX + 12.7, DY + 8.9, 1.2)
 
-# ---------------------------------------------------------------- terminal blocks: one 5-way block per module, wires enter at the bottom edge
-TB_Y = 88.0
-TB_X0, TB_PITCH = 10.0, 26.67
+# ---------------------------------------------------------------- module connectors: pluggable 5-way header per module (Phoenix MSTB 2,5/5-GF-5,08,
+# order no. 1776537, threaded flange); the cable plug MSTB 2,5/5-STF-5,08 (1778014) screws on. Plug side flush with the bottom edge.
+TB_Y = H - 10.6                  # footprint body/silk reach ~10.2 mm below the pads: keep them just inside the edge
+TB_X0, TB_PITCH = 9.5, 37.5      # header incl. flanges is 35.7 mm wide
 PIN = ["EN", "SP+", "SP-", "GND", "F"]           # pad 1..5, same order as docs/diagrams/cabling-4-modules.png
 COLOUR = ["yel", "blu", "grn", "wht", "brn"]
 tb = {}
 for k, m in enumerate(MODS):
-    base = TB_X0 + TB_PITCH * k                      # x of pad 5 (F); rotated 180 deg so pad 1 (EN) is rightmost
+    base = TB_X0 + TB_PITCH * k                      # x of pad 1 (EN); pads 1..5 left to right
     nets = {"1": f"EN_{m}", "2": f"SP_{m}", "3": "GND", "4": "GND", "5": f"FIN_{m}"}
-    j = place("TerminalBlock_Phoenix", "TerminalBlock_Phoenix_MKDS-1,5-5-5.08_1x05_P5.08mm_Horizontal",
-              f"J{k + 1}", f"Module {m}", base + 20.32, TB_Y, 180, nets)
+    j = place("Connector_Phoenix_MSTB", "PhoenixContact_MSTB_2,5_5-GF-5,08_1x05_P5.08mm_Horizontal_ThreadedFlange",
+              f"J{k + 1}", f"Module {m}", base, TB_Y, 0, nets)
     j.Reference().SetVisible(False)
     for i in range(5):
-        x = base + 20.32 - 5.08 * i
+        x = base + 5.08 * i
         tb[(m, PIN[i])] = (x, TB_Y)
-        text(PIN[i], x + (1.6 if PIN[i] == "F" else 0), 80.9, 0.8, bold=True)
-        text(COLOUR[i], x, 82.3, 0.8)
-    text(f"{m} · {ROLE[m]}" if ROLE[m] else m, base + 12.5, 75.0, 1.1, bold=True)
+        text(PIN[i], x + (1.6 if PIN[i] == "F" else 0), TB_Y - 5.7, 0.8, bold=True)
+        text(COLOUR[i], x, TB_Y - 4.3, 0.8)
+    text(f"{m} · {ROLE[m]}" if ROLE[m] else m, base + 7.0, 75.0, 1.1, bold=True)
 
 # ---------------------------------------------------------------- force-input protection, one column above each F terminal
 # FIN (terminal) -> R_series -> F_x node -> Teensy pin; node -> R_pulldown -> GND; node -> Schottky -> +3V3
@@ -242,6 +243,9 @@ def manhattan(name, src, src_x, dst_x, dst_y, w=TRACK, jog=None, dst_via_x=None,
     """src pad -> B.Cu down (optional jog) -> via -> F.Cu horizontal on its band -> via -> B.Cu down to (dst_x, dst_y).
     dst_via_x: put the second via beside dst_x and jog back on B.Cu (keeps it clear of a neighbouring track)."""
     y = BAND[name]
+    if abs(src_x - dst_x) < 2.0 and dst_via_x is None:      # source column ~ above the target: stay on B.Cu, no vias
+        track(name, "B", [src] + (jog or []) + [(src_x, y), (dst_x, y + abs(dst_x - src_x)), (dst_x, dst_y)], w)
+        return
     vx = dst_x if dst_via_x is None else dst_via_x
     pts = [src] + (jog or []) + [(src_x, y)]
     track(name, "B", pts, w); via(name, src_x, y)
@@ -261,13 +265,12 @@ for m, pin in zip("DCBA", ["17", "16", "15", "14"]):
     sx, sy = t_pin[("t", pin)]
     manhattan(f"F_{m}", (sx, sy), F_COL_X[m], tb[(m, "F")][0], NODE_Y, jog=[(sx, F_CH_Y[m]), (F_COL_X[m], F_CH_Y[m])])
 # enables (bottom row) down; B and C shifted sideways to keep >= 0.6 mm from the neighbouring vias
-EN_COL_X = {"A": None, "B": 49.9, "C": 53.6, "D": None}
+EN_COL_X = {"A": None, "B": 49.9, "C": 53.8, "D": None}
 for m, pin in zip(MODS, ["27", "28", "29", "30"]):
     sx, sy = t_pin[("b", pin)]
     x = EN_COL_X[m] or sx
-    manhattan(f"EN_{m}", (sx, sy), x, tb[(m, "EN")][0], TB_Y, jog=jog_to(sx, 23.6, x),
-              dst_via_x=57.8 if m == "B" else None, dst_jog_dy=7.0)    # B rejoins its column below EN_D's via
-# DAC outputs down; D shifted sideways to keep >= 0.6 mm from F_D's via
+    manhattan(f"EN_{m}", (sx, sy), x, tb[(m, "EN")][0], TB_Y, jog=jog_to(sx, 23.6, x))
+# DAC outputs down; D shifted sideways to keep >= 0.6 mm from SP_C's via
 for m, nm in zip(MODS, ["VA", "VB", "VC", "VD"]):
     sx, sy = d_pin[("2", nm)]
     x = 88.0 if m == "D" else sx
@@ -283,20 +286,21 @@ track("SDA", "B", [(sx, sy), (sx, 2.6), (dx, 2.6), (dx, dy)])
 sx, sy = t_pin[("b", "3V3")]
 track("+3V3", "B", [(sx, sy), (sx, 23.6), (39.0, 24.75), (39.0, K_Y)], POWER); via("+3V3", 39.0, K_Y)
 kx = [tb[(m, "F")][0] + 3.81 for m in MODS]
-track("+3V3", "F", [(kx[0], K_Y), (kx[-1] + 2.69, K_Y)], POWER); via("+3V3", kx[-1] + 2.69, K_Y)
+V3_X = tb[("D", "EN")][0] + 2.54          # riser to the DAC between module D's EN and SP+ columns
+track("+3V3", "F", [(kx[0], K_Y), (kx[-1], K_Y)], POWER); via("+3V3", V3_X, K_Y)
 vx, vy = d_pin[("2", "VCC")]
-track("+3V3", "B", [(kx[-1] + 2.69, K_Y), (kx[-1] + 2.69, 20.2), (vx, 20.2), (vx, vy)], POWER)
+track("+3V3", "B", [(V3_X, K_Y), (V3_X, 20.2), (vx, 20.2), (vx, vy)], POWER)
 
 # ---------------------------------------------------------------- mounting holes, outline, labels
-for i, (x, y) in enumerate([(4.0, 32.0), (4.0, 58.0), (116.0, 10.0), (116.0, 45.0)]):
+for i, (x, y) in enumerate([(4.0, 32.0), (4.0, 58.0), (W - 4.0, 10.0), (W - 4.0, 45.0)]):
     place("MountingHole", "MountingHole_3.2mm_M3", f"H{i + 1}", "M3", x, y)
 rect(0, 0, W, H, pcbnew.Edge_Cuts, 0.1)
 BS = pcbnew.B_SilkS
-text("Bump'em carrier v1 · IBMS Offenburg", 60.0, 38.0, 1.5, BS, bold=True)
-text("Teensy 4.1 + MCP4728 → modules A-D", 60.0, 41.0, 1.0, BS)
-text("R1-R4 1k series · R5-R8 1M pull-down · D1-D4 BAT85 clamp to 3.3 V", 60.0, 43.5, 1.0, BS)
-text("pinout: BumpemServer/docs/diagrams/cabling-4-modules.png", 60.0, 46.0, 1.0, BS)
-text("module wires enter here ↓ (bottom edge)", 60.0, 50.0, 1.0, BS)
+text("Bump'em carrier v1 · IBMS Offenburg", W / 2, 38.0, 1.5, BS, bold=True)
+text("Teensy 4.1 + MCP4728 → modules A-D", W / 2, 41.0, 1.0, BS)
+text("R1-R4 1k series · R5-R8 1M pull-down · D1-D4 BAT85 clamp to 3.3 V", W / 2, 43.5, 1.0, BS)
+text("pinout: BumpemServer/docs/diagrams/cabling-4-modules.png", W / 2, 46.0, 1.0, BS)
+text("module plugs (Phoenix MSTB 2,5/5-STF-5,08) at the bottom edge", W / 2, 50.0, 1.0, BS)
 
 # ---------------------------------------------------------------- ground pours on both layers + stitching vias in free spots
 def seg_dist(px, py, x1, y1, x2, y2):

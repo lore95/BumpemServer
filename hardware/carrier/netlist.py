@@ -31,7 +31,7 @@ PARTS = {
 }
 for k, m in enumerate(MODS):
     PARTS[f"J{k + 1}"] = ("Connector:Screw_Terminal_01x05", f"Module {m}",
-                          "TerminalBlock_Phoenix:TerminalBlock_Phoenix_MKDS-1,5-5-5.08_1x05_P5.08mm_Horizontal",
+                          "Connector_Phoenix_MSTB:PhoenixContact_MSTB_2,5_5-GF-5,08_1x05_P5.08mm_Horizontal_ThreadedFlange",
                           {"1": f"EN_{m}", "2": f"SP_{m}", "3": "GND", "4": "GND", "5": f"FIN_{m}"})
     PARTS[f"R{k + 1}"] = ("Device:R", "1k", "Resistor_THT:R_Axial_DIN0207_L6.3mm_D2.5mm_P10.16mm_Horizontal",
                           {"1": f"F_{m}", "2": f"FIN_{m}"})

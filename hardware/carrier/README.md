@@ -1,6 +1,6 @@
 # Carrier board (v1)
 
-Replaces the breadboard: Teensy 4.1 and the MCP4728 DAC plug into sockets, each cable module gets one 5-way screw terminal.
+Replaces the breadboard: Teensy 4.1 and the MCP4728 DAC plug into sockets, each cable module gets one 5-way **pluggable** connector: its wires are screwed into a plug once, the plug pops into the board and locks with two screws.
 Same connections as `docs/diagrams/cabling-4-modules.png`, plus a protection network on each force input.
 
 ![board](board-preview.png)
@@ -11,10 +11,10 @@ Same connections as `docs/diagrams/cabling-4-modules.png`, plus a protection net
 |---|---|
 | U1 Teensy 4.1 (socket, USB at the left edge) | enable T27–30, force T14–17, I²C T18 SDA / T19 SCL, 3V3, GND. **VIN/5V not connected** |
 | U2 Adafruit MCP4728 (socket) | VA–VD → setpoint of modules A–D, VCC 3.3 V from the Teensy |
-| J1–J4 terminals, one per module (A left, B front, C right, D back) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
-| R1–R4 1 kΩ (series), R5–R8 1 MΩ (pull-down), D1–D4 BAT85 (clamp to 3.3 V) | per force input: terminal F → 1 kΩ → Teensy pin; 1 MΩ to GND; BAT85 to 3.3 V |
+| J1–J4 pluggable headers, one per module (A left, B front, C right, D back), pins left to right | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
+| R1–R4 1 kΩ (series), R5–R8 1 MΩ (pull-down), D1–D4 BAT85 (clamp to 3.3 V) | per force input: connector F → 1 kΩ → Teensy pin; 1 MΩ to GND; BAT85 to 3.3 V |
 
-Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), only 45° bends, ground fill on both layers (0.5 mm from other copper), 4 × M3 holes.
+Board 154 × 96 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), only 45° bends, ground fill on both layers (0.5 mm from other copper), 4 × M3 holes.
 Spacing (measured, edge to edge): ≥ 0.74 mm between any two nets; 0.74 mm is the gap between neighbouring socket pins (2.54 mm headers).
 The force tracks run under the Teensy and out past its right end, never between socket pins: ≥ 1.39 mm to any other net's pad, so a solder blob on a socket cannot reach a force signal.
 
@@ -29,7 +29,9 @@ The force tracks run under the Teensy and out past its right end, never between 
 | 1 | PCB from step 1 | |
 | 2 | female header 1 × 24, 2.54 mm, 8.5 mm tall | Teensy socket (or cut from 1 × 40 strips) |
 | 2 | female header 1 × 6, 2.54 mm | DAC socket |
-| 4 | Phoenix Contact MKDS 1,5/5-5,08 (1715750) | or any 5-way 5.08 mm PCB screw terminal with the same footprint |
+| 4 | Phoenix Contact header **MSTB 2,5/5-GF-5,08 (1776537)**, threaded flange | on the board |
+| 4 | Phoenix Contact plug **MSTB 2,5/5-STF-5,08 (1778014)**, screw flange | on each module cable: wires screwed in once (1 EN, 2 SP+, 3 SP−, 4 GND, 5 F) |
+| optional | Phoenix Contact coding profile **CP-MSTB (1734634)** | keys each socket to its own plug (A's cable can't go into C's socket); check the coding scheme in Phoenix's MSTB coding guide |
 | 4 | resistor 1 kΩ, 0.25 W, 1 %, axial | R1–R4 |
 | 4 | resistor 1 MΩ, 0.25 W, 1 %, axial | R5–R8 |
 | 4 | BAT85 Schottky diode, DO-35 | D1–D4, band (cathode) towards the 3.3 V track |
@@ -40,13 +42,13 @@ Full list: `fab/bumpem-carrier-bom.csv`. Schematic: `fab/bumpem-carrier-schemati
 **Makerspace HS Offenburg (reply 2026-10-05):** can make the board, but **without solder mask and silkscreen** (bare copper): fine for a prototype. Open with them: plated through-holes / vias? (the top-layer tracks end on socket pads, which cannot be soldered from the top under a socket); how to label pins without silkscreen (copper text or a printed label sheet).
 
 ## Assembly and first power-up
-1. Solder the low parts first: resistors, diodes (check the band!), then the female headers, then the terminals (wire openings facing the board edge).
-2. **No Teensy, no DAC, no modules.** Multimeter beep test: 3V3 ↔ GND must **not** beep; each terminal pin 3 and 4 ↔ Teensy GND must beep; terminal A pin 1 ↔ Teensy socket pin 27 must beep (same for B–D: 28, 29, 30).
+1. Solder the low parts first: resistors, diodes (check the band!), then the female headers, then the 4 MSTB headers (plug side at the board edge).
+2. **No Teensy, no DAC, no modules.** Multimeter beep test: 3V3 ↔ GND must **not** beep; each connector pin 3 and 4 ↔ Teensy GND must beep; connector A pin 1 ↔ Teensy socket pin 27 must beep (same for B–D: 28, 29, 30).
 3. Plug in the DAC and the Teensy (USB at the board edge). USB only, no modules: `bumpem info --port <PORT>` must answer.
-4. Move the module wires from the breadboard to the terminals one module at a time, 48 V off, colours as printed on the board. Then repeat `scripts/open_loop_test.sh` for that module.
+4. One module at a time, 48 V off: screw that module's 5 wires into a plug (order as printed on the board: EN yellow, SP+ blue, SP− green, GND white, F brown), plug it in, tighten the two flange screws. Then repeat `scripts/open_loop_test.sh` for that module.
 
 ## Before ordering: check in KiCad (5 minutes)
-- Open `bumpem-carrier.kicad_pro` → PCB editor → View → 3D viewer: the terminal wire openings must face the bottom board edge.
+- Open `bumpem-carrier.kicad_pro` → PCB editor → View → 3D viewer: the MSTB headers' plug openings must face the bottom board edge.
 - Hold a Teensy and the DAC over a 1:1 print of `fab/bumpem-carrier-layout.pdf`: pins over the holes, Teensy USB at the left edge.
 
 ## Change the design
