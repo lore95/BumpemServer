@@ -1,0 +1,44 @@
+An: jobs4makerspace@hs-offenburg.de
+Betreff: Anfrage: Prüfung und Fertigung einer Platine (KiCad) für ein Forschungsprojekt
+
+Anhänge (aus BumpemServer/hardware/carrier/):
+  fab/bumpem-carrier-schematic.pdf
+  fab/bumpem-carrier-layout.pdf
+  fab/bumpem-carrier-bom.csv
+  fab/bumpem-carrier-gerbers.zip
+
+----------------------------------------------------------------------
+
+Sehr geehrte Damen und Herren,
+
+mein Name ist [Ihr Name], ich arbeite als [Studierender / wissenschaftliche Hilfskraft] im Projekt [Projektname, z. B. „Bump'em“-Perturbationssystem] bei [Betreuer/in, Fakultät].
+
+Unser Versuchsaufbau wird derzeit über ein Steckbrett (Breadboard) gesteuert: Ein Teensy 4.1 und ein MCP4728-DAC-Modul sind mit Steckbrücken mit vier Motormodulen verbunden. Für den dauerhaften Laborbetrieb möchte ich das Steckbrett durch eine Platine ersetzen.
+
+Da ich wenig Erfahrung mit CAD bzw. Platinenlayout habe, habe ich das Layout mithilfe von Claude (einem KI-Assistenten) in KiCad 8 erstellt. Die Designprüfungen in KiCad (ERC, DRC und Abgleich Schaltplan/Layout) laufen ohne Fehler durch. Trotzdem hätte ich gern die Einschätzung von jemandem mit Erfahrung, bevor die Platine gefertigt wird.
+
+Kurz zur Platine:
+- 120 × 93,5 mm, 2 Lagen, nur bedrahtete Bauteile (THT)
+- Teensy 4.1 und DAC-Modul auf Buchsenleisten (steckbar)
+- 4 Schraubklemmen (5-polig, Rastermaß 5,08 mm), eine pro Motormodul
+- Schutzbeschaltung der Kraftsensor-Eingänge (Widerstände und Schottky-Dioden)
+- Leiterbahnbreite 0,5 mm (3,3 V: 0,8 mm), kleinster Abstand zwischen Netzen 0,74 mm, kleinste Bohrung 0,8 mm (Vias 0,8/1,4 mm), Massefläche auf beiden Lagen
+
+Meine Fragen:
+1. Könnten Sie das Design einmal prüfen, ob es grundsätzlich sinnvoll und fertigungsgerecht ist?
+2. Ist diese Platine bei Ihnen im Makerspace herstellbar (2 Lagen mit Durchkontaktierungen)? Falls nicht: Würden Sie eher eine Bestellung bei einem Leiterplattenhersteller empfehlen, oder gibt es Anpassungen (z. B. einlagig), die eine Fertigung bei Ihnen ermöglichen würden?
+3. Wäre es möglich, die Bestückung bzw. das Löten bei Ihnen durchzuführen, gern auch mit Unterstützung oder Einweisung?
+
+Im Anhang finden Sie:
+- den Schaltplan (PDF)
+- das Layout (PDF)
+- die Stückliste (CSV)
+- die Gerber- und Bohrdateien (ZIP)
+- auf Wunsch auch das vollständige KiCad-Projekt
+
+Gern komme ich auch persönlich vorbei, um das Projekt kurz vorzustellen.
+
+Vielen Dank im Voraus und freundliche Grüße
+[Ihr Name]
+[Studiengang / Projekt, Betreuer/in]
+[E-Mail, Telefon]

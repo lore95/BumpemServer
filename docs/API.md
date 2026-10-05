@@ -30,13 +30,14 @@ HTTP 4xx/5xx with:
 | `board_rejected` | 409 | board answered `A,ERR` (message = board reason) |
 | `not_connected` | 409 | no board or simulator connected |
 | `board_timeout` | 504 | no reply from the board |
+| `wrong_mode` | 409 | endpoint belongs to the other server mode (testing / production) |
 
 ## Endpoints
 
 ### Connection
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/info` | | `{"server": "0.1.0", "api": "1.0", "port": "sim", "board": {...INFO fields} or null}` | board |
+| GET | `/api/v1/info` | | `{"server": "0.3.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
 | GET | `/api/v1/ports` | | `["/dev/tty.usbmodem123", ...]` | board |
 | POST | `/api/v1/connect` | `{"port": "COM7"}` or `{"port": "sim"}` | `info` | board |
 | POST | `/api/v1/disconnect` | | `{}` | board |
@@ -49,6 +50,23 @@ HTTP 4xx/5xx with:
 | PATCH | `/api/v1/params` | `{"baseline_n": 5, "kff": 7.5}` | updated params | board |
 
 `PATCH` applies keys one by one and stops at the first rejection; the error names the key.
+
+### Modes
+`bumpem serve --testing` or `--production` (default). The UI at `/ui/` follows the mode (production page / testing page), and the server refuses what belongs to the other mode with 409 `wrong_mode`:
+
+| Mode | Allowed | Refused |
+|---|---|---|
+| production | everything below except `/test/pull` | `POST /test/pull` |
+| testing | connection, status, params, `POST /test/pull`, `abort`, `release`, `estop`, `clear`, stream | `POST /arm`, `POST /pulse`, `POST /perturbation` |
+
+### Test pull (`host`, testing mode)
+One pull on one motor, without leaving the system armed:
+```json
+POST /api/v1/test/pull
+{"module": "C", "force_n": 5, "dur_ms": 400}
+→ {"pulse_id": 3, "module": "C", "force_n": 5, "dur_ms": 400}
+```
+The server, in one call: saves the parameters → open loop (gains 0, `kff` 2), `baseline_n` 0, `fmax_n` = `force_n`, `arm_ms` 0, only `module` enabled → `ARM` (target 0 N, rope stays slack) → one `PULSE` (50 ms ramps, `dur_ms` 100–1000 incl. ramps) → `RELEASE 0` → restores the parameters. Starts only from DISARMED or ESTOP (else 409 `board_rejected`); one test pull at a time. Force is calculated from the motor current (open loop), not measured. `estop` works throughout.
 
 ### Actions
 | Method | Path | Body | Status |

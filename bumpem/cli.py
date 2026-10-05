@@ -83,6 +83,12 @@ def main(argv=None):
     sv.add_argument("--port", type=int, default=8000, help="HTTP port")
     sv.add_argument("--board", help="serial device to connect at startup, or 'sim'")
     sv.add_argument("--wd-ms", type=int, default=1000, help="board watchdog while served (0 = off)")
+    mg = sv.add_mutually_exclusive_group()
+    mg.add_argument("--testing", action="store_const", const="testing", dest="mode",
+                    help="testing UI: one pull per motor, no arming (docs/API.md Modes)")
+    mg.add_argument("--production", action="store_const", const="production", dest="mode",
+                    help="production UI: arm, perturbations, force feedback (default)")
+    sv.set_defaults(mode="production")
     sv.add_argument("--modules", default="ACD",
                     help="mounted modules: their channels are switched on at connect, the others off "
                          "(default ACD = setup 2026-10-02; \"\" = keep firmware defaults)")
@@ -96,8 +102,10 @@ def main(argv=None):
             from .server import create_app
         except ImportError:
             sys.exit('server extras missing: pip install -e ".[server]"')
-        print(f"bumpem server on http://{args.host}:{args.port}  (UI: /ui/, test page: /docs)")
-        uvicorn.run(create_app(wd_ms=args.wd_ms, board=args.board, ui_dir=args.ui, modules=args.modules or None),
+        page = "/ui/testing.html" if args.mode == "testing" else "/ui/"
+        print(f"bumpem server ({args.mode} mode) on http://{args.host}:{args.port}  (UI: {page}, API test page: /docs)")
+        uvicorn.run(create_app(wd_ms=args.wd_ms, board=args.board, ui_dir=args.ui, modules=args.modules or None,
+                               mode=args.mode),
                     host=args.host, port=args.port)
         return
 

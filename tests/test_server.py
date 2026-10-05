@@ -190,3 +190,32 @@ def test_concurrent_connects_leave_one_working_board():
         for t in ts:
             t.join(timeout=10)
         assert c.get("/api/v1/info").json()["board"]["proto"] == "1"
+
+
+def test_testing_mode_pull_restores_everything():
+    app = create_app(mode="testing", modules="ACD")
+    with TestClient(app) as c:
+        c.post("/api/v1/connect", json={"port": "sim"})
+        before = c.get("/api/v1/params").json()
+        peak = {"C": 0.0, "A": 0.0}
+        app.state.hub.board.add_listener(
+            lambda m: [peak.__setitem__(k, max(peak[k], m.target[k])) for k in peak] if hasattr(m, "target") else None)
+        r = c.post("/api/v1/test/pull", json={"module": "c", "force_n": 5, "dur_ms": 300})
+        assert r.status_code == 200, r.json()
+        assert r.json()["module"] == "C"
+        assert peak["C"] == pytest.approx(5, abs=0.2) and peak["A"] == 0      # only C pulled, from 0 N to 5 N
+        assert c.get("/api/v1/status").json()["state"] == "DISARMED"
+        assert c.get("/api/v1/params").json() == before                        # every parameter restored
+        assert c.get("/api/v1/info").json()["mode"] == "testing"
+
+
+def test_modes_refuse_each_other():
+    with TestClient(create_app(mode="testing")) as c:
+        c.post("/api/v1/connect", json={"port": "sim"})
+        for path, body in [("/api/v1/arm", None), ("/api/v1/pulse", {"amps": {"C": 5}, "rise_ms": 0, "dur_ms": 100, "fall_ms": 0})]:
+            r = c.post(path, json=body)
+            assert r.status_code == 409 and err(r) == "wrong_mode"
+    with TestClient(create_app()) as c:
+        c.post("/api/v1/connect", json={"port": "sim"})
+        r = c.post("/api/v1/test/pull", json={"module": "C", "force_n": 5, "dur_ms": 300})
+        assert r.status_code == 409 and err(r) == "wrong_mode"

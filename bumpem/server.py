@@ -21,7 +21,9 @@ from . import geometry
 from . import protocol as P
 from .device import Board, BoardError
 
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
+MODES = ("production", "testing")
+TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
 
 
@@ -55,6 +57,12 @@ class PulseBody(BaseModel):
     fall_ms: float = Field(examples=[50])
 
 
+class TestPullBody(BaseModel):
+    module: str = Field(pattern="^[ABCDabcd]$", description="A left, B front, C right, D back", examples=["C"])
+    force_n: float = Field(gt=0, le=30, description="Pull force (open loop: calculated from the motor current)", examples=[5])
+    dur_ms: float = Field(ge=100, le=1000, description="Start to end, 50 ms ramps included", examples=[400])
+
+
 class PerturbationBody(BaseModel):
     angle_deg: float = Field(description="Pull direction: 0 front, +90 left, -90 right, 180 back (Vicon axes)",
                              examples=[135])
@@ -84,6 +92,7 @@ class Hub:
         self._clients: set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]] = set()
         self._lock = threading.Lock()
         self._conn_lock = threading.Lock()    # one connect / disconnect at a time (double clicks, two tabs)
+        self._test_lock = threading.Lock()    # one test pull at a time
         self._ping_stop = threading.Event()   # replaced per connection, so an old ping thread can't be revived
 
     # --- connection ---
@@ -143,6 +152,46 @@ class Hub:
             except Exception:
                 return  # port closed (disconnect, cable pulled): this connection is over
 
+    def wait_state(self, states: tuple[str, ...], timeout: float) -> str:
+        end = time.monotonic() + timeout
+        while time.monotonic() < end:
+            t = self.board.last if self.board else None
+            if t and t.state in states:
+                return t.state
+            time.sleep(0.01)
+        t = self.board.last if self.board else None
+        raise ApiError("board_timeout", 504, f"board did not reach {'/'.join(states)} (state {t.state if t else None})")
+
+    def test_pull(self, module: str, force_n: float, dur_ms: float) -> int:
+        """Testing mode: one open-loop pull on one module from DISARMED/ESTOP, back to DISARMED, parameters restored."""
+        with self._test_lock:
+            b = self.need()
+            state = b.last.state if b.last else None
+            if state not in ("DISARMED", "ESTOP"):
+                raise ApiError("board_rejected", 409, f"board is {state}: test pulls start from DISARMED or ESTOP (release first)")
+            saved = self.call(b.get)
+            setup = {**TEST_PARAMS, "fmax_n": force_n, **{f"ch_{m}": int(m == module) for m in "ABCD"}}
+            try:
+                for k, v in setup.items():           # baseline 0 before the new cap, so the cap is always >= baseline
+                    self.call(b.set, k, v)
+                self.call(b.arm)
+                self.wait_state(("ARMED",), 2.0)
+                pid = self.next_pulse_id
+                self.call(b.pulse, pid, {module: force_n}, rise_ms=50, dur_ms=dur_ms, fall_ms=50)
+                self.next_pulse_id += 1
+                time.sleep(dur_ms / 1000 + 0.1)
+                return pid
+            finally:                                  # always end slack and with the user's parameters back
+                try:
+                    if b.last and b.last.state in ("ARMED", "FAULT", "ARMING"):
+                        self.wait_state(("ARMED", "FAULT"), 2.0)
+                        b.release(0)
+                    self.wait_state(("DISARMED", "ESTOP"), 2.0)
+                    for k in ["fmax_n"] + [k for k in setup if k != "fmax_n"]:   # old cap first, then the old baseline fits
+                        b.set(k, saved[k])
+                except (BoardError, ApiError) as e:
+                    print(f"warning: test pull clean-up incomplete ({e}); check the parameters")
+
     def need(self) -> Board:
         if self.board is None:
             raise ApiError("not_connected", 409, "no board connected (POST /api/v1/connect)")
@@ -191,8 +240,10 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 
 # ---------- app ----------
 def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None,
-               modules: str | None = None) -> FastAPI:
+               modules: str | None = None, mode: str = "production") -> FastAPI:
     """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists."""
+    if mode not in MODES:
+        raise ValueError(f"mode must be one of {MODES}")
     hub = Hub(wd_ms, modules)
 
     @asynccontextmanager
@@ -218,7 +269,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     @app.get("/api/v1/info")
     def info():
         b = hub.board
-        return {"server": SERVER_VERSION, "api": API_VERSION, "port": hub.port,
+        return {"server": SERVER_VERSION, "api": API_VERSION, "mode": mode, "port": hub.port,
                 "board": hub.call(b.info) if b else None}
 
     @app.get("/api/v1/ports")
@@ -259,9 +310,14 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                 raise ApiError(err.code, err.status, f"{name}: {err.message}") from None
         return hub.call(b.get)
 
+    def only(m: str) -> None:
+        if mode != m:
+            raise ApiError("wrong_mode", 409, f"server is in {mode} mode; this needs `bumpem serve --{m}`")
+
     # --- actions ---
     @app.post("/api/v1/arm")
     def arm():
+        only("production")
         hub.call(hub.need().arm)
         return {}
 
@@ -298,6 +354,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     @app.post("/api/v1/pulse")
     def pulse(body: PulseBody):
+        only("production")
         pid = send_pulse({k.upper(): v for k, v in body.amps.items()}, body.delay_ms, body.rise_ms,
                          body.dur_ms, body.fall_ms)
         return {"pulse_id": pid}
@@ -313,12 +370,20 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     @app.post("/api/v1/perturbation")
     def perturbation(body: PerturbationBody):
+        only("production")
         try:
             amps = geometry.split(body.angle_deg, body.amplitude_n, enabled_modules())
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
         pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
         return {"pulse_id": pid, "amps": amps}
+
+    @app.post("/api/v1/test/pull")
+    def test_pull(body: TestPullBody):
+        only("testing")
+        m = body.module.upper()
+        pid = hub.test_pull(m, body.force_n, body.dur_ms)
+        return {"pulse_id": pid, "module": m, "force_n": body.force_n, "dur_ms": body.dur_ms}
 
     # --- live stream ---
     @app.websocket("/api/v1/stream")
@@ -360,6 +425,6 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
             @app.get("/", include_in_schema=False)
             def root():
-                return RedirectResponse("/ui/")
+                return RedirectResponse("/ui/testing.html" if mode == "testing" else "/ui/")
 
     return app

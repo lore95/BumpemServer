@@ -97,3 +97,8 @@ Consequence: reinstall the extras once: `pip install -e ".[server,dev]"`.
 Decision: `bumpem serve --modules ACD` (default `ACD`) switches ch_A..ch_D at connect: listed modules on, others off (only while DISARMED). `--modules ""` keeps the firmware defaults (A, B, C on, D off).
 Reason: the firmware's power-up defaults date from when D was out of service; on the real board the UI showed the front (B, not installed) reachable and the back (D, installed) refused, so a back pull reached only A. Fixing it in the server needs no re-flash and is one option to change when B is mounted.
 Alternatives: change the firmware defaults (PROTOCOL.md + re-flash); tick channels in the UI after every power-up.
+
+## D19 — 2026-10-05 — Testing and production modes
+Decision: `bumpem serve --testing` / `--production` (default). Testing: `POST /api/v1/test/pull` does one open-loop pull on one module (save params → gains 0, kff 2, baseline 0, cap = force, arm_ms 0, only that module → ARM → PULSE → RELEASE 0 → restore params); arm / pulse / perturbation refused. Production: the full UI (arm with force feedback, perturbations); test pulls refused. Error code `wrong_mode` (409). UI: `/ui/testing.html` vs `/ui/`.
+Reason: the project lead wants a plain "does each motor react?" check without arming or constant tension, separate from the arming / feedback workflow; mixing both on one page caused confusion.
+Alternatives: one page with a test card (tried, confusing); CLI only.

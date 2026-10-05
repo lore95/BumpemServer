@@ -56,7 +56,7 @@ API order: `docs/API.md`, `planned` sections. Each step: API.md first, simulator
 - [ ] Step 4: **Vicon live** (force plates + markers) on the lab PC: needs the Vicon DataStream SDK there
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (rule 5: before any live use). Need a recorded file from the lab
 - [x] First web UI (`../BumpemUI/web`, served at http://127.0.0.1:8000/ui/): dial, perturbation, gait-phase picker, board settings, live force, STOP/Esc (2026-10-05, simulator)
-- [ ] 🟢 You: `pip install -e ".[server,dev]"` once (adds `websockets`), then try the UI on the Teensy: `bumpem serve --board PORT` → http://127.0.0.1:8000/ui/ (open-loop settings)
+- [ ] 🟢 You: `pip install -e ".[server,dev]"` once (adds `websockets`). **Motor check:** `bumpem serve --testing --board PORT` → http://127.0.0.1:8000/ → Pull each motor (5 N, 400 ms). **Production:** `bumpem serve --board PORT` → arm, perturb (closed loop only once the force readings are reliable)
 - [ ] Give BumpemUI a GitHub remote
 - [ ] Decide: firmware boots with `ch_D = 1` now that D works (firmware change → `PROTOCOL.md` first, re-flash)
 

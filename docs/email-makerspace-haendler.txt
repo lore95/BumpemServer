@@ -1,0 +1,24 @@
+An: jobs4makerspace@hs-offenburg.de
+Betreff: AW: Anfrage: Prüfung und Fertigung einer Platine (KiCad) – aktualisiertes Design
+
+Anhänge (aus BumpemServer/hardware/carrier/fab/):
+  bumpem-carrier-top.pdf
+  bumpem-carrier-bottom.pdf
+  bumpem-carrier-schematic.pdf
+  bumpem-carrier-kicad.zip
+  bumpem-carrier-gerbers.zip
+
+----------------------------------------------------------------------
+
+Hallo nochmal, Herr Händler,
+
+ich melde mich noch einmal kurz wegen der Platine, da ich das Design noch etwas angepasst habe.
+
+Mir ist aufgefallen, dass der Versuchsaufbau voraussichtlich öfter umgestellt bzw. transportiert wird. Deshalb habe ich die festen Schraubklemmen durch steckbare Anschlüsse ersetzt (Phoenix Contact MSTB 2,5, Rastermaß 5,08 mm). Auf der Platine sitzt jeweils eine Stiftleiste (MSTB 2,5/5-GF-5,08), an jedem Motormodul-Kabel ein Stecker (MSTB 2,5/5-STF-5,08). Die Kabel werden einmal im Stecker verschraubt und können danach einfach abgezogen und wieder eingesteckt werden. Beide Teile haben Schraubflansche, sodass sich die Stecker im Betrieb nicht lösen.
+
+Durch die Flansche ist die Platine etwas größer geworden: jetzt 154 × 96 mm (vorher 120 × 93,5 mm). Ist diese Größe bei Ihnen machbar?
+
+Alle anderen Punkte sind unverändert: weiterhin nur 45°-Knicke, und die Designprüfungen in KiCad laufen fehlerfrei. Die aktualisierten Dateien finden Sie im Anhang.
+
+Vielen Dank und freundliche Grüße
+Lorenzo [Nachname]

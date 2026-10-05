@@ -1,0 +1,30 @@
+An: jobs4makerspace@hs-offenburg.de
+Betreff: AW: Anfrage: Prüfung und Fertigung einer Platine (KiCad) für ein Forschungsprojekt
+
+Anhänge (aus BumpemServer/hardware/carrier/fab/):
+  bumpem-carrier-top.pdf
+  bumpem-carrier-bottom.pdf
+  bumpem-carrier-schematic.pdf
+  bumpem-carrier-kicad.zip
+  bumpem-carrier-gerbers.zip
+
+----------------------------------------------------------------------
+
+Hallo [Name],
+
+vielen Dank für Ihre schnelle Rückmeldung und das Angebot. Eine Platine ohne Lötstoppmaske und Bestückungsdruck ist für unseren Prototyp völlig in Ordnung.
+
+Ich komme sehr gern im Makerspace vorbei, um das Design gemeinsam durchzugehen. Wann würde es Ihnen passen? Ich bin von Montag bis Donnerstag jeweils von 9:30 bis 17:00 Uhr verfügbar, jeder dieser Tage passt mir gut.
+
+Ihren Hinweis zu den 90°-Biegungen habe ich bereits umgesetzt: Alle Leiterbahnen haben jetzt nur noch 45°-Knicke, die Designprüfungen laufen weiterhin fehlerfrei. Im Anhang finden Sie die Ober- und Unterseite jetzt als getrennte PDFs (die Unterseite gespiegelt, also von unten gesehen), den Schaltplan, die Gerber-Dateien und das komplette KiCad-Projekt.
+
+Zwei Fragen, damit ich mich auf den Termin vorbereiten kann:
+1. Können Sie Durchkontaktierungen (Vias) und durchkontaktierte Bohrungen herstellen? Die Platine ist zweilagig, und einige Leiterbahnen auf der Oberseite enden an den Pads der Buchsenleisten, die man von oben nicht löten kann.
+2. Gibt es Mindestwerte für Leiterbahnbreite, Abstände und Bohrdurchmesser, die ich einhalten sollte? Aktuell: Leiterbahnen 0,5 mm, kleinster Abstand 0,74 mm, kleinste Bohrung 0,8 mm.
+
+Da es keinen Bestückungsdruck gibt, würde ich die Beschriftung der Anschlüsse gern mit Ihnen besprechen (z. B. Text in der Kupferlage oder ein ausgedrucktes Etikett).
+
+Vielen Dank und freundliche Grüße
+Lorenzo [Nachname]
+[Studiengang / Projekt, Betreuer/in]
+[Telefon]
