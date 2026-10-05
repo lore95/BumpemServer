@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import queue
 import threading
+import time
 from collections.abc import Callable, Iterator
 from typing import Protocol
 
@@ -16,8 +17,15 @@ class Link(Protocol):
 
 
 class SerialLink:
+    """BUMPEM_SERIAL_LOG=<file>: append every command sent and every non-telemetry line received, with times."""
+
     def __init__(self, port: str, timeout: float = 0.1):
+        import os
         import serial
+        path = os.environ.get("BUMPEM_SERIAL_LOG")
+        self._log = open(path, "a", buffering=1) if path else None
+        self._t0, self._tel = time.monotonic(), 0
+        self._note(f"open {port}")
         try:   # exclusive: a second program on the same port would silently steal replies (macOS allows sharing)
             self._ser = serial.Serial(port, 115200, timeout=timeout, exclusive=True)
         except serial.SerialException as e:
@@ -26,12 +34,26 @@ class SerialLink:
                                              f"(a running `bumpem serve`, monitor or test script?)") from None
             raise
 
+    def _note(self, text: str) -> None:
+        if self._log:
+            self._log.write(f"{time.monotonic() - self._t0:9.3f}  {text}\n")
+
     def write(self, data: bytes) -> None:
+        self._note(f">> {data!r}")
         self._ser.write(data)
         self._ser.flush()
+        self._note("   (written)")
 
     def readline(self) -> bytes:
-        return self._ser.readline()
+        line = self._ser.readline()
+        if self._log and line:
+            if line.startswith(b"T,"):
+                self._tel += 1
+                if self._tel % 100 == 0:
+                    self._note(f"<< ({self._tel} telemetry lines so far)")
+            else:
+                self._note(f"<< {line!r}")
+        return line
 
     def close(self) -> None:
         self._ser.close()
