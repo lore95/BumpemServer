@@ -26,7 +26,8 @@ from bumpem.device import Board  # noqa: E402
 ROPE = {"A": "LEFT", "B": "FRONT", "C": "RIGHT", "D": "BACK"}
 SHOWN = ["A", "C", "D"]          # mounted 2026-10-02 (B not installed)
 ZERO_S = 2.0
-RISE_N = 5.0                     # a pull counts if the reading rises this much above the zero (noise at rest ~1 N)
+RISE_N = 5.0                     # a pull counts if the smoothed reading rises this much above the zero
+SMOOTH_S = 0.25                  # peak is taken on 0.25 s averages, so single noise spikes (~±1-1.5 N) don't count
 
 
 def main() -> None:
@@ -59,6 +60,15 @@ def main() -> None:
         with lock:
             return [m for t, m in samples if t >= t0]
 
+    def smoothed_peak(t0: float, c: str) -> float:
+        """highest 0.25 s average of channel c since t0"""
+        with lock:
+            rows = [(t, m[c]) for t, m in samples if t >= t0 and c in m]
+        bins: dict[int, list[float]] = {}
+        for t, v in rows:
+            bins.setdefault(int((t - t0) / SMOOTH_S), []).append(v)
+        return max(statistics.fmean(v) for v in bins.values()) if bins else float("nan")
+
     results = {}
     try:
         print(f"board: {board.info()}")
@@ -82,8 +92,7 @@ def main() -> None:
             while not done.is_set():
                 show("pulling", latest(), zero)
                 time.sleep(0.1)
-            rows = since(t1)
-            rise = {c: max(r[c] for r in rows) - zero[c] for c in SHOWN} if rows else {c: 0.0 for c in SHOWN}
+            rise = {c: smoothed_peak(t1, c) - zero[c] for c in SHOWN}
             results[mod] = (zero, rise)
             print_result(mod, zero, rise)
     finally:
