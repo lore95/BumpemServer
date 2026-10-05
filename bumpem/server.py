@@ -83,11 +83,16 @@ class Hub:
         self.next_pulse_id = 1
         self._clients: set[tuple[asyncio.AbstractEventLoop, asyncio.Queue]] = set()
         self._lock = threading.Lock()
-        self._ping_stop = threading.Event()
+        self._conn_lock = threading.Lock()    # one connect / disconnect at a time (double clicks, two tabs)
+        self._ping_stop = threading.Event()   # replaced per connection, so an old ping thread can't be revived
 
     # --- connection ---
     def connect(self, port: str) -> None:
-        self.disconnect()
+        with self._conn_lock:
+            self._connect(port)
+
+    def _connect(self, port: str) -> None:
+        self._disconnect()
         if port == "sim":
             from .sim import SimLink
             board = Board(SimLink())
@@ -102,8 +107,8 @@ class Hub:
         self.apply_modules()
         if port != "sim" and self.wd_ms > 0:   # firmware aborts a pending pulse if the server dies
             self.call(board.set, "wd_ms", self.wd_ms)
-            self._ping_stop.clear()
-            threading.Thread(target=self._ping_loop, args=(board,), daemon=True).start()
+            self._ping_stop = stop = threading.Event()
+            threading.Thread(target=self._ping_loop, args=(board, stop), daemon=True).start()
 
     def apply_modules(self) -> None:
         """Firmware boots with A, B, C on and D off: switch the channels to the mounted modules.
@@ -120,17 +125,23 @@ class Hub:
             print(f"warning: channels not set yet ({e}); retrying when the board is DISARMED")
 
     def disconnect(self) -> None:
+        with self._conn_lock:
+            self._disconnect()
+
+    def _disconnect(self) -> None:
         board, self.board, self.port = self.board, None, None
         self._ping_stop.set()
         if board is not None:
             board.close()
 
-    def _ping_loop(self, board: Board) -> None:
-        while not self._ping_stop.wait(0.3):
+    def _ping_loop(self, board: Board, stop: threading.Event) -> None:
+        while not stop.wait(0.3):
             try:
                 board.ping()
             except BoardError:
                 pass   # busy or late reply; the next ping retries
+            except Exception:
+                return  # port closed (disconnect, cable pulled): this connection is over
 
     def need(self) -> Board:
         if self.board is None:

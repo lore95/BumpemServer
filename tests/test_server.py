@@ -177,3 +177,16 @@ def test_modules_applied_once_disarmed():
             time.sleep(0.05)
         p = c.get("/api/v1/params").json()
         assert not hub.modules_pending and (p["ch_B"], p["ch_D"]) == (0, 1)
+
+
+def test_concurrent_connects_leave_one_working_board():
+    import threading
+    app = create_app()
+    with TestClient(app) as c:
+        hub = app.state.hub
+        ts = [threading.Thread(target=hub.connect, args=("sim",)) for _ in range(4)]
+        for t in ts:
+            t.start()
+        for t in ts:
+            t.join(timeout=10)
+        assert c.get("/api/v1/info").json()["board"]["proto"] == "1"
