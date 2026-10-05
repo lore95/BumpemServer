@@ -14,7 +14,7 @@ Same connections as `docs/diagrams/cabling-4-modules.png`, plus a protection net
 | J1–J4 terminals, one per module (A left, B front, C right, D back) | 1 EN yellow · 2 SP+ blue · 3 SP− green · 4 GND white · 5 F brown |
 | R1–R4 1 kΩ (series), R5–R8 1 MΩ (pull-down), D1–D4 BAT85 (clamp to 3.3 V) | per force input: terminal F → 1 kΩ → Teensy pin; 1 MΩ to GND; BAT85 to 3.3 V |
 
-Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), ground fill on both layers, 4 × M3 holes.
+Board 120 × 93.5 mm, 2 layers, through-hole parts only, 0.5 mm tracks (0.8 mm for 3.3 V), only 45° bends, ground fill on both layers (0.5 mm from other copper), 4 × M3 holes.
 Spacing (measured, edge to edge): ≥ 0.74 mm between any two nets; 0.74 mm is the gap between neighbouring socket pins (2.54 mm headers).
 The force tracks run under the Teensy and out past its right end, never between socket pins: ≥ 1.39 mm to any other net's pad, so a solder blob on a socket cannot reach a force signal.
 
@@ -35,7 +35,9 @@ The force tracks run under the Teensy and out past its right end, never between 
 | 4 | BAT85 Schottky diode, DO-35 | D1–D4, band (cathode) towards the 3.3 V track |
 | 4 | M3 spacer + screw | |
 
-Full list: `fab/bumpem-carrier-bom.csv`. Schematic: `fab/bumpem-carrier-schematic.pdf`. Layout print: `fab/bumpem-carrier-layout.pdf`.
+Full list: `fab/bumpem-carrier-bom.csv`. Schematic: `fab/bumpem-carrier-schematic.pdf`. Layout: `fab/bumpem-carrier-top.pdf`, `fab/bumpem-carrier-bottom.pdf` (seen from below), both layers together `fab/bumpem-carrier-layout.pdf`. Whole KiCad project: `fab/bumpem-carrier-kicad.zip`.
+
+**Makerspace HS Offenburg (reply 2026-10-05):** can make the board, but **without solder mask and silkscreen** (bare copper): fine for a prototype. Open with them: plated through-holes / vias? (the top-layer tracks end on socket pads, which cannot be soldered from the top under a socket); how to label pins without silkscreen (copper text or a printed label sheet).
 
 ## Assembly and first power-up
 1. Solder the low parts first: resistors, diodes (check the band!), then the female headers, then the terminals (wire openings facing the board edge).

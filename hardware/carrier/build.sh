@@ -25,4 +25,8 @@ rm -rf fab && mkdir -p fab/gerbers
 "$K" sch export bom --fields 'Reference,Value,Footprint,${QUANTITY}' --group-by "Value,Footprint" \
   -o fab/bumpem-carrier-bom.csv bumpem-carrier.kicad_sch >/dev/null
 "$K" pcb export pdf --layers "F.Cu,B.Cu,F.Silkscreen,Edge.Cuts" -o fab/bumpem-carrier-layout.pdf bumpem-carrier.kicad_pcb >/dev/null
+"$K" pcb export pdf --layers "F.Cu,F.Silkscreen,Edge.Cuts" -o fab/bumpem-carrier-top.pdf bumpem-carrier.kicad_pcb >/dev/null
+"$K" pcb export pdf --layers "B.Cu,Edge.Cuts" --mirror -o fab/bumpem-carrier-bottom.pdf bumpem-carrier.kicad_pcb >/dev/null   # as seen from below
+zip -q fab/bumpem-carrier-kicad.zip bumpem-carrier.kicad_pro bumpem-carrier.kicad_pcb bumpem-carrier.kicad_sch \
+  bumpem-carrier.kicad_sym bumpem-carrier.pretty/* fp-lib-table sym-lib-table
 ls fab

@@ -53,8 +53,27 @@ ROLE = {"A": "left", "B": "front", "C": "right", "D": "back"}
 # ---------------------------------------------------------------- geometry log (for stitching-via clearance)
 SEGS, DOTS = [], []          # (x1,y1,x2,y2,halfwidth,layer) ; (x,y,radius,layers)
 
+CHAMFER = 1.0   # mm cut off each 90 deg corner -> two 45 deg bends (makerspace: no 90 deg bends)
+
+
+def chamfer(pts):
+    """Replace every 90 deg corner of a polyline by a 45 deg cut."""
+    out = [pts[0]]
+    for (ax, ay), (bx, by), (cx, cy) in zip(pts, pts[1:], pts[2:]):
+        ux, uy, vx, vy = bx - ax, by - ay, cx - bx, cy - by
+        lu, lv = math.hypot(ux, uy), math.hypot(vx, vy)
+        if lu > 1e-9 and lv > 1e-9 and abs(ux * vx + uy * vy) < 1e-9 * lu * lv:   # perpendicular
+            c = min(CHAMFER, lu / 2, lv / 2)
+            out += [(bx - ux / lu * c, by - uy / lu * c), (bx + vx / lv * c, by + vy / lv * c)]
+        else:
+            out.append((bx, by))
+    out.append(pts[-1])
+    return out
+
+
 def track(netname, layer, pts, w=TRACK):
     lay = pcbnew.F_Cu if layer == "F" else pcbnew.B_Cu
+    pts = chamfer(pts)
     for (x1, y1), (x2, y2) in zip(pts, pts[1:]):
         t = pcbnew.PCB_TRACK(board)
         t.SetStart(P(x1, y1)); t.SetEnd(P(x2, y2)); t.SetWidth(mm(w)); t.SetLayer(lay); t.SetNet(net(netname))
@@ -303,8 +322,8 @@ for gy in [] if PREVIEW else [y / 2 for y in range(8, int(2 * (H - 7)))]:
 
 for layer in () if PREVIEW else (pcbnew.F_Cu, pcbnew.B_Cu):
     z = pcbnew.ZONE(board)
-    z.SetLayer(layer); z.SetNet(net("GND")); z.SetLocalClearance(mm(0.4)); z.SetMinThickness(mm(0.3))
-    z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL); z.SetThermalReliefGap(mm(0.4)); z.SetThermalReliefSpokeWidth(mm(0.5))
+    z.SetLayer(layer); z.SetNet(net("GND")); z.SetLocalClearance(mm(0.5)); z.SetMinThickness(mm(0.3))
+    z.SetPadConnection(pcbnew.ZONE_CONNECTION_THERMAL); z.SetThermalReliefGap(mm(0.5)); z.SetThermalReliefSpokeWidth(mm(0.5))
     z.SetIslandRemovalMode(pcbnew.ISLAND_REMOVAL_MODE_ALWAYS)
     o = z.Outline(); o.NewOutline()
     for x, y in ((0.5, 0.5), (W - 0.5, 0.5), (W - 0.5, H - 0.5), (0.5, H - 0.5)):
