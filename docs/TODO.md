@@ -1,7 +1,7 @@
 # To do
 
 Ordered by **danger** first, then by **what it blocks**. Work top to bottom; items in the same step can run in parallel.
-Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-02 (evening).
+Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-02 (evening), updated 2026-10-05.
 
 **Danger:** 🔴 high = injury or burnt hardware if skipped/done wrong · 🟠 medium = damaged electronics or misleading test · 🟢 low.
 **Blocks:** the steps that cannot start until this one is done.
@@ -17,7 +17,7 @@ Server 0.2.0: board API + perturbation by angle (`bumpem perturb`), simulator-te
 - [ ] 🟠 Try `bumpem perturb` on the hardware, open-loop settings of the script, rope to fixed anchors, nobody attached:
   `bumpem set ch_D 1` (the firmware boots with D off) → `arm` → `perturb 180 10`, `perturb 135 10`, `perturb -90 10`, `perturb 90 10` (`--dur 400 --phase2 50 --watch 2`). Expect D / A+D (7.07 N each) / C / A
 - [ ] 🟢 Same through the server: `bumpem serve --board PORT` → http://127.0.0.1:8000/docs → `POST /perturbation`
-- [ ] 🟢 `git push` in BumpemServer (3 commits ahead of GitHub); delete the empty clone `IBMS_Offenburg/BumpemServerGit`
+- [ ] 🟢 `git push` in BumpemServer (9 commits ahead of GitHub); delete the empty clone `IBMS_Offenburg/BumpemServerGit`
 
 ## 1. 🔴 Safety · blocks long sessions and anything with a person attached
 - [ ] **Multimeter**: borrow one (lab / makerspace) or buy one. Needed for the e-stop test, the 24 V checks and the amplifier range check
@@ -32,11 +32,11 @@ Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-
 
 ## 2. 🟠 Force sensing → closed loop · blocks real force control, logging, trials with people
 Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down: release → 48 V off → 24 V off.
-- [ ] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)**, supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
+- [x] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)** on A, C, D (2026-10-05), supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
 - [ ] **C rests at ~73 N** (`scripts/force_check.py`, 2026-10-05; A 4.6 N, D 1.3 N): swap C/D brown wires (does it follow?), then jumper C's IAA100 pin 4 → − rail (ground?). Don't pull C hard meanwhile (3.3 V reached at ~127 N real force)
-- [ ] **Amplifier range** per module: brown force wire **not** in the Teensy, pull the rope hard → output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N). Higher: stop, tell Claude
-- [ ] Then per module: remove the short wire from its force pin (T14 A, T16 C, T17 D) to the − rail, plug the brown wire in
-- [ ] **24 V only:** `bumpem monitor --port PORT`, pull each rope by hand → only that module's force rises
+- [ ] **Amplifier range** per module (needs the multimeter): brown wire out of the Teensy, pull hard → output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N). Hand pulls so far stayed ≤ ~2.4 V at the Teensy, but above 3.3 V the Teensy can't tell (reads 200 N) and can be damaged
+- [x] Short wires removed, brown force wires in T14 (A), T16 (C), T17 (D) (2026-10-05)
+- [x] Hand-pull check `scripts/force_check.py` (2026-10-05): left → A, right → C, back → D, each moves only its own sensor. Zeros: A 4.6 N, C **73 N** (item above), D 1.3 N
 - [ ] Claude: CSV logging for `--watch` / server (to compare with `knowledge/results.md`)
 - [ ] **Closed-loop test**, one module at a time (C first): default gains (`kp`, `kd`, `kff` back to boot values: unplug/replug USB), `arm`, `pulse C=10`, `20`, `50`; note target vs measured peak and rise time → Claude compares with `knowledge/results.md`
 
