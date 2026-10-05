@@ -27,6 +27,7 @@ Hall colour code: catalog page PDF (to be added to `docs/reference/`).
 - Common ground via distributor. Logic 3.3 V.
 
 ## Sensing
+- **Found 2026-10-05:** a 4th IAA100 still paired with a **DYMH-103 200 kg, 1.0 mV/V** (others: 100 kg, 1.6 mV/V) → ~3× less signal per N, so ~3× more noise and ±0.3 % of 1962 N ≈ ±6 N. Possibly thesis sensor S4 (calibration.md). Check with 6 / 8 / 12 kg before use; small errors → firmware `gain_X` / `offset_X`.
 - Load cell DYMH-103. Thesis Table 1 says 100 kg max; text says 1000 N (§3.1) / 980 N (§8). Excitation 10 V, sensitivity 1.6 mV/V.
 - IAA100 gain set via DIP switches + zero/span pots: 0–3.3 V ↔ 0–200 N (§3.1–3.2).
 - Teensy ADC 10-bit (`ADCresolution = 1023`, `.ino:39`).
