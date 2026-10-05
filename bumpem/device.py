@@ -18,7 +18,13 @@ class Link(Protocol):
 class SerialLink:
     def __init__(self, port: str, timeout: float = 0.1):
         import serial
-        self._ser = serial.Serial(port, 115200, timeout=timeout)
+        try:   # exclusive: a second program on the same port would silently steal replies (macOS allows sharing)
+            self._ser = serial.Serial(port, 115200, timeout=timeout, exclusive=True)
+        except serial.SerialException as e:
+            if "exclusively lock" in str(e):
+                raise serial.SerialException(f"{port} is busy: another program has it open "
+                                             f"(a running `bumpem serve`, monitor or test script?)") from None
+            raise
 
     def write(self, data: bytes) -> None:
         self._ser.write(data)

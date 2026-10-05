@@ -17,7 +17,10 @@ def _open(args) -> Board:
     if not args.port:
         sys.exit("--port or --sim required (see `bumpem ports`)")
     from .device import SerialLink
-    return Board(SerialLink(args.port))
+    try:
+        return Board(SerialLink(args.port))
+    except Exception as e:     # busy port, wrong name, unplugged
+        sys.exit(f"cannot open {args.port}: {e}")
 
 
 def _amps(items: list[str]) -> dict[str, float]:
