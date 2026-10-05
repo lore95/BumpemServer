@@ -158,3 +158,22 @@ def test_modules_set_at_connect():
         p = c.get("/api/v1/params").json()
         assert (p["ch_A"], p["ch_B"], p["ch_C"], p["ch_D"]) == (1, 0, 1, 1)
         assert c.get("/api/v1/geometry").json()["reachable"] == [{"from_deg": 90.0, "to_deg": -90.0}]
+
+
+def test_modules_applied_once_disarmed():
+    app = create_app()
+    with TestClient(app) as c:
+        hub = app.state.hub
+        c.post("/api/v1/connect", json={"port": "sim"})
+        c.patch("/api/v1/params", json={"arm_ms": 0})
+        c.post("/api/v1/arm")
+        wait_state(c, "ARMED")
+        hub.modules = "ACD"
+        hub.apply_modules()                      # armed: channels can't change yet
+        assert hub.modules_pending
+        c.post("/api/v1/release", json={"ms": 0})
+        end = time.time() + 3
+        while time.time() < end and hub.modules_pending:
+            time.sleep(0.05)
+        p = c.get("/api/v1/params").json()
+        assert not hub.modules_pending and (p["ch_B"], p["ch_D"]) == (0, 1)

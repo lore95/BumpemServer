@@ -77,6 +77,7 @@ class Hub:
     def __init__(self, wd_ms: int = 1000, modules: str | None = None):
         self.wd_ms = wd_ms
         self.modules = modules        # e.g. "ACD": channels switched on at connect, the others off
+        self.modules_pending = False  # True while the board was not DISARMED when the channels had to be set
         self.board: Board | None = None
         self.port: str | None = None
         self.next_pulse_id = 1
@@ -97,17 +98,26 @@ class Hub:
             except Exception as e:  # serial.SerialException, FileNotFoundError, ...
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
         board.add_listener(self._dispatch)
-        if self.modules is not None:          # firmware boots with A, B, C on and D off; match the mounted modules
-            try:
-                for m in "ABCD":
-                    board.set(f"ch_{m}", 1 if m in self.modules.upper() else 0)
-            except BoardError as e:           # e.g. board already armed: leave it, the user can PATCH /params
-                print(f"warning: channels not set at connect ({e})")
         self.board, self.port = board, port
+        self.apply_modules()
         if port != "sim" and self.wd_ms > 0:   # firmware aborts a pending pulse if the server dies
             self.call(board.set, "wd_ms", self.wd_ms)
             self._ping_stop.clear()
             threading.Thread(target=self._ping_loop, args=(board,), daemon=True).start()
+
+    def apply_modules(self) -> None:
+        """Firmware boots with A, B, C on and D off: switch the channels to the mounted modules.
+        Channels only change while DISARMED; otherwise retry when the board next reports DISARMED."""
+        board = self.board
+        if self.modules is None or board is None:
+            return
+        try:
+            for m in "ABCD":
+                board.set(f"ch_{m}", 1 if m in self.modules.upper() else 0)
+            self.modules_pending = False
+        except BoardError as e:
+            self.modules_pending = True
+            print(f"warning: channels not set yet ({e}); retrying when the board is DISARMED")
 
     def disconnect(self) -> None:
         board, self.board, self.port = self.board, None, None
@@ -151,6 +161,8 @@ class Hub:
             item = _telemetry_dict(msg)
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
+            if self.modules_pending and msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
+                threading.Thread(target=self.apply_modules, daemon=True).start()   # not on the reader thread
         else:
             return
         with self._lock:
