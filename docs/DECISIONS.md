@@ -92,3 +92,8 @@ Alternatives: clockwise 0–360 convention (the lab's verbal description of the 
 Decision: `bumpem serve` mounts `../BumpemUI/web` at `/ui/` (`--ui PATH`), `/` redirects there (BumpemUI U2). The `server` extra now includes `websockets`: plain uvicorn rejects WebSocket requests (404, "No supported WebSocket library"), so `/api/v1/stream` never worked outside the test client.
 Reason: one URL, no CORS; the live stream is required by the UI.
 Consequence: reinstall the extras once: `pip install -e ".[server,dev]"`.
+
+## D18 — 2026-10-05 — The server sets the channels to the mounted modules at connect
+Decision: `bumpem serve --modules ACD` (default `ACD`) switches ch_A..ch_D at connect: listed modules on, others off (only while DISARMED). `--modules ""` keeps the firmware defaults (A, B, C on, D off).
+Reason: the firmware's power-up defaults date from when D was out of service; on the real board the UI showed the front (B, not installed) reachable and the back (D, installed) refused, so a back pull reached only A. Fixing it in the server needs no re-flash and is one option to change when B is mounted.
+Alternatives: change the firmware defaults (PROTOCOL.md + re-flash); tick channels in the UI after every power-up.

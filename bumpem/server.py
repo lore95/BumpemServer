@@ -74,8 +74,9 @@ def _telemetry_dict(t: P.Telemetry) -> dict[str, Any]:
 class Hub:
     """The one board connection plus the WebSocket clients listening to it."""
 
-    def __init__(self, wd_ms: int = 1000):
+    def __init__(self, wd_ms: int = 1000, modules: str | None = None):
         self.wd_ms = wd_ms
+        self.modules = modules        # e.g. "ACD": channels switched on at connect, the others off
         self.board: Board | None = None
         self.port: str | None = None
         self.next_pulse_id = 1
@@ -96,6 +97,12 @@ class Hub:
             except Exception as e:  # serial.SerialException, FileNotFoundError, ...
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
         board.add_listener(self._dispatch)
+        if self.modules is not None:          # firmware boots with A, B, C on and D off; match the mounted modules
+            try:
+                for m in "ABCD":
+                    board.set(f"ch_{m}", 1 if m in self.modules.upper() else 0)
+            except BoardError as e:           # e.g. board already armed: leave it, the user can PATCH /params
+                print(f"warning: channels not set at connect ({e})")
         self.board, self.port = board, port
         if port != "sim" and self.wd_ms > 0:   # firmware aborts a pending pulse if the server dies
             self.call(board.set, "wd_ms", self.wd_ms)
@@ -160,9 +167,10 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 
 
 # ---------- app ----------
-def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None) -> FastAPI:
+def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None,
+               modules: str | None = None) -> FastAPI:
     """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists."""
-    hub = Hub(wd_ms)
+    hub = Hub(wd_ms, modules)
 
     @asynccontextmanager
     async def lifespan(_):

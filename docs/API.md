@@ -16,7 +16,7 @@ version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 - One server per PC. The server alone opens the Teensy's serial port (or the simulator).
 - JSON everywhere. Units: force N, time ms, angle degrees.
 - Angle (Vicon Forward/Left/Up axes, counter-clockwise seen from above): **0 = front, +90 = left, −90 = right, 180 = back**. Any value is accepted and normalised to (−180, 180]. The angle is the direction the subject is pulled.
-- Modules: A +90 (left), B 0 (front), C −90 (right), D 180 (back). A module is available when its channel is on (`ch_A`…`ch_D` = 1). Setup 2026-10-02: A, C, D mounted, B not installed → reachable +90 … 180 … −90 (left, back, right and the back diagonals).
+- Modules: A +90 (left), B 0 (front), C −90 (right), D 180 (back). A module is available when its channel is on (`ch_A`…`ch_D` = 1). **On connect the server sets the channels to the mounted modules** (`bumpem serve --modules ACD`, default `ACD`; `--modules ""` keeps the firmware's power-up defaults A, B, C on, D off). Only while DISARMED; otherwise it leaves them and logs a warning. `PATCH /params` can still change them. Setup 2026-10-02: A, C, D mounted, B not installed → reachable +90 … 180 … −90 (left, back, right and the back diagonals).
 - Pulse terms follow `docs/knowledge/perturbation_definitions.md`: amplitude is relative to baseline; duration runs start → end, ramps included.
 
 ## Errors

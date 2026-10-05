@@ -150,3 +150,11 @@ def test_ui_served_when_folder_exists(tmp_path):
         assert "<title>ui</title>" in c.get("/ui/").text
     with TestClient(create_app(ui_dir=str(tmp_path / "missing"))) as c:
         assert c.get("/ui/").status_code == 404
+
+
+def test_modules_set_at_connect():
+    with TestClient(create_app(modules="ACD")) as c:
+        c.post("/api/v1/connect", json={"port": "sim"})
+        p = c.get("/api/v1/params").json()
+        assert (p["ch_A"], p["ch_B"], p["ch_C"], p["ch_D"]) == (1, 0, 1, 1)
+        assert c.get("/api/v1/geometry").json()["reachable"] == [{"from_deg": 90.0, "to_deg": -90.0}]
