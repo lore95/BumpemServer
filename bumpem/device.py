@@ -58,6 +58,7 @@ class Board:
         self._telemetry: queue.Queue[P.Telemetry] = queue.Queue(maxsize=10000)
         self._listeners: list[Callable[[P.Message], None]] = []
         self.last: P.Telemetry | None = None
+        self.last_event: P.Event | None = None
         self._run = True
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
@@ -78,6 +79,8 @@ class Board:
             if not raw:
                 continue
             msg = P.parse_line(raw.decode("ascii", errors="replace"))
+            if isinstance(msg, P.Event):
+                self.last_event = msg
             if isinstance(msg, P.Telemetry):
                 self.last = msg
                 try:
@@ -102,12 +105,19 @@ class Board:
                 self._write(line)
                 ack = q.get(timeout=self._timeout)
             except queue.Empty:
-                raise BoardError(f"no reply to {cmd}") from None
+                raise BoardError(f"no reply to {cmd}{self._stuck_hint()}") from None
             finally:
                 self._waiting = None
             if not ack.ok:
                 raise BoardError(f"{cmd}: {ack.detail}")
             return ack, self._extra
+
+    def _stuck_hint(self) -> str:
+        e = self.last_event
+        if e and e.kind == "FAULT" and any("DAC init failed" in a for a in e.args):
+            return ("; the board is stuck at power-up: DAC (MCP4728) not found on I2C. Check its VCC, GND, "
+                    "SDA (Teensy 18) and SCL (Teensy 19) wires, then unplug and replug the Teensy's USB")
+        return ""
 
     def add_listener(self, cb: Callable[[P.Message], None]) -> None:
         """Called from the reader thread for every message (telemetry, events, acks, text)."""
