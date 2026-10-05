@@ -31,6 +31,9 @@ Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-
 - [ ] Shunt regulator: photo of the DIP switch block (threshold must stay clearly > 48 V; Stanford 55 V). Tell Claude before changing anything
 
 ## 2. 🟠 Force sensing → closed loop · blocks real force control, logging, trials with people
+**Decision 2026-10-05:** zero / sensitivity / calibration checks and the closed-loop test wait for the **carrier board** (breadboard contacts made the readings unreliable: C 73 N, then A/D shifting after replugging). Until then only open-loop tests (force not used; over-force cut-out at `fault_n` 195 N).
+- [ ] 🔴 **Now:** repair C's **cut white ground wire** (found 2026-10-05); inspect A's and D's cables for damage
+- [ ] After the carrier board: `scripts/force_check.py` (all zeros a few N) → weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell) → closed-loop test
 Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down: release → 48 V off → 24 V off.
 - [x] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)** on A, C, D (2026-10-05), supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
 - [ ] **C rests at ~73 N** (`scripts/force_check.py`, 2026-10-05; A 4.6 N, D 1.3 N): swap C/D brown wires (does it follow?), then jumper C's IAA100 pin 4 → − rail (ground?). Don't pull C hard meanwhile (3.3 V reached at ~127 N real force)
