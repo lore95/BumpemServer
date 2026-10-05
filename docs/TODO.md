@@ -56,6 +56,7 @@ API order: `docs/API.md`, `planned` sections. Each step: API.md first, simulator
 - [ ] Decide: firmware boots with `ch_D = 1` now that D works (firmware change → `PROTOCOL.md` first, re-flash)
 
 ## 5. 🟢 Hardware build
+- [ ] 🟠 **Ropes** worn: measure rope diameter, drum diameter/width, eyebolt inner diameter; photo of worn spots and of the breakaway link → Claude proposes a low-stretch rope (Kevlar / Dyneema, ≥ ~2 kN, breakaway stays the weakest link). Lengths: Stanford guide p. 12 / 20 (drum rope = travel + 28 in, ≥ 3 wraps left at full travel)
 - [ ] Carrier board (`hardware/carrier/README.md`): terminal orientation in KiCad's 3D viewer + 1:1 print check → order (makerspace can help) → solder → move modules over one at a time, re-run the open-loop test for each
 - [ ] Module **B (front)**: is it planned? When mounted: trace cables, ESCON Diagnostics, open-loop test, `ch_B 1`
 

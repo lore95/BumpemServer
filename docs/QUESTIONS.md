@@ -144,3 +144,8 @@ Ask them to send these if they still have them:
 ## 7. Anything else
 **7.1** Is there anything that was known to be broken, fragile or "just worked that way" that we should know about?
 > Answer:
+
+## 7. Ropes (added 2026-10-05)
+**7.1** Which rope is on the modules (material, diameter, brand)? Stanford used braided Kevlar string (build guide p. 12), the thesis does not say.
+**7.2** What is the breakaway link (thesis p. 17: "mechanical breakaway cable")? Stanford: Berkley FireLine with a surgeon's knot (guide p. 18). Which line / strength here?
+**7.3** When were the ropes last replaced, and are spare ropes in the lab?
