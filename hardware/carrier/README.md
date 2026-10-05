@@ -29,7 +29,7 @@ The force tracks run under the Teensy and out past its right end, never between 
 | 1 | PCB from step 1 | |
 | 2 | female header 1 × 24, 2.54 mm, 8.5 mm tall | Teensy socket (or cut from 1 × 40 strips) |
 | 2 | female header 1 × 6, 2.54 mm | DAC socket |
-| 4 | Phoenix Contact MKDS 1,5/5-5,08 (1715747) | or any 5-way 5.08 mm PCB screw terminal with the same footprint |
+| 4 | Phoenix Contact MKDS 1,5/5-5,08 (1715750) | or any 5-way 5.08 mm PCB screw terminal with the same footprint |
 | 4 | resistor 1 kΩ, 0.25 W, 1 %, axial | R1–R4 |
 | 4 | resistor 1 MΩ, 0.25 W, 1 %, axial | R5–R8 |
 | 4 | BAT85 Schottky diode, DO-35 | D1–D4, band (cathode) towards the 3.3 V track |
