@@ -12,6 +12,7 @@ version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 ## Basics
 - Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). Other hosts only if started with `--host`.
+- UI: the same server serves the browser UI (`../BumpemUI/web`) at **`http://127.0.0.1:8000/ui/`**; `/` redirects there. Other folder: `bumpem serve --ui PATH`. Same origin, so the UI needs no cross-origin setup.
 - One server per PC. The server alone opens the Teensy's serial port (or the simulator).
 - JSON everywhere. Units: force N, time ms, angle degrees.
 - Angle (Vicon Forward/Left/Up axes, counter-clockwise seen from above): **0 = front, +90 = left, −90 = right, 180 = back**. Any value is accepted and normalised to (−180, 180]. The angle is the direction the subject is pulled.
@@ -79,7 +80,7 @@ POST /api/v1/perturbation
 - An angle needing a module whose channel is off → 422 `invalid`, message names the module. Force limits stay on the board (`fmax_n` → 409 `board_rejected`).
 - At baseline the cables do not cancel when a module is missing: with B not installed, the subject feels a constant pull of `baseline_n` towards D (back).
 
-PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct", "value": 20}, "trigger": {"event": "FS", "side": "any"}` → waits for the next matching gait event, response adds `"scheduled": "same_fs" | "predicted_fs"`.
+PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct" | "cycle_pct", "value": 20}, "trigger": {"event": "FS", "side": "any"}` → waits for the next matching gait event, response adds `"scheduled": "same_fs" | "predicted_fs"`. `cycle_pct`: % of the gait cycle after the trigger foot strike (running: stance 0–40, float 40–55, swing 55–85, float 85–100, thesis Fig. 1); the server converts it with the measured stride time. The UI's gait-phase picker produces it.
 
 | Method | Path | Returns | Status |
 |---|---|---|---|

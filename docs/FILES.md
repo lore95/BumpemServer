@@ -41,7 +41,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/vicon.py` | Vicon DataStream client (stub) |
 | `bumpem/geometry.py` | Perturbation angle → per-module amplitudes (Vicon axes, D16), reachable directions |
 | `bumpem/cli.py` | `bumpem` command (incl. `bumpem serve`, `bumpem perturb ANGLE AMPLITUDE`) |
-| `bumpem/server.py` | FastAPI server: `board` and `host` endpoints of `docs/API.md` (incl. `/perturbation`, `/geometry`) + WebSocket stream |
+| `bumpem/server.py` | FastAPI server: `board` and `host` endpoints of `docs/API.md` (incl. `/perturbation`, `/geometry`) + WebSocket stream; serves `../BumpemUI/web` at `/ui/` |
 | `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |

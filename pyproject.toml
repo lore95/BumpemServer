@@ -10,7 +10,7 @@ requires-python = ">=3.10"
 dependencies = ["pyserial>=3.5"]
 
 [project.optional-dependencies]
-server = ["fastapi>=0.110", "uvicorn>=0.29"]
+server = ["fastapi>=0.110", "uvicorn>=0.29", "websockets>=12"]   # websockets: uvicorn needs it for /api/v1/stream
 dev = ["pytest>=8", "httpx>=0.27"]
 
 [project.scripts]

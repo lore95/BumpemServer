@@ -87,3 +87,8 @@ Decision: the API takes a pull direction in Vicon axes seen from above (0 front,
 Reason: project lead's choice of convention (Vicon axes); the split reproduces the legacy diagonals (`legacy/Arduino_Script.ino:82`, force × 1/√2 per cable).
 Assumptions: horizontal cables at right angles, attached at one point. With B missing, baseline tension leaves a constant pull of `baseline_n` towards D.
 Alternatives: clockwise 0–360 convention (the lab's verbal description of the setup); per-module amplitudes only (already available as `POST /pulse`).
+
+## D17 — 2026-10-05 — The server serves the browser UI; websockets is a server dependency
+Decision: `bumpem serve` mounts `../BumpemUI/web` at `/ui/` (`--ui PATH`), `/` redirects there (BumpemUI U2). The `server` extra now includes `websockets`: plain uvicorn rejects WebSocket requests (404, "No supported WebSocket library"), so `/api/v1/stream` never worked outside the test client.
+Reason: one URL, no CORS; the live stream is required by the UI.
+Consequence: reinstall the extras once: `pip install -e ".[server,dev]"`.

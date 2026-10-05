@@ -13,7 +13,8 @@ from typing import Any
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import geometry
@@ -159,7 +160,8 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 
 
 # ---------- app ----------
-def create_app(wd_ms: int = 1000, board: str | None = None) -> FastAPI:
+def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None) -> FastAPI:
+    """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists."""
     hub = Hub(wd_ms)
 
     @asynccontextmanager
@@ -318,5 +320,15 @@ def create_app(wd_ms: int = 1000, board: str | None = None) -> FastAPI:
         finally:
             rx.cancel()
             hub.unsubscribe(q)
+
+    # --- browser UI (same origin as the API) ---
+    if ui_dir:
+        from pathlib import Path
+        if Path(ui_dir).is_dir():
+            app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
+
+            @app.get("/", include_in_schema=False)
+            def root():
+                return RedirectResponse("/ui/")
 
     return app

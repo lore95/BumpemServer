@@ -140,3 +140,13 @@ def test_perturbation_split_and_reach(sim):
                                                "phase1_ms": 0, "dur_ms": 100, "phase2_ms": 0})
     assert r.status_code == 200, r.json()
     assert r.json()["amps"] == {"C": 10}
+
+
+def test_ui_served_when_folder_exists(tmp_path):
+    (tmp_path / "index.html").write_text("<title>ui</title>")
+    with TestClient(create_app(ui_dir=str(tmp_path))) as c:
+        r = c.get("/", follow_redirects=False)
+        assert r.status_code in (302, 307) and r.headers["location"] == "/ui/"
+        assert "<title>ui</title>" in c.get("/ui/").text
+    with TestClient(create_app(ui_dir=str(tmp_path / "missing"))) as c:
+        assert c.get("/ui/").status_code == 404

@@ -55,7 +55,9 @@ API order: `docs/API.md`, `planned` sections. Each step: API.md first, simulator
 - [ ] Step 3: **trials**: blocks, shuffle, 50–75 steps between perturbations, recovery stand-in (D8), baseline = first 3 s (D7), logs
 - [ ] Step 4: **Vicon live** (force plates + markers) on the lab PC: needs the Vicon DataStream SDK there
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (rule 5: before any live use). Need a recorded file from the lab
-- [ ] Minimal web UI in `../BumpemUI`: connect, arm, perturb by angle, stop, live force plot. Give BumpemUI a GitHub remote
+- [x] First web UI (`../BumpemUI/web`, served at http://127.0.0.1:8000/ui/): dial, perturbation, gait-phase picker, board settings, live force, STOP/Esc (2026-10-05, simulator)
+- [ ] 🟢 You: `pip install -e ".[server,dev]"` once (adds `websockets`), then try the UI on the Teensy: `bumpem serve --board PORT` → http://127.0.0.1:8000/ui/ (open-loop settings)
+- [ ] Give BumpemUI a GitHub remote
 - [ ] Decide: firmware boots with `ch_D = 1` now that D works (firmware change → `PROTOCOL.md` first, re-flash)
 
 ## 5. 🟢 Hardware build
