@@ -90,17 +90,35 @@ class Board:
         with self._write_lock:
             self._link.write(P.encode(line))
 
+    def _report(self, where: str, exc: BaseException) -> None:
+        """A reader error must not stop the reader: log it (serial log + stderr, first few times) and go on."""
+        import sys
+        import traceback
+        self._errors = getattr(self, "_errors", 0) + 1
+        text = "".join(traceback.format_exception(exc)).rstrip()
+        note = getattr(self._link, "_note", None)
+        if note:
+            note(f"!! reader error in {where} (#{self._errors}): {text}")
+        if self._errors <= 3:
+            print(f"bumpem: reader error in {where}: {exc!r} (reader keeps running)", file=sys.stderr)
+
     def _read_loop(self) -> None:
         while self._run:
             try:
                 raw = self._link.readline()
-            except Exception:
-                if self._run:
-                    raise
-                return
+            except Exception as e:
+                if not self._run:
+                    return
+                self._report("readline", e)
+                time.sleep(0.05)
+                continue
             if not raw:
                 continue
-            msg = P.parse_line(raw.decode("ascii", errors="replace"))
+            try:
+                msg = P.parse_line(raw.decode("ascii", errors="replace"))
+            except Exception as e:
+                self._report("parse", e)
+                continue
             if isinstance(msg, P.Event):
                 self.last_event = msg
             if isinstance(msg, P.Telemetry):
@@ -116,7 +134,10 @@ class Board:
             elif isinstance(msg, P.Ack) and waiting and msg.cmd == waiting[0]:
                 waiting[1].put(msg)
             for cb in self._listeners:
-                cb(msg)
+                try:
+                    cb(msg)
+                except Exception as e:
+                    self._report(f"listener {getattr(cb, '__qualname__', cb)}", e)
 
     def request(self, line: str) -> tuple[P.Ack, list[P.Info | P.Param]]:
         cmd = line.split()[0].upper()

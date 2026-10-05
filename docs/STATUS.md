@@ -1,6 +1,7 @@
 # Status
 
 ## Done
+- **Reader thread diagnosis (2026-10-05):** serial log (`BUMPEM_SERIAL_LOG=<file>`) on the real board showed the server stops reading everything ~0.3–0.6 s after connecting (no replies, no telemetry), while commands still go out. The reader thread now survives errors (readline / parse / listener) and logs them with a traceback; root cause still to read from the next log.
 - **Stuck-at-power-up hint (2026-10-05):** if the DAC is not found on I²C at boot, firmware v1 only prints `E,0,FAULT,DAC init failed` every second and answers nothing (`main.ino:450-452`); `Board` now says so on a timeout (check DAC VCC / GND / SDA T18 / SCL T19, replug USB). Seen on the real board after rewiring: `bumpem info` → no reply.
 - **Exclusive serial port (2026-10-05):** `SerialLink` opens the Teensy port exclusively; a second `bumpem` program gets "port busy". Seen before: test pulls / ARM / INFO timing out at random ("no reply to GET") when two programs read the port. Advisory lock: it stops other `bumpem` programs, not tools that ignore locks (e.g. Arduino serial monitor).
 - **Two modes (2026-10-05, D19), server 0.3.0:** `bumpem serve --testing` → testing page (one pull per motor: force + duration, no arming, settings restored after each pull); default `--production` → full UI. Each mode refuses the other's commands. 45 tests pass; both pages checked in Chrome on the simulator.
