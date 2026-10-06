@@ -68,13 +68,17 @@ threshold Vth = 75 V − (sum of DIP switches ON: S1=1, S2=2, S3=4, S4=8, S5=16,
 Wiring: 24 V + → pin 4, 24 V − → pin 5, nothing else. Pins 6/7 (output 1) are in parallel with the input.
 | # | Check | Expected (healthy) | Result |
 |---|---|---|---|
-| 5a | DIP switches S1–S6 (before power): write ON/OFF, compute Vth | Vth above 48 V (e.g. 53 V) | |
+| 5a | DIP switches S1–S6 (before power): write ON/OFF, compute Vth | Vth above 48 V (e.g. 53 V) | **all OFF → Vth = 75 V** (photo IMG_9788). The 3 working towers: S3 + S5 ON → **55 V** (IMG_9784/9785/9787). ON = lever toward the "ON" print (right), away from the numbers |
 | 5b | Pins 4–5 (DC V) after switch-on | ~24 V (may take ~1 s: the supply charges 8800 µF) | |
 | 5c | Pins 6–7 (DC V) | same as 5b | |
 | 5d | Yellow LED (shunt active) / red LED (over-temperature) | both off | |
 | 5e | Housing after 5 min, sound, smell | cool, silent, no smell | |
 | 5f | After switch-off: pins 4–5 before touching the wires | wait until < 1 V (the capacitors hold charge) | |
 Faulty: 5b well below 24 V or the supply clicking on/off (short), or yellow LED on with Vth > 24 V.
+
+**DIP finding (2026-10-06).** Vth 75 V is above the ESCON 70/10 supply maximum (70 V) and above the RSP-2000-48 over-voltage protection (57.6–67.2 V, `docs/reference/meanwell-rsp-2000-spec.pdf`; it shuts the output down, "re-power on to recover").
+With 75 V the chopper never clamps braking energy below those limits; with 55 V (working towers) it does. Plausible cause of the failure (bus pumped up when the motor brakes), not proven: the DIP could also have been changed after the failure. Neither the Stanford guide nor the thesis/manual states a threshold.
+Set to 55 V (S3 and S5 ON, others OFF), like the other towers, before any powered test. Then 5b–5f at 24 V.
 
 ## Result
 | Part | Verdict | Date |
