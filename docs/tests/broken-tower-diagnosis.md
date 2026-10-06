@@ -83,7 +83,7 @@ With 75 V the chopper never clamps braking energy below those limits; with 55 V 
 ## Result
 | Part | Verdict | Date |
 |---|---|---|
-| Brake chopper | passes all meter tests and the 24 V powered test (DIP set to 55 V like the other towers). Before reuse: 48 V with a 1 A fast fuse or a 0.1 A bench supply | 2026-10-06 |
+| Brake chopper | passes all meter tests, 24 V and 48 V powered tests (new 48 V supply, no fuse, ~5 min: 48 V on pins 6–7, LEDs off, no heat). DIP set to 55 V like the other towers | 2026-10-06 |
 | ESCON 70/10 | passes all meter tests (power input, all 6 transistor diodes; meter battery died mid-series, 2b7–2b12 repeated with a new one) | 2026-10-06 |
 | Motor | | |
 | Old 48 V supply | **faulty**: 4a–4c passed but white residue leaking from the case → scrap (e-waste), replace | 2026-10-05 |
