@@ -24,7 +24,7 @@ class SerialLink:
         import serial
         path = os.environ.get("BUMPEM_SERIAL_LOG")
         self._log = open(path, "a", buffering=1) if path else None
-        self._t0, self._tel = time.monotonic(), 0
+        self._t0, self._tel, self._empty = time.monotonic(), 0, 0
         self._note(f"open {port}")
         try:   # exclusive: a second program on the same port would silently steal replies (macOS allows sharing)
             self._ser = serial.Serial(port, 115200, timeout=timeout, exclusive=True)
@@ -46,6 +46,12 @@ class SerialLink:
 
     def readline(self) -> bytes:
         line = self._ser.readline()
+        if self._log and not line:
+            self._empty += 1
+            if self._empty % 10 == 0:                     # readline timeout is 0.1 s
+                self._note(f"   (no data for {self._empty / 10:.0f} s, reader alive)")
+        if line:
+            self._empty = 0
         if self._log and line:
             if line.startswith(b"T,"):
                 self._tel += 1
@@ -81,6 +87,7 @@ class Board:
         self._listeners: list[Callable[[P.Message], None]] = []
         self.last: P.Telemetry | None = None
         self.last_event: P.Event | None = None
+        self.last_rx = time.monotonic()               # time of the last line received (any kind)
         self._run = True
         self._reader = threading.Thread(target=self._read_loop, daemon=True)
         self._reader.start()
@@ -114,6 +121,7 @@ class Board:
                 continue
             if not raw:
                 continue
+            self.last_rx = time.monotonic()
             try:
                 msg = P.parse_line(raw.decode("ascii", errors="replace"))
             except Exception as e:
@@ -148,7 +156,9 @@ class Board:
                 self._write(line)
                 ack = q.get(timeout=self._timeout)
             except queue.Empty:
-                raise BoardError(f"no reply to {cmd}{self._stuck_hint()}") from None
+                quiet = time.monotonic() - self.last_rx
+                diag = f" [reader {'alive' if self._reader.is_alive() else 'DEAD'}, last line {quiet:.1f} s ago]"
+                raise BoardError(f"no reply to {cmd}{self._stuck_hint()}{diag}") from None
             finally:
                 self._waiting = None
             if not ack.ok:
