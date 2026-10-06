@@ -62,10 +62,24 @@ Subtract reading 0a from 3a–3c.
 | 4d | look | burn marks, bulged parts, smell, blown fuse visible through the vents | | none | **white residue coming out of the case** (likely capacitor electrolyte) |
 Do not open the supply and do not touch its mains terminals.
 
+## 5. Brake chopper powered from a 24 V supply (Mean Well RS-15-24, current-limited by its short-circuit protection)
+Source: `docs/reference/maxon-235811-dsr-70-30-operating-instructions.pdf` (supply 12–70 V, no-load 15 mA, 8800 µF inside,
+threshold Vth = 75 V − (sum of DIP switches ON: S1=1, S2=2, S3=4, S4=8, S5=16, S6=32) × 1 V, yellow LED = shunt active, red LED = over-temperature).
+Wiring: 24 V + → pin 4, 24 V − → pin 5, nothing else. Pins 6/7 (output 1) are in parallel with the input.
+| # | Check | Expected (healthy) | Result |
+|---|---|---|---|
+| 5a | DIP switches S1–S6 (before power): write ON/OFF, compute Vth | Vth above 48 V (e.g. 53 V) | |
+| 5b | Pins 4–5 (DC V) after switch-on | ~24 V (may take ~1 s: the supply charges 8800 µF) | |
+| 5c | Pins 6–7 (DC V) | same as 5b | |
+| 5d | Yellow LED (shunt active) / red LED (over-temperature) | both off | |
+| 5e | Housing after 5 min, sound, smell | cool, silent, no smell | |
+| 5f | After switch-off: pins 4–5 before touching the wires | wait until < 1 V (the capacitors hold charge) | |
+Faulty: 5b well below 24 V or the supply clicking on/off (short), or yellow LED on with Vth > 24 V.
+
 ## Result
 | Part | Verdict | Date |
 |---|---|---|
-| Brake chopper | passes all meter tests; current-limited bench test (0.1 A) still due before reuse | 2026-10-05 |
+| Brake chopper | passes all meter tests; 24 V powered test (section 5) next, then 48 V with a 1 A fast fuse or a 0.1 A bench supply before reuse | 2026-10-05 |
 | ESCON 70/10 | power input and phase 1 upper OK; 2b3–2b12 still to do | 2026-10-05 |
 | Motor | | |
 | Old 48 V supply | **faulty**: 4a–4c passed but white residue leaking from the case → scrap (e-waste), replace | 2026-10-05 |
