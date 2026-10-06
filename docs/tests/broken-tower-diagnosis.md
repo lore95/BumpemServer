@@ -32,16 +32,16 @@ Everything unplugged from mains, Teensy and other modules. Meter: **Ω** = resis
 | 2a2 | Ω | J1 − | J1 + | a value or rising, not ~0 | 20 kΩ |
 | 2b1 | ▶| | J2 pin 1 | J1 + | ~0.3–0.7 V | 0.496 V |
 | 2b2 | ▶| | J1 + | J2 pin 1 | OL | OL |
-| 2b3 | ▶| | J1 − | J2 pin 1 | ~0.3–0.7 V | |
-| 2b4 | ▶| | J2 pin 1 | J1 − | OL | |
-| 2b5 | ▶| | J2 pin 2 | J1 + | ~0.3–0.7 V | |
-| 2b6 | ▶| | J1 + | J2 pin 2 | OL | |
-| 2b7 | ▶| | J1 − | J2 pin 2 | ~0.3–0.7 V | |
-| 2b8 | ▶| | J2 pin 2 | J1 − | OL | |
-| 2b9 | ▶| | J2 pin 3 | J1 + | ~0.3–0.7 V | |
-| 2b10 | ▶| | J1 + | J2 pin 3 | OL | |
-| 2b11 | ▶| | J1 − | J2 pin 3 | ~0.3–0.7 V | |
-| 2b12 | ▶| | J2 pin 3 | J1 − | OL | |
+| 2b3 | ▶| | J1 − | J2 pin 1 | ~0.3–0.7 V | pass |
+| 2b4 | ▶| | J2 pin 1 | J1 − | OL | pass |
+| 2b5 | ▶| | J2 pin 2 | J1 + | ~0.3–0.7 V | pass |
+| 2b6 | ▶| | J1 + | J2 pin 2 | OL | pass |
+| 2b7 | ▶| | J1 − | J2 pin 2 | ~0.3–0.7 V | pass |
+| 2b8 | ▶| | J2 pin 2 | J1 − | OL | pass |
+| 2b9 | ▶| | J2 pin 3 | J1 + | ~0.3–0.7 V | pass |
+| 2b10 | ▶| | J1 + | J2 pin 3 | OL | pass |
+| 2b11 | ▶| | J1 − | J2 pin 3 | ~0.3–0.7 V | pass |
+| 2b12 | ▶| | J2 pin 3 | J1 − | OL | pass |
 Faulty: ~0 in both directions on any pair = shorted power stage.
 
 ## 3. Motor (maxon EC 90 flat 500267), on its own cable, ESCON unplugged
@@ -84,6 +84,6 @@ With 75 V the chopper never clamps braking energy below those limits; with 55 V 
 | Part | Verdict | Date |
 |---|---|---|
 | Brake chopper | passes all meter tests and the 24 V powered test (DIP set to 55 V like the other towers). Before reuse: 48 V with a 1 A fast fuse or a 0.1 A bench supply | 2026-10-06 |
-| ESCON 70/10 | power input and phase 1 upper OK; 2b3–2b12 still to do | 2026-10-05 |
+| ESCON 70/10 | passes all meter tests (power input, all 6 transistor diodes; meter battery died mid-series, 2b7–2b12 repeated with a new one) | 2026-10-06 |
 | Motor | | |
 | Old 48 V supply | **faulty**: 4a–4c passed but white residue leaking from the case → scrap (e-waste), replace | 2026-10-05 |
