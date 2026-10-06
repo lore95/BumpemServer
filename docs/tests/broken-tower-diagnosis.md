@@ -47,9 +47,9 @@ Faulty: ~0 in both directions on any pair = shorted power stage.
 ## 3. Motor (maxon EC 90 flat 500267), on its own cable, ESCON unplugged
 | # | Mode | Red | Black | Expected (healthy) | Result |
 |---|---|---|---|---|---|
-| 3a | Ω | red winding wire | brown | ~0.8–1 Ω (datasheet 0.844 Ω + cable) | |
-| 3b | Ω | brown | white | ~0.8–1 Ω | |
-| 3c | Ω | white | red | ~0.8–1 Ω | |
+| 3a | Ω | red winding wire | brown | ~0.8–1 Ω (datasheet 0.844 Ω + cable) | 1 Ω (0a = 0, measured at the J2 plug incl. cable) |
+| 3b | Ω | brown | white | ~0.8–1 Ω | 0.9 Ω |
+| 3c | Ω | white | red | ~0.8–1 Ω | 0.9 Ω |
 | 3d | Ω | red winding wire | motor metal body | OL | |
 Subtract reading 0a from 3a–3c.
 
