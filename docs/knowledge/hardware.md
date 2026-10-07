@@ -34,6 +34,6 @@ Hall colour code: catalog page PDF (to be added to `docs/reference/`).
 
 ## Mechanical
 - 80×80 mm aluminium profiles, floor mounts, height adjustable to CoM (§2.9).
-  **Actual (2026-10-07):** Rotec **90×90 Profil schwer**, slot **Nut 10** (rotec-aluprofile.de/produkt/90x90-profil-schwer/; 6063 T5, 6.82 kg/m). Measured on a tower: face 90 mm, slot cavity ~10–30 mm from the edge, T-nut head 20 mm; parts held with ISO 7380 button-head screws (class 010.9) in T-slot nuts. Thesis value 80×80 is outdated. Bolt thread: to measure (Rotec Nut-10 T-nuts come in M4–M8).
+  **Actual (2026-10-07):** **90×90 light, B-type (Bosch-compatible, 45 grid), slot 10**: 8 open grooves (2 per face), groove 10 mm wide / 14 mm deep, 4 star-shaped core bores (for M12), large hollow centre. Identified from a top photo (`docs/hardware-photos/IMG_9801.heic`); maker unknown, not item (item's own system is slot 8). Sold e.g. as Motedis "Aluprofil 90x90 L B-Typ Nut 10". Measured: face 90 mm, slot cavity ~10–30 mm from the edge, T-nut head 20 mm; parts held with ISO 7380 button-head screws (class 010.9) in slot-10 T-nuts. Thesis value 80×80 is outdated. Bolt thread: to measure.
 - Breakaway cable per rope (§2.1).
 - No reflective parts (mocap) (§2.3).
