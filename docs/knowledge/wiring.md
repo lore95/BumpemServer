@@ -69,7 +69,7 @@ Still to record: the same trace for modules A, B (and D); colours may differ.
 
 ## Power supplies and e-stop (Stanford guide pp. 14–16)
 - RSP-2000-48 **−V → shunt pin 5**, **+V → shunt pin 4**, **⏚ → shunt pin 3**; shunt **pins 6/7 → ESCON J1 +/−** (guide p. 16 table, regulator label).
-- Shunt regulator DIP: Stanford **55 V = switches 3 and 5 ON** (Vth = 75 V − (4 + 16) × 1 V). IBMS setting unknown.
+- Shunt regulator DIP: Stanford **55 V = switches 3 and 5 ON** (Vth = 75 V − (4 + 16) × 1 V). IBMS: **55 V on all four** (three found at 55 V; the broken tower's was all OFF = 75 V, set to 55 V on 2026-10-06, `docs/tests/broken-tower-diagnosis.md`).
 - Mains side (⏚ L N, 230 V) of both supplies: lab technician only.
 - **E-stop** (guide pp. 13–15, Mean Well RSP-2000 datasheet p. 4 + p. 6 in `docs/reference/`):
   - Button with an **SPST-NO** contact block (normally open; Stanford swapped the stock red NC block for a green NO block).
