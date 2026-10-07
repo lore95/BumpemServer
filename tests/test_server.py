@@ -40,6 +40,15 @@ def test_info_and_params(sim):
     assert p["kff"] == 2 and p["baseline_n"] == 3
 
 
+def test_lost_link_is_503(sim):
+    def gone(_data):
+        raise OSError(6, "Device not configured")       # what pyserial raises after the USB is unplugged
+    sim.app.state.hub.board._link.write = gone
+    r = sim.get("/api/v1/params")
+    assert r.status_code == 503 and err(r) == "board_lost"
+    assert sim.get("/api/v1/info").status_code == 503
+
+
 def test_params_rejection_names_key(sim):
     r = sim.patch("/api/v1/params", json={"kff": 3, "fmax_n": 250})
     assert r.status_code == 409 and err(r) == "board_rejected"

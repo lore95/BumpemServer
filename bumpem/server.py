@@ -204,6 +204,8 @@ class Hub:
             raise _board_error(e) from None
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
+        except OSError as e:                                  # pyserial errors are OSErrors: the port is gone
+            raise ApiError("board_lost", 503, f"serial link lost ({e}): replug the Teensy, then Disconnect and Connect") from None
 
     # --- live stream ---
     def subscribe(self) -> asyncio.Queue:
@@ -375,6 +377,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             amps = geometry.split(body.angle_deg, body.amplitude_n, enabled_modules())
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
+        except OSError as e:                                  # pyserial errors are OSErrors: the port is gone
+            raise ApiError("board_lost", 503, f"serial link lost ({e}): replug the Teensy, then Disconnect and Connect") from None
         pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
         return {"pulse_id": pid, "amps": amps}
 

@@ -30,6 +30,7 @@ HTTP 4xx/5xx with:
 | `board_rejected` | 409 | board answered `A,ERR` (message = board reason) |
 | `not_connected` | 409 | no board or simulator connected |
 | `board_timeout` | 504 | no reply from the board |
+| `board_lost` | 503 | serial link gone (USB unplugged or Teensy reset): replug, then `POST /disconnect` + `POST /connect` |
 | `wrong_mode` | 409 | endpoint belongs to the other server mode (testing / production) |
 
 ## Endpoints
