@@ -1,87 +1,86 @@
 # To do
 
-Ordered by **danger** first, then by **what it blocks**. Work top to bottom; items in the same step can run in parallel.
-Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-02 (evening), updated 2026-10-05.
+Ordered by **date**, then by **danger**. Items on the same day can run in parallel.
+Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-07.
 
 **Danger:** 🔴 high = injury or burnt hardware if skipped/done wrong · 🟠 medium = damaged electronics or misleading test · 🟢 low.
-**Blocks:** the steps that cannot start until this one is done.
+Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (the other hub socket drops data). Every new Terminal: `conda activate BumpemHome`.
 
-Teensy port on the Mac: `/dev/cu.usbmodem169222501` (written `PORT` below). Every new Terminal: `conda activate BumpemHome`.
-**State (2026-10-02):** modules **A (left), C (right), D (back)** mounted and pulled correctly in the open-loop test (no force sensing); B (front) not installed.
-Server 0.2.0: board API + perturbation by angle (`bumpem perturb`), simulator-tested only. E-stop **not wired**: the 48 V strip switch is the only stop. Carrier board designed, not ordered.
+**State (2026-10-07):**
+- **A (left), C (right), D (back):** test pulls work (`bumpem serve --testing`); A + D held at 2 N closed loop (kff 2, offsets zeroed). C's force reads ~73 N at rest (cut ground wire).
+- **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement or repair.
+- E-stop **not wired**: the power strip switch is the only stop.
+- Printed tower parts designed (`hardware/enclosures/`): test plate, IAA100 DIN mount, RS-15 plate, RSP-2000 brackets.
 
 ---
 
-## ▶ Next session
-- [ ] 🟢 Fix `scripts/open_loop_test.sh`: keep `AC`, usage text = real modes, `ACD` power-on prompt must name all three supplies (A, C, **D**), "with AC both at once" text. Then commit (`scripts: ...`)
-- [ ] 🟠 Try `bumpem perturb` on the hardware, open-loop settings of the script, rope to fixed anchors, nobody attached:
-  `bumpem set ch_D 1` (the firmware boots with D off) → `arm` → `perturb 180 10`, `perturb 135 10`, `perturb -90 10`, `perturb 90 10` (`--dur 400 --phase2 50 --watch 2`). Expect D / A+D (7.07 N each) / C / A
-- [ ] 🟢 Same through the server: `bumpem serve --board PORT` → http://127.0.0.1:8000/docs → `POST /perturbation`
-- [ ] 🟢 `git push` in BumpemServer (9 commits ahead of GitHub); delete the empty clone `IBMS_Offenburg/BumpemServerGit`
+## Thu 2026-10-08 · PCB at the makerspace
+- [ ] 🟢 Send the reply to Sebastian Stulz (`docs/email-makerspace-stulz.txt`, 14:00, English OK?)
+- [ ] 🟢 Bring: laptop, `hardware/carrier/fab/` (kicad.zip, gerbers.zip, layout/top/bottom/schematic PDFs, bom.csv), Teensy 4.1 + DAC, an MSTB header + plug if at hand
+- [ ] 🟢 Check with him: 1:1 print of the layout against Teensy + DAC + MSTB headers before milling/etching
+- [ ] 🟢 Ask about printing `hardware/enclosures/out/fit_check.stl` (PETG/ASA, brim) if the makerspace prints too
+- [ ] 🟢 Send the maxon email (`docs/email-maxon-escon-repair.txt`, info.de@maxongroup.com): repair quote **and** price/delivery of a new ESCON 70/10 in the same mail
 
-## 1. 🔴 Safety · blocks long sessions and anything with a person attached
-- [ ] **Multimeter**: borrow one (lab / makerspace) or buy one. Needed for the e-stop test, the 24 V checks and the amplifier range check
-Details: `knowledge/wiring.md` → Power supplies and e-stop; `docs/power-estop-checklist.md`.
-- [ ] Order a **Hirose DF11-12DS** housing + **DF11 crimp terminals** for each RSP-2000's CN501 (or plan to solder)
-- [ ] **Wire the e-stop**: CN501 pin 7 + pin 11, one NO contact per 48 V supply (A, C, D)
-- [ ] Ask the technician whether a **fail-safe** e-stop is possible (in this design a cut wire means the button does nothing)
-- [ ] **Test:** 48 V on, press → every ESCON LED off; release → back on. **Repeat before every session**
-- [ ] Ask your **supervisor**: electrical safety inspection (DGUV Vorschrift 3)? Who fixes mains cables?
-- [ ] Mains, look only: confirm **one RSP-2000-48 per module**; each on its own socket/circuit; RS-15-24 (24 V) units: plug, L / N / ⏚ tight, earth, cover, strain relief. Anything wrong → stop, university fixes it
-- [ ] Shunt regulator: photo of the DIP switch block (threshold must stay clearly > 48 V; Stanford 55 V). Tell Claude before changing anything
+## Thu/Fri · carrier board assembly (before any module is moved)
+- [ ] 🟠 Solder sockets, MSTB headers, protection parts (`hardware/carrier/README.md`); **nothing plugged in yet**
+- [ ] 🔴 Meter checks, board bare: **3.3 V ↔ GND no short**, 5 V not connected anywhere, each MSTB pin → its Teensy/DAC socket pin (enable 27/28/29/30, VA–VD, force 14–17), neighbouring pins **not** connected
+- [ ] 🟠 Insert Teensy + DAC, USB only (no 24 V / 48 V): `bumpem monitor --port PORT` streams 100 lines/s; `bumpem info` answers
+- [ ] 🟠 Move **one module at a time** from the breadboard to its MSTB plug (5 wires: yellow enable, blue SP+, green SP−, white GND, brown force; colours `knowledge/wiring.md`). After each: testing page, Pull 10 N, 500 ms → only that rope moves
+- [ ] 🔴 Before moving C: **repair C's cut white ground wire**; then C's rest reading must drop from ~73 N to a few N
 
-## 2. 🟠 Force sensing → closed loop · blocks real force control, logging, trials with people
-**Decision 2026-10-05:** zero / sensitivity / calibration checks and the closed-loop test wait for the **carrier board** (breadboard contacts made the readings unreliable: C 73 N, then A/D shifting after replugging). Until then only open-loop tests (force not used; over-force cut-out at `fault_n` 195 N).
-- [ ] 🔴 **Now:** repair C's **cut white ground wire** (found 2026-10-05); inspect A's and D's cables for damage
-- [ ] After the carrier board: `scripts/force_check.py` (all zeros a few N) → weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell) → closed-loop test
-Power order: Teensy USB → **24 V** → check force → **48 V** → arm. Down: release → 48 V off → 24 V off.
-- [x] RS-15-24 **+V → IAA100 pin 1 (+Vin), −V → pin 2 (GND)** on A, C, D (2026-10-05), supply unplugged while wiring (`knowledge/wiring.md`). Check first: the existing brown wire is on pin 5 and the ground on pin 4; if not, photo to Claude. Don't touch DIP switches / zero / span. 24 V output: no short before connecting
-- [ ] **C rests at ~73 N** (`scripts/force_check.py`, 2026-10-05; A 4.6 N, D 1.3 N): swap C/D brown wires (does it follow?), then jumper C's IAA100 pin 4 → − rail (ground?). Don't pull C hard meanwhile (3.3 V reached at ~127 N real force)
-- [ ] **Amplifier range** per module (needs the multimeter): brown wire out of the Teensy, pull hard → output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N). Hand pulls so far stayed ≤ ~2.4 V at the Teensy, but above 3.3 V the Teensy can't tell (reads 200 N) and can be damaged
-- [x] Short wires removed, brown force wires in T14 (A), T16 (C), T17 (D) (2026-10-05)
-- [x] Hand-pull check `scripts/force_check.py` (2026-10-05): left → A, right → C, back → D, each moves only its own sensor. Zeros: A 4.6 N, C **73 N** (item above), D 1.3 N
-- [ ] Claude: CSV logging for `--watch` / server (to compare with `knowledge/results.md`)
-- [ ] **Closed-loop test**, one module at a time (C first): default gains (`kp`, `kd`, `kff` back to boot values: unplug/replug USB), `arm`, `pulse C=10`, `20`, `50`; note target vs measured peak and rise time → Claude compares with `knowledge/results.md`
+## Mon 2026-10-12 · printed parts
+- [ ] 🟢 Test plate: slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
+- [ ] 🟢 Buy: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts as needed
+- [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf` (role + steps on each page): IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
+- [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
+- [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
 
-## 3. 🟠 Motor drivers (ESCON Studio)
-⚠️ Diagnostics and auto-tuning turn the motor: rope slack, nobody near, hand on the strip switch.
-- [ ] Module A: Diagnostics (Hall test must pass) after its J3 recabling
-- [ ] Module D: Diagnostics; upload its config as `escon/moduleD_back_<date>.edc`
-- [ ] Always: USB in before 48 V on; 48 V off before USB out
+## After the carrier board · force sensing → closed loop
+- [ ] 🟠 `scripts/force_check.py`: each module rests at a few N, a hand pull moves only its own reading
+- [ ] 🟠 **Amplifier range** per module (meter): pull hard, IAA100 output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N)
+- [ ] 🟠 Weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell on the 4th amplifier)
+- [ ] 🟠 Closed-loop test one module at a time: production page, Arm at 2–5 N, perturbation 10 N → 20 N; note target vs measured → Claude compares with `knowledge/results.md`
+- [ ] 🟢 Decide `i_full` 9.9 / `kt` (`knowledge/control.md`) after reading C's and D's ESCON configs
+- [ ] 🟢 Claude: CSV logging for the server (compare with `knowledge/results.md`); server applies saved settings (kff, offsets, baseline) at connect
 
-## 4. 🟢 Software (Claude builds, you test)
-API order: `docs/API.md`, `planned` sections. Each step: API.md first, simulator tests, then hardware.
-- [ ] Step 2: **PTO**: perturb a set time after a foot strike (ms or % of stance), from gait events (simulated / replayed recorded trial until Vicon is connected)
-- [ ] Step 3: **trials**: blocks, shuffle, 50–75 steps between perturbations, recovery stand-in (D8), baseline = first 3 s (D7), logs
-- [ ] Step 4: **Vicon live** (force plates + markers) on the lab PC: needs the Vicon DataStream SDK there
-- [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (rule 5: before any live use). Need a recorded file from the lab
-- [x] First web UI (`../BumpemUI/web`, served at http://127.0.0.1:8000/ui/): dial, perturbation, gait-phase picker, board settings, live force, STOP/Esc (2026-10-05, simulator)
-- [ ] 🟢 You: `pip install -e ".[server,dev]"` once (adds `websockets`). **Motor check:** `bumpem serve --testing --board PORT` → http://127.0.0.1:8000/ → Pull each motor (5 N, 400 ms). **Production:** `bumpem serve --board PORT` → arm, perturb (closed loop only once the force readings are reliable)
-- [ ] Give BumpemUI a GitHub remote
-- [ ] Decide: firmware boots with `ch_D = 1` now that D works (firmware change → `PROTOCOL.md` first, re-flash)
+## Front tower (B)
+- [ ] 🟠 Order the replacement **ESCON 70/10** (maxon 422969: maxon shop €417.67 net, "Hoch" availability, ~3–5 days; or Farnell DE 2452179) unless maxon's repair quote is clearly cheaper. Label the old one "faulty: USB + enable"
+- [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
+- [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio, save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
+- [ ] 🟢 Start the server with `--modules ABCD` from then on
 
-## 5. 🟢 Hardware build
-- [ ] 🔴 **Broken tower** (the thesis's out-of-service module; now unused). Diagnosis `docs/tests/broken-tower-diagnosis.md` (2026-10-05): **old 48 V supply faulty** (white residue leaking) → scrap; brake chopper passes all meter tests → bench test at 0.1 A before reuse; ESCON: input + phase 1 upper OK, finish 2b3–2b12; motor: section 3 to do. Amplifier: 4th IAA100 found (paired with a 200 kg, 1.0 mV/V DYMH-103): calibration check with 6 / 8 / 12 kg first; buy a 100 kg cell only if it fails (`docs/parts-to-buy.xlsx`). New RSP-2000-48 in hand: mains side by the university electrician only. New IAA100: copy a working module's DIP settings, trim to 0–3.3 V = 0–200 N
-- [ ] 🟠 **Ropes** worn: measure rope diameter, drum diameter/width, eyebolt inner diameter; photo of worn spots and of the breakaway link → Claude proposes a low-stretch rope (Kevlar / Dyneema, ≥ ~2 kN, breakaway stays the weakest link). Lengths: Stanford guide p. 12 / 20 (drum rope = travel + 28 in, ≥ 3 wraps left at full travel)
-- [ ] Carrier board (`hardware/carrier/README.md`): terminal orientation in KiCad's 3D viewer + 1:1 print check → order (makerspace can help) → solder → move modules over one at a time, re-run the open-loop test for each
-- [ ] Module **B (front)**: is it planned? When mounted: trace cables, ESCON Diagnostics, open-loop test, `ch_B 1`
+## 🔴 Safety · before long sessions or anyone attached
+- [ ] Order **Hirose DF11-12DS** housing + DF11 crimp terminals per RSP-2000 (CN501), or plan to solder
+- [ ] **Wire the e-stop**: CN501 pin 7 + pin 11, one NO contact per 48 V supply (A, B, C, D) (`knowledge/wiring.md` → e-stop)
+- [ ] Ask the technician about a **fail-safe** e-stop (here a cut wire means the button does nothing)
+- [ ] **Test** before every session: 48 V on, press → every ESCON LED off; release → back on
+- [ ] Supervisor: electrical safety inspection (DGUV V3)? One power strip per tower, each on its own wall socket (no strips plugged into strips; RSP-2000 inrush 50 A)
+- [ ] 🟠 **Ropes** worn: measure rope / drum / eyebolt, photos → Claude proposes a low-stretch rope with the breakaway as weakest link
 
-## Before final testing (not needed for preliminary tests)
-- [ ] Module C config upload → `escon/moduleC_right_<date>.edc` → Claude compares with module A / Stanford. If gains equal the Stanford file (integral time 20000 µs) → load module A's file, then auto-tune C
-- [ ] Every module: same base config + auto-tuning per driver (manual §4.3.1); upload each result into `escon/module<X>_<side>_<date>.edc`
-- [ ] Screenshot the ESCON **firmware version** of each driver (look only, no update)
-- [ ] Correct firmware `i_full` (9.9, setpoint 10 V = 30 A) and `kt` (0.231 Nm/A) (`knowledge/control.md`, `STATUS.md`)
+## Software (Claude builds, you test)
+- [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
+- [ ] Step 3 **trials**: blocks, shuffle, 50–75 steps between perturbations, baseline first 3 s, logs
+- [ ] Step 4 **Vicon live** on the lab PC (DataStream SDK)
+- [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (needs a file from the lab)
+- [ ] 🟢 Fix `scripts/open_loop_test.sh` (your uncommitted edit: `AC` mode, usage text, ACD prompt), then commit
+- [ ] 🟢 `git push` BumpemServer (many commits since 10-02); give BumpemUI a GitHub remote
+- [ ] Decide: firmware boots with `ch_D = 1` (firmware change → `PROTOCOL.md` first, re-flash)
+
+## Before final testing
+- [ ] ESCON configs of C and D → `escon/`; Claude compares with A / Stanford; same base config + auto-tuning per driver
+- [ ] Screenshot each ESCON's firmware version (look only)
 
 ## Scheduled
-- [ ] 🟢 Call with the previous student, **week of 2026-10-05**: `QUESTIONS.md` (3.2 answered), bring the "Files to ask for" list (recorded MATLAB logs for step 4 above)
+- [ ] 🟢 Call with the previous student: `QUESTIONS.md`, ask for recorded MATLAB logs
 
-## Done
-- [x] Mac: conda env `BumpemHome` (Python 3.12), `pip install -e ".[dev]" platformio`, pytest (2026-09-30)
-- [x] 48 V chain of module C wired and checked: T0–T7 passed, shunt threshold > 48 V, e-stop pins found and contact type checked (2026-09-30)
-- [x] Module C driver: supply and Hall wiring fixed, Diagnostics passed; module A config saved; all motors maxon 500267 (2026-10-01)
-- [x] Teensy flashed with firmware v1, desk test passed, loopback wires removed (2026-09-29 / 10-02)
-- [x] Breadboard recabled to ESCON-side colours (`docs/diagrams/cabling-4-modules.png`) (2026-10-02)
-- [x] Open-loop tests passed: C, A (after fixing its swapped J3 Hall wires), A + C together, D (2026-10-02)
-- [x] Server: board API, perturbation by angle, `bumpem perturb` (simulator) (2026-10-02)
-- [x] Git: repo filtered, pushed to GitHub (`lore95/BumpemServer`) (2026-10-02)
-- [x] Carrier board v1 designed: ERC / DRC / parity clean, spacing ≥ 0.74 mm (2026-10-02)
+## Done (since 2026-10-05)
+- [x] "No reply" timeouts: bad USB socket/cable, not software (2026-10-06)
+- [x] D pulled too hard: green SP− on the 3.3 V rail, fixed; A no-pull: loose pin (2026-10-06)
+- [x] Test pulls A, C, D; closed-loop arm A + D at 2 N (2026-10-06)
+- [x] Broken tower diagnosed: old 48 V supply faulty; chopper OK at 24 V and 48 V after DIP 75 V → 55 V; ESCON power stage OK; motor windings OK (2026-10-06/07)
+- [x] Front tower ESCON found faulty (enable + USB dead, A's ESCON works on the same PC) (2026-10-07)
+- [x] Server: `board_lost` 503 when the USB link is gone (2026-10-07)
+- [x] Tower profile identified: 90×90 light B-type, slot 10; bolts M6 ISO 7380 (2026-10-07)
+- [x] Printed parts designed from datasheets + fit-check print and PDF (2026-10-07)
+- [x] Multimeter available
+- [x] Earlier: conda env, firmware v1 flashed, breadboard recabled, open-loop tests A/C/D, server board API + perturbation, repo on GitHub, carrier board v1 designed (2026-09-29 … 10-02)
