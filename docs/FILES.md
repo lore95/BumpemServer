@@ -27,6 +27,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `firmware/tools/loadcell_check/` | Recreated calibration sketch (A1, 200 ms, `ADC \| Voltage \| Force`). `scripts/flash.sh loadcell` |
 | `firmware/legacy/` | PlatformIO project building `legacy/Arduino_Script.ino` (v0 reference) |
 | `escon/stanford/` | Stanford reference ESCON 70/10 config (`.edc`), decoded in `escon/README.md` |
+| `hardware/enclosures/` | printed tower parts (CadQuery): `tower.py` profile/bolt dimensions, `test_fit.py` slot test print, `out/` STL + STEP |
 | `docs/reference/maxon-500267-catalog-page.pdf` | maxon EC 90 flat 260 W catalog page (motor data, 8-pin connector pinout V1) |
 | `docs/reference/meanwell-rsp-2000-spec.pdf` | Mean Well RSP-2000 datasheet (48 V supply: CN501 pins, remote ON-OFF for the e-stop) |
 | `docs/reference/maxon-235811-dsr-70-30-operating-instructions.pdf` | maxon DSR 70/30 shunt regulator / brake chopper (terminals 1–10, DIP threshold, LEDs, 8800 µF) |
