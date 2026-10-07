@@ -27,7 +27,10 @@ def images(name, wp, status):
     if not ctx:
         return alone, None
     length, slots, devices = ctx
-    items = [(wp, col, 1.0), (parts.profile_block(length, slots), parts.GREY, 1.0)] + [(d(), parts.AMBER, 0.55) for d in devices]
+    prof = parts.profile_block(length, slots)
+    if name.startswith("48 V"):
+        prof = prof.translate((parts.RSP["L"] / 2, 0, 0))
+    items = [(wp, col, 1.0), (prof, parts.GREY, 1.0)] + [((d[0]() if isinstance(d, tuple) else d()), *(d[1:] if isinstance(d, tuple) else (parts.AMBER, 0.55))) for d in devices]
     mounted = TMP / f"{name} mounted.png"
     render.render_png(items, mounted)
     return alone, mounted
@@ -67,7 +70,7 @@ def cover(pdf):
             f"Fasteners: {P.BOLT} ISO 7380 button head (4 mm hex) + existing slot-10 T-nuts; plates {P.PLATE_T:.0f} mm thick",
             "Material: PETG or ASA (not PLA: softens near warm drivers / supplies). No supports needed.",
             "Device sizes: Futek IAA100 drawing FI1573, Mean Well RS-15 case 971A (docs/reference/).",
-            "Not printed: 48 V supply RSP-2000-48 (295x127x41 mm, 1.95 kg, 3x M4, needs airflow): metal brackets.",
+            "48 V supply RSP-2000-48 (295x127x41 mm, 1.95 kg, case 952D): 2 printed end brackets, 10 mm air gap, ASA preferred.",
             "Source: BumpemServer/hardware/enclosures (CadQuery). Dimensions in tower.py."]
     for i, t in enumerate(info):
         fig.text(0.07, 0.89 - i * 0.025, t, fontsize=10)

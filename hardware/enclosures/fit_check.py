@@ -1,4 +1,4 @@
-"""One print with one of each: slot test plate (clearance 0.2 mm, 2 notches), IAA100 DIN-rail mount, RS-15-24 plate,
+"""One print with one of each: slot test plate (clearance 0.2 mm, 2 notches), IAA100 DIN-rail mount, RS-15-24 plate, RSP-2000 bracket A,
 laid out on one bed; plus a 3-page PDF of these parts.  Run: python fit_check.py  ->  out/fit_check.stl, out/fit_check.pdf"""
 from pathlib import Path
 
@@ -19,7 +19,7 @@ def test_plate() -> cq.Workplane:
 
 
 def layout() -> cq.Workplane:
-    items = [test_plate(), make_stl.on_end(parts.din_rail_mount()), make_stl.on_end(parts.rs15_holder())]
+    items = [test_plate(), make_stl.on_end(parts.din_rail_mount()), make_stl.on_end(parts.rs15_holder()), make_stl.on_side(parts.rsp_bracket("A"))]
     out, x = None, 0.0
     for wp in items:
         bb = wp.val().BoundingBox()
@@ -35,6 +35,7 @@ PAGES = [
      "nothing"),
     ("IAA100 DIN-rail mount", parts.din_rail_mount(), "READY (datasheet)", None, None),
     ("24 V supply plate (RS-15-24)", parts.rs15_holder(), "READY (datasheet)", None, None),
+    ("48 V supply brackets (RSP-2000-48)", parts.rsp_bracket("A"), "READY (datasheet)", None, None),
 ]
 
 if __name__ == "__main__":

@@ -7,12 +7,12 @@ import tower as P
 KEY_W = P.SLOT_OPEN - 2 * P.KEY_CLEAR
 
 
-def base(length: float, slots: int = 1, width: float | None = None, holes: int = 2) -> cq.Workplane:
+def base(length: float, slots: int = 1, width: float | None = None, holes: int = 2, xs: list[float] | None = None) -> cq.Workplane:
     """Plate on one profile face: `slots` = 1 (one slot, plate 24 mm wide) or 2 (both slots, plate covers the face)."""
     width = width or (24.0 if slots == 1 else P.FACE - 4)
     ys = [0.0] if slots == 1 else [-P.SLOT_PITCH / 2, P.SLOT_PITCH / 2]
     part = cq.Workplane("XY").box(length, width, P.PLATE_T, centered=(True, True, False))
-    xs = [0.0] if holes == 1 else [-(length / 2 - 10), length / 2 - 10]
+    xs = xs if xs is not None else ([0.0] if holes == 1 else [-(length / 2 - 10), length / 2 - 10])
     for y in ys:
         part = part.union(cq.Workplane("XY").box(length, KEY_W, P.KEY_H, centered=(True, True, False)).translate((0, y, -P.KEY_H)))
         for x in xs:
@@ -51,6 +51,39 @@ def rs15_holder() -> cq.Workplane:
     return part.union(ledge)                                 # end stop opposite the terminals
 
 
+RSP = dict(L=295.0, W=127.0, H=41.0,                       # Mean Well RSP-2000 case 952D, wide face ("top view") toward the profile
+           holes_a=[(21.0, 18.5), (21.0, 108.5)],           # (from end A, from long edge): M4, max 4 mm deep
+           holes_b=[(34.5, 59.0)])                          # from end B (fan end)
+GAP = 10.0                                                  # air gap between profile face and supply
+
+
+def rsp_bracket(end: str = "A") -> cq.Workplane:
+    """End bracket for the RSP-2000-48: plate keyed into both slots, M6 holes past the supply end (reachable when mounted),
+    raised pad under the supply with M4 x 12 screws from the back into the case holes. Supply end at x = 0, supply over x > 0.
+    Assemble: screw the supply onto both brackets first, then bolt the brackets to the profile."""
+    r, holes = RSP, (RSP["holes_a"] if end == "A" else RSP["holes_b"])
+    pad_len, out_len = 38.0, 24.0                            # pad under the supply / plate beyond its end
+    ln = pad_len + out_len
+    part = base(ln, slots=2, xs=[-(ln / 2 - out_len / 2)]).translate((ln / 2 - out_len, 0, 0))   # M6 pair at x = -12
+    pad = cq.Workplane("XY").box(pad_len, r["W"] - 20, GAP, centered=(False, True, False)).translate((0, 0, P.PLATE_T))
+    part = part.union(pad)
+    top = P.PLATE_T + GAP
+    for fx, fy in holes:
+        y = fy - r["W"] / 2
+        part = part.cut(cq.Workplane("XY").circle(2.2).extrude(top + 5).translate((fx, y, -P.KEY_H - 1)))
+        part = part.cut(cq.Workplane("XY").circle(4.0).extrude(top - 8.0 + P.KEY_H).translate((fx, y, -P.KEY_H)))  # head recess: 8 mm left
+    return part
+
+
+def rsp_box() -> cq.Workplane:
+    return cq.Workplane("XY").box(RSP["L"], RSP["W"], RSP["H"], centered=(False, True, False)).translate((0, 0, P.PLATE_T + GAP))
+
+
+def rsp_bracket_far() -> cq.Workplane:
+    """Bracket B in mounting position at the supply's fan end (for renders)."""
+    return rsp_bracket("B").mirror("YZ").translate((RSP["L"], 0, 0))
+
+
 def connector_plate(cut_w: float = 32.0, cut_h: float = 12.0) -> cq.Workplane:
     """Upright panel for the tower's 5-pin signal connector (Phoenix MSTB 2,5/5, 5.08 mm pitch). Cut-out PLACEHOLDER."""
     part = base(50.0, slots=1)
@@ -83,6 +116,7 @@ PARTS = {
     "Base mount plate": (lambda: base(80.0, slots=2), "READY (geometry)", "Covers one face, 2 keys in both slots, 4 M6 holes with head seats. Template for wider parts.", "test-fit result (KEY_CLEAR), bolt length"),
     "IAA100 DIN-rail mount": (din_rail_mount, "READY (datasheet)", "100 mm printed 35 mm top-hat rail on a one-slot plate. The Futek IAA100 clips on (spring DIN clip, FI1573); plugs point up and down along the profile. Alternative: bolt a short steel DIN rail instead.", "check your IAA100 has the DIN clip (66.8 x 50.4 x 17.8 mm version)"),
     "24 V supply plate (RS-15-24)": (rs15_holder, "READY (datasheet)", "Plate under the Mean Well RS-15-24 (62.5 x 51 x 28 mm, case 971A), held by its 2 bottom M3 holes with M3 x 6 screws from the back; end stop opposite the terminals.", "M3 x 6 screws; a cover for the open 230 V terminals (electrician)"),
+    "48 V supply brackets (RSP-2000-48)": (lambda: rsp_bracket("A"), "READY (datasheet)", "Two end brackets (A: 2 x M4, B: 1 x M4) under the Mean Well RSP-2000-48 (295 x 127 x 41 mm, 1.95 kg, case 952D). Keyed into both slots; M6 bolts past the supply ends stay reachable; 10 mm air gap behind the supply; fan ends free. Screw the supply onto both brackets first (M4 x 12 from the back, max 4 mm into the case), then bolt them to the profile. Print in ASA or PETG.", "M4 x 12 screws; check the supply's 3 M4 holes on the wide face match (case 952D)"),
     "Signal connector plate": (connector_plate, "CONCEPT", "Upright panel holding the tower's 5-pin MSTB socket: the single signal cable to the breadboard / carrier board.", "MSTB panel part + cut-out size"),
     "Cable clip": (cable_clip, "CONCEPT", "Snap-in clip guiding a cable along the profile (mains, signal, motor).", "cable diameters (PLACEHOLDER 8 mm)"),
     "Power-strip hook (x2)": (strip_hooks, "CONCEPT", "Two hooks carrying the tower's power strip. Holder only, no mains parts inside the print.", "power strip L x W x H"),
@@ -119,6 +153,7 @@ CONTEXT = {   # name -> (profile length, slots, [device envelopes])
     "Base mount plate": (120.0, 2, []),
     "IAA100 DIN-rail mount": (140.0, 1, [iaa100_box]),
     "24 V supply plate (RS-15-24)": (130.0, 1, [rs15_box]),
+    "48 V supply brackets (RSP-2000-48)": (360.0, 2, [(rsp_bracket_far, (0.55, 0.66, 0.80), 1.0), rsp_box]),
     "Signal connector plate": (90.0, 1, []),
     "Cable clip": (70.0, 1, []),
     "Power-strip hook (x2)": (70.0, 1, []),

@@ -14,7 +14,21 @@ def on_end(wp: cq.Workplane) -> cq.Workplane:
     return w.translate((-bb.center.x, -bb.center.y, -bb.zmin))
 
 
+def on_side(wp: cq.Workplane) -> cq.Workplane:
+    """Lay the part on its -y side (holes and keys horizontal)."""
+    w = wp.rotate((0, 0, 0), (1, 0, 0), -90)
+    bb = w.val().BoundingBox()
+    return w.translate((-bb.center.x, -bb.center.y, -bb.zmin))
+
+
+def rsp_pair() -> cq.Workplane:
+    a, b = on_side(parts.rsp_bracket("A")), on_side(parts.rsp_bracket("B"))
+    bb = a.val().BoundingBox()
+    return a.union(b.translate((0, bb.ylen + 10, 0)))
+
+
 READY = {
+    "rsp2000_brackets": rsp_pair,
     "iaa100_din_mount": lambda: on_end(parts.din_rail_mount()),
     "rs15_plate": lambda: on_end(parts.rs15_holder()),
 }
