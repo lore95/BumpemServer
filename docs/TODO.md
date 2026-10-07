@@ -8,7 +8,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 **State (2026-10-07):**
 - **A (left), C (right), D (back):** test pulls work (`bumpem serve --testing`); A + D held at 2 N closed loop (kff 2, offsets zeroed). C's force reads ~73 N at rest (cut ground wire).
-- **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement or repair.
+- **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement **ordered 2026-10-07**.
 - E-stop **not wired**: the power strip switch is the only stop.
 - Printed tower parts designed (`hardware/enclosures/`): test plate, IAA100 DIN mount, RS-15 plate, RSP-2000 brackets.
 
@@ -19,7 +19,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Bring: laptop, `hardware/carrier/fab/` (kicad.zip, gerbers.zip, layout/top/bottom/schematic PDFs, bom.csv), Teensy 4.1 + DAC, an MSTB header + plug if at hand
 - [ ] 🟢 Check with him: 1:1 print of the layout against Teensy + DAC + MSTB headers before milling/etching
 - [ ] 🟢 Ask about printing `hardware/enclosures/out/fit_check.stl` (PETG/ASA, brim) if the makerspace prints too
-- [ ] 🟢 Send the maxon email (`docs/email-maxon-escon-repair.txt`, info.de@maxongroup.com): repair quote **and** price/delivery of a new ESCON 70/10 in the same mail
+- [ ] 🟢 Optional: send the maxon repair email (`docs/email-maxon-escon-repair.txt`) for the old ESCON (spare); replacement already ordered
 
 ## Thu/Fri · carrier board assembly (before any module is moved)
 - [ ] 🟠 Solder sockets, MSTB headers, protection parts (`hardware/carrier/README.md`); **nothing plugged in yet**
@@ -44,7 +44,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Claude: CSV logging for the server (compare with `knowledge/results.md`); server applies saved settings (kff, offsets, baseline) at connect
 
 ## Front tower (B)
-- [ ] 🟠 Order the replacement **ESCON 70/10** (maxon 422969: maxon shop €417.67 net, "Hoch" availability, ~3–5 days; or Farnell DE 2452179) unless maxon's repair quote is clearly cheaper. Label the old one "faulty: USB + enable"
+- [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); expected in ~3–5 working days
+- [ ] 🟢 Label the old one "faulty: USB + enable"; repair quote from maxon only as a spare (no rush)
 - [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
 - [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio, save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
 - [ ] 🟢 Start the server with `--modules ABCD` from then on
