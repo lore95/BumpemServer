@@ -37,29 +37,41 @@ def images(name, wp, status):
 
 
 def page(pdf, title, wp, status, what, needed):
-    fig = plt.figure(figsize=(8.27, 11.69))
-    fig.text(0.07, 0.95, title, fontsize=18, weight="bold")
-    fig.text(0.07, 0.925, status, fontsize=11, weight="bold", color=COLORS[status])
-    alone, mounted = images(title, wp, status)
-    bb = wp.val().BoundingBox(); size = (bb.xlen, bb.ylen, bb.zlen)
-    boxes = [([0.05, 0.56, 0.9, 0.34], alone, "Part (as modelled; print orientation in the STL)")]
-    if mounted:
-        boxes.append(([0.05, 0.27, 0.9, 0.29], mounted, "Mounted on the profile (grey); device envelope in red"))
-    else:
-        boxes[0] = ([0.05, 0.30, 0.9, 0.58], alone, boxes[0][2])
-    for rect, img, cap in boxes:
-        ax = fig.add_axes(rect); ax.imshow(plt.imread(img)); ax.set_axis_off(); ax.set_title(cap, fontsize=9, color="#555")
-    lines = [f"What: {what}", f"Size: {size[0]:.0f} x {size[1]:.0f} x {size[2]:.0f} mm",
-             f"Mount: {P.BOLT} button-head screws in slot-{P.SLOT_OPEN:.0f} T-nuts; key {parts.KEY_W:.1f} mm in the slot",
-             f"Still needed: {needed}"]
-    if status == "CONCEPT":
-        lines.append("Concept only: device sizes are placeholders, the final part will change.")
     import textwrap
-    y = 0.23
-    for ln in lines:
-        for w in textwrap.wrap(ln, 95):
-            fig.text(0.07, y, w, fontsize=10); y -= 0.02
+    fig = plt.figure(figsize=(8.27, 11.69))
+    fig.text(0.07, 0.955, title, fontsize=17, weight="bold")
+    fig.text(0.07, 0.935, status, fontsize=10, weight="bold", color=COLORS[status])
+    alone, mounted = images(title, wp, status)
+    bb = wp.val().BoundingBox()
+    if mounted:
+        for rect, img, cap in (([0.03, 0.66, 0.46, 0.26], alone, "Part"), ([0.51, 0.66, 0.46, 0.26], mounted, "On the profile (grey), device in red")):
+            ax = fig.add_axes(rect); ax.imshow(plt.imread(img)); ax.set_axis_off(); ax.set_title(cap, fontsize=8, color="#555")
+    else:
+        ax = fig.add_axes([0.15, 0.66, 0.7, 0.26]); ax.imshow(plt.imread(alone)); ax.set_axis_off()
+    y = 0.635
+
+    def para(head, body, size=9.5, width=100):
+        nonlocal y
+        fig.text(0.07, y, head, fontsize=10.5, weight="bold"); y -= 0.02
+        for w in textwrap.wrap(body, width):
+            fig.text(0.07, y, w, fontsize=size); y -= 0.016
+        y -= 0.01
+
+    guide = parts.GUIDE.get(title)
+    para("Role", guide[0] if guide else what)
+    if guide:
+        fig.text(0.07, y, "How to anchor it", fontsize=10.5, weight="bold"); y -= 0.02
+        for n, step in enumerate(guide[1], 1):
+            lines = textwrap.wrap(step, 92)
+            fig.text(0.07, y, f"{n}.", fontsize=9.5)
+            for w in lines:
+                fig.text(0.095, y, w, fontsize=9.5); y -= 0.016
+            y -= 0.004
         y -= 0.008
+    para("Data", f"Size {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm. Mount: {P.BOLT} button-head bolts in slot-{P.SLOT_OPEN:.0f} T-nuts, "
+         f"key {parts.KEY_W:.1f} mm in the slot. Still needed: {needed}.", size=9)
+    if status == "CONCEPT":
+        para("Note", "Concept only: device sizes are placeholders, the final part will change.", size=9)
     pdf.savefig(fig); plt.close(fig)
 
 

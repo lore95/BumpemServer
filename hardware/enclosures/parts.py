@@ -158,3 +158,45 @@ CONTEXT = {   # name -> (profile length, slots, [device envelopes])
     "Cable clip": (70.0, 1, []),
     "Power-strip hook (x2)": (70.0, 1, []),
 }
+
+
+# ---------- role and mounting steps (printed in the PDFs) ----------
+GUIDE = {
+    "Slot test plate": (
+        "Checks the fit before the real parts are printed: the key on the back must slide into the 10 mm profile slot without "
+        "wobbling, the M6 bolt must pass the hole and still grip the T-nut.",
+        ["Slide a slot-10 T-nut into a free slot of the tower (or use one already in the slot).",
+         "Put the plate on the profile with the key (ridge on the back) in the slot.",
+         "Push an M6 button-head bolt through the hole and turn it into the T-nut, hand-tight.",
+         "Check: no sideways play, plate flat on the profile, at least ~5 mm of thread in the T-nut.",
+         "Report the result: too tight / good / loose (the 0.1 and 0.3 mm plates are in test_fit.stl)."]),
+    "Slot test plates": None,
+    "IAA100 DIN-rail mount": (
+        "Holds the Futek IAA100 force amplifier (now taped) on the tower. The IAA100 has a spring DIN clip on its back; this part "
+        "is a short 35 mm DIN rail that bolts into one slot, so the amplifier clicks on and off without screws.",
+        ["Choose a slot on the tower face near the load cell cable; slide 2 slot-10 T-nuts into it, about 80 mm apart.",
+         "Put the mount on with the key in the slot and the rail facing out; bolt it with 2 M6 bolts through the holes at the ends "
+         "(reach them through the openings in the rail).",
+         "Hook the top of the IAA100's DIN clip over the rail, press the bottom until it clicks.",
+         "Orientation: sensor plug (4-pin) toward the load cell, power/output plug (5-pin) toward the breadboard cable.",
+         "To remove: pull the clip's spring tab down (small screwdriver) and tilt the amplifier off."]),
+    "24 V supply plate (RS-15-24)": (
+        "Holds the Mean Well RS-15-24, the 24 V supply of the force amplifier (now taped). Fixed by the supply's own 2 M3 holes; "
+        "an end stop keeps it square.",
+        ["Mains first: the supply stays unplugged; its 230 V terminals are wired and covered only by the electrician.",
+         "Put the supply on the plate, the end stop against the end opposite the screw terminals.",
+         "From the back of the plate, screw 2 M3 x 6 screws into the supply's bottom holes (max 3 mm into the case: no longer screws).",
+         "Slide 2 slot-10 T-nuts into a slot; bolt the plate on with 2 M6 bolts through the holes at both ends.",
+         "Route the 24 V output (+V, -V) to the IAA100 power plug (pin 1 +Vin, pin 2 GND)."]),
+    "48 V supply brackets (RSP-2000-48)": (
+        "Hold the Mean Well RSP-2000-48, the motor supply (1.95 kg), on one profile face with a 10 mm air gap. "
+        "Bracket A takes the 2 M4 holes at the end without fans, bracket B the single M4 hole at the fan end.",
+        ["Supply switched off and unplugged; leave its mains side to the electrician.",
+         "Lay the supply with its wide face (the one with 3 M4 holes, case 952D) up. Put bracket A on the end with 2 holes and "
+         "bracket B on the fan end, pads on the supply, the bolt flanges pointing away from the supply.",
+         "Screw M4 x 12 screws from the back of each bracket into the supply (2 in A, 1 in B); max 4 mm into the case.",
+         "Slide 4 slot-10 T-nuts into the tower face: one in each of its 2 slots for each bracket. The two brackets' bolts end up 319 mm apart.",
+         "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds.",
+         "Check: fans and vents free, 10 mm gap behind the supply, output cables (+V, -V) reach the chopper terminals 4 / 5."]),
+}
+GUIDE["Slot test plates"] = GUIDE["Slot test plate"]
