@@ -84,6 +84,6 @@ With 75 V the chopper never clamps braking energy below those limits; with 55 V 
 | Part | Verdict | Date |
 |---|---|---|
 | Brake chopper | passes all meter tests, 24 V and 48 V powered tests (new 48 V supply, no fuse, ~5 min: 48 V on pins 6–7, LEDs off, no heat). DIP set to 55 V like the other towers | 2026-10-06 |
-| ESCON 70/10 | passes all meter tests (power input, all 6 transistor diodes; meter battery died mid-series, 2b7–2b12 repeated with a new one). Powered at 48 V via the chopper: J1 only → red 5× (Hall error, expected); with motor J2 + J3 → green slow blink (DISABLE), motor still. Settings in ESCON Studio not yet compared with module A | 2026-10-06 |
+| ESCON 70/10 | **faulty (control side)**: power stage passes all meter tests and it powers up (red 5× without Halls, green slow blink with motor), but **enable on J5 pin 2 never enables it** (LED stays slow green during a pull, wire to Teensy 28 replaced) and **USB is "not recognized"** on Windows with two cables, while module A's ESCON connects on the same PC and cable. Likely damaged by over-voltage (chopper at 75 V). Replace (maxon 422969, `docs/parts-to-buy.xlsx`); label the old one "faulty: USB + enable" | 2026-10-07 |
 | Motor | windings 1 / 0.9 / 0.9 Ω; Hall sensors OK (ESCON reports no Hall error with J3 connected); 3d (winding to body) not yet measured | 2026-10-06 |
 | Old 48 V supply | **faulty**: 4a–4c passed but white residue leaking from the case → scrap (e-waste), replace | 2026-10-05 |
