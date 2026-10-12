@@ -1,7 +1,7 @@
 # To do
 
 Ordered by **date**, then by **danger**. Items on the same day can run in parallel.
-Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-07.
+Tick items off and tell Claude what you found so `STATUS.md` stays current. Rewritten 2026-10-07, updated 2026-10-12.
 
 **Danger:** 🔴 high = injury or burnt hardware if skipped/done wrong · 🟠 medium = damaged electronics or misleading test · 🟢 low.
 Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (the other hub socket drops data). Every new Terminal: `conda activate BumpemHome`.
@@ -10,30 +10,26 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - **A (left), C (right), D (back):** test pulls work (`bumpem serve --testing`); A + D held at 2 N closed loop (kff 2, offsets zeroed). C's force reads ~73 N at rest (cut ground wire).
 - **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement **ordered 2026-10-07**.
 - E-stop **not wired**: the power strip switch is the only stop.
-- Printed tower parts designed (`hardware/enclosures/`): test plate, IAA100 DIN mount, RS-15 plate, RSP-2000 brackets.
+- Printed tower parts (`hardware/enclosures/`): being printed 2026-10-12. Carrier board: at the makerspace (Sebastian Stulz), expected **Fri 2026-10-16**. Replacement ESCON: not arrived yet (2026-10-12).
 
 ---
 
-## Thu 2026-10-08 · PCB at the makerspace
-- [ ] 🟢 Send the reply to Sebastian Stulz (`docs/email-makerspace-stulz.txt`, 14:00, English OK?)
-- [ ] 🟢 Bring: laptop, `hardware/carrier/fab/` (kicad.zip, gerbers.zip, layout/top/bottom/schematic PDFs, bom.csv), Teensy 4.1 + DAC, an MSTB header + plug if at hand
-- [ ] 🟢 Check with him: 1:1 print of the layout against Teensy + DAC + MSTB headers before milling/etching
-- [ ] 🟢 Ask about printing `hardware/enclosures/out/fit_check.stl` (PETG/ASA, brim) if the makerspace prints too
-- [ ] 🟢 Optional: send the maxon repair email (`docs/email-maxon-escon-repair.txt`) for the old ESCON (spare); replacement already ordered
+## Mon 2026-10-12 · today
+- [ ] 🟢 Printed parts (ready in a few hours): test plate slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
+- [ ] 🟢 Buy: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts; **ferrules 0.25–0.5 mm²** for the 5 signal wires per MSTB plug; pin terminals (blue, 1.5–2.5 mm²) for the chopper cables
+- [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf`: IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
+- [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
+- [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals): crimp pin terminals, 48 V off and chopper < 1 V first; check terminals 6/7 on the working towers
+- [ ] 🔴 Order the e-stop parts (Hirose DF11-12DS + crimp terminals per 48 V supply)
+- [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
+- [ ] 🟢 `git push`; motor test 3d on the front tower; label the old ESCON
 
-## Thu/Fri · carrier board assembly (before any module is moved)
+## Fri 2026-10-16 · carrier board (makerspace is making it; expected Friday)
 - [ ] 🟠 Solder sockets, MSTB headers, protection parts (`hardware/carrier/README.md`); **nothing plugged in yet**
 - [ ] 🔴 Meter checks, board bare: **3.3 V ↔ GND no short**, 5 V not connected anywhere, each MSTB pin → its Teensy/DAC socket pin (enable 27/28/29/30, VA–VD, force 14–17), neighbouring pins **not** connected
 - [ ] 🟠 Insert Teensy + DAC, USB only (no 24 V / 48 V): `bumpem monitor --port PORT` streams 100 lines/s; `bumpem info` answers
-- [ ] 🟠 Move **one module at a time** from the breadboard to its MSTB plug (5 wires: yellow enable, blue SP+, green SP−, white GND, brown force; colours `knowledge/wiring.md`). After each: testing page, Pull 10 N, 500 ms → only that rope moves
-- [ ] 🔴 Before moving C: **repair C's cut white ground wire**; then C's rest reading must drop from ~73 N to a few N
-
-## Mon 2026-10-12 · printed parts
-- [ ] 🟢 Test plate: slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
-- [ ] 🟢 Buy: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts as needed
-- [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf` (role + steps on each page): IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
-- [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
-- [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
+- [ ] 🟠 Move **one module at a time** to its MSTB plug (5 wires: yellow enable, blue SP+, green SP−, white GND, brown force; colours `knowledge/wiring.md`): cut each wire back to clean copper, crimp a **ferrule** (do not tin the tip: solder creeps under a screw and the contact loosens), screw into the plug. After each: testing page, Pull 10 N, 500 ms → only that rope moves
+- [ ] 🔴 **C's cut white ground wire** is repaired in this step (cut behind the damage, new ferrule, into C's plug); C's rest reading must then drop from ~73 N to a few N
 
 ## After the carrier board · force sensing → closed loop
 - [ ] 🟠 `scripts/force_check.py`: each module rests at a few N, a hand pull moves only its own reading
@@ -44,7 +40,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Claude: CSV logging for the server (compare with `knowledge/results.md`); server applies saved settings (kff, offsets, baseline) at connect
 
 ## Front tower (B)
-- [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); expected in ~3–5 working days
+- [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); not arrived by 2026-10-12
 - [ ] 🟢 Label the old one "faulty: USB + enable"; repair quote from maxon only as a spare (no rush)
 - [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
 - [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio, save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
@@ -75,6 +71,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Call with the previous student: `QUESTIONS.md`, ask for recorded MATLAB logs
 
 ## Done (since 2026-10-05)
+- [x] Makerspace meeting with Sebastian Stulz; carrier board in production (2026-10-08)
 - [x] "No reply" timeouts: bad USB socket/cable, not software (2026-10-06)
 - [x] D pulled too hard: green SP− on the 3.3 V rail, fixed; A no-pull: loose pin (2026-10-06)
 - [x] Test pulls A, C, D; closed-loop arm A + D at 2 N (2026-10-06)
