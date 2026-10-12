@@ -3,7 +3,7 @@
 The contract between the bumpem server and every client (the web UI in `BumpemUI`, MATLAB, scripts,
 future apps). Clients use only this API, never the Python internals (DECISIONS D10).
 
-**Version:** 1.0-draft. Server 0.2.0 (2026-10-02): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
+**Version:** 1.0-draft. Server 0.4.0 (2026-10-12): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
 version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 **Status tags:** `board` = maps directly onto protocol v1 (`docs/PROTOCOL.md`), **implemented**. Interactive test page: `http://127.0.0.1:8000/docs`.
@@ -38,7 +38,7 @@ HTTP 4xx/5xx with:
 ### Connection
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/info` | | `{"server": "0.3.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
+| GET | `/api/v1/info` | | `{"server": "0.4.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
 | GET | `/api/v1/ports` | | `["/dev/tty.usbmodem123", ...]` | board |
 | POST | `/api/v1/connect` | `{"port": "COM7"}` or `{"port": "sim"}` | `info` | board |
 | POST | `/api/v1/disconnect` | | `{}` | board |
@@ -52,13 +52,44 @@ HTTP 4xx/5xx with:
 
 `PATCH` applies keys one by one and stops at the first rejection; the error names the key.
 
+### Saved settings (`host`)
+Board parameters live in the Teensy's RAM: a replug resets them to the firmware defaults. The server keeps one JSON file
+(`bumpem serve --settings PATH`, default `BumpemServer/settings.json`, not in git; `--settings ""` = off) and writes its
+parameters to the board **at every connect**, after the channels. If the board is not DISARMED or in ESTOP at connect
+(server restarted while armed), nothing changes until it next reports DISARMED.
+
+| Method | Path | Body | Returns | Status |
+|---|---|---|---|---|
+| GET | `/api/v1/settings` | | `{"file": "…/settings.json" or null, "saved": "2026-10-12T14:03:00" or null, "params": {...} or null, "applied": true, "pending": false, "message": null}` | host |
+| POST | `/api/v1/settings` | | saves the board's **current** parameters to the file → same object | host |
+| DELETE | `/api/v1/settings` | | removes the file (the board keeps its current values) → same object | host |
+
+- Not saved, not applied: `ch_A`…`ch_D` (owned by `--modules`), `wd_ms` (owned by the server), `loop_ms`, `tel_div` (timing).
+- `applied`: the file was written to the board on this connection. `pending`: waiting for DISARMED. `message`: why a value was refused, if any (the rest is still applied).
+- Sensor zero offsets (`offset_*`) are saved like every other parameter: re-zero and save again when a sensor or its wiring changes.
+- Both modes. In testing mode a test pull still restores the parameters it changed.
+
+### Recording (`host`)
+Writes the board's telemetry at the **full board rate** (not thinned like the stream) to CSV files in `bumpem serve --log-dir PATH` (default `BumpemServer/Logs/`, not in git).
+
+| Method | Path | Body | Returns | Status |
+|---|---|---|---|---|
+| GET | `/api/v1/log` | | `{"recording": false, "file": null, "events_file": null, "rows": 0, "duration_s": 0}` | host |
+| POST | `/api/v1/log/start` | `{"label": "closedloop_A"}` (optional; letters, digits, `_`, `-`, max 40) | same object, `recording: true` | host |
+| POST | `/api/v1/log/stop` | | same object with the final `rows` and `duration_s`; `recording: false` | host |
+
+- `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D` (one row per telemetry line; `time_ms` = board clock).
+- `events_<same>.csv`: `time_ms,kind,args`: board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
+- Start while recording → 409 `board_rejected` ("already recording"). Stop while idle → the idle object. Needs a connected board (409 `not_connected`); recording stops by itself at disconnect.
+- Both modes.
+
 ### Modes
 `bumpem serve --testing` or `--production` (default). The UI at `/ui/` follows the mode (production page / testing page), and the server refuses what belongs to the other mode with 409 `wrong_mode`:
 
 | Mode | Allowed | Refused |
 |---|---|---|
-| production | everything below except `/test/pull` | `POST /test/pull` |
-| testing | connection, status, params, `POST /test/pull`, `abort`, `release`, `estop`, `clear`, stream | `POST /arm`, `POST /pulse`, `POST /perturbation` |
+| production | everything except `/test/pull` | `POST /test/pull` |
+| testing | connection, status, params, settings, recording, `POST /test/pull`, `abort`, `release`, `estop`, `clear`, stream | `POST /arm`, `POST /pulse`, `POST /perturbation` |
 
 ### Test pull (`host`, testing mode)
 One pull on one motor, without leaving the system armed:

@@ -6,9 +6,13 @@ Interactive test page: http://127.0.0.1:8000/docs
 from __future__ import annotations
 
 import asyncio
+import json
+import re
 import threading
 import time
 from contextlib import asynccontextmanager
+from datetime import datetime
+from pathlib import Path
 from typing import Any
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
@@ -19,12 +23,14 @@ from pydantic import BaseModel, Field
 
 from . import geometry
 from . import protocol as P
+from .datalog import ForceLog
 from .device import Board, BoardError
 
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.0"
 MODES = ("production", "testing")
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
+SETTINGS_SKIP = ("ch_A", "ch_B", "ch_C", "ch_D", "wd_ms", "loop_ms", "tel_div")   # owned by --modules / the server / timing
 
 
 # ---------- errors (docs/API.md "Errors") ----------
@@ -63,6 +69,10 @@ class TestPullBody(BaseModel):
     dur_ms: float = Field(ge=100, le=1000, description="Start to end, 50 ms ramps included", examples=[400])
 
 
+class LogStartBody(BaseModel):
+    label: str = Field("", pattern="^[A-Za-z0-9_-]{0,40}$", description="Added to the file names", examples=["closedloop_A"])
+
+
 class PerturbationBody(BaseModel):
     angle_deg: float = Field(description="Pull direction: 0 front, +90 left, -90 right, 180 back (Vicon axes)",
                              examples=[135])
@@ -82,8 +92,12 @@ def _telemetry_dict(t: P.Telemetry) -> dict[str, Any]:
 class Hub:
     """The one board connection plus the WebSocket clients listening to it."""
 
-    def __init__(self, wd_ms: int = 1000, modules: str | None = None):
+    def __init__(self, wd_ms: int = 1000, modules: str | None = None, settings: str | None = None, log_dir: str = "Logs"):
         self.wd_ms = wd_ms
+        self.settings_path = Path(settings) if settings else None   # saved parameters, written to the board at connect
+        self.settings_applied, self.settings_pending, self.settings_message = False, False, None
+        self.log_dir = log_dir
+        self.log: ForceLog | None = None
         self.modules = modules        # e.g. "ACD": channels switched on at connect, the others off
         self.modules_pending = False  # True while the board was not DISARMED when the channels had to be set
         self.board: Board | None = None
@@ -113,7 +127,9 @@ class Hub:
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
         board.add_listener(self._dispatch)
         self.board, self.port = board, port
+        self.settings_applied, self.settings_pending, self.settings_message = False, False, None
         self.apply_modules()
+        self.apply_settings()
         if port != "sim" and self.wd_ms > 0:   # firmware aborts a pending pulse if the server dies
             self.call(board.set, "wd_ms", self.wd_ms)
             self._ping_stop = stop = threading.Event()
@@ -133,11 +149,94 @@ class Hub:
             self.modules_pending = True
             print(f"warning: channels not set yet ({e}); retrying when the board is DISARMED")
 
+    # --- saved settings (docs/API.md "Saved settings") ---
+    def read_settings(self) -> dict | None:
+        if self.settings_path is None or not self.settings_path.is_file():
+            return None
+        return json.loads(self.settings_path.read_text())
+
+    def apply_settings(self) -> None:
+        """Write the saved parameters to the board, only while it is DISARMED or in ESTOP (else when it next disarms)."""
+        board, saved = self.board, self.read_settings()
+        if board is None or saved is None:
+            return
+        end = time.monotonic() + 1.0                       # the first telemetry line tells the state
+        while board.last is None and time.monotonic() < end:
+            time.sleep(0.01)
+        if board.last is None or board.last.state not in ("DISARMED", "ESTOP"):
+            self.settings_pending = True
+            return
+        todo = {k: v for k, v in saved["params"].items() if k not in SETTINGS_SKIP}
+        errors: dict[str, str] = {}
+        for _ in range(2):                                  # second pass: baseline_n / fmax_n depend on each other
+            errors = {}
+            for k, v in todo.items():
+                try:
+                    board.set(k, v)
+                except BoardError as e:
+                    errors[k] = str(e).split(": ", 1)[-1]
+                except OSError:
+                    return                                  # link gone; the next request reports board_lost
+            todo = {k: todo[k] for k in errors}
+            if not todo:
+                break
+        self.settings_applied, self.settings_pending = True, False
+        self.settings_message = "; ".join(f"{k}: {m}" for k, m in errors.items()) or None
+        if errors:
+            print(f"warning: saved settings not fully applied ({self.settings_message})")
+
+    def save_settings(self) -> None:
+        if self.settings_path is None:
+            raise ApiError("invalid", 422, "saved settings are off (bumpem serve --settings \"\")")
+        params = {k: v for k, v in self.call(self.need().get).items() if k not in SETTINGS_SKIP}
+        self.settings_path.parent.mkdir(parents=True, exist_ok=True)
+        self.settings_path.write_text(json.dumps({"saved": datetime.now().isoformat(timespec="seconds"), "params": params}, indent=1))
+        self.settings_applied, self.settings_pending, self.settings_message = True, False, None
+
+    def settings_info(self) -> dict[str, Any]:
+        saved = self.read_settings()
+        return {"file": str(self.settings_path) if self.settings_path else None,
+                "saved": saved["saved"] if saved else None, "params": saved["params"] if saved else None,
+                "applied": bool(saved) and self.settings_applied, "pending": bool(saved) and self.settings_pending,
+                "message": self.settings_message}
+
+    # --- recording (docs/API.md "Recording") ---
+    def log_info(self) -> dict[str, Any]:
+        lg = self.log
+        return {"recording": lg is not None, "file": str(lg.force_path) if lg else None,
+                "events_file": str(lg.events_path) if lg else None,
+                "rows": lg.rows if lg else 0, "duration_s": lg.duration_s if lg else 0}
+
+    def log_start(self, label: str) -> dict[str, Any]:
+        self.need()
+        with self._lock:
+            if self.log is not None:
+                raise ApiError("board_rejected", 409, "already recording (POST /api/v1/log/stop first)")
+            self.log = ForceLog(self.log_dir, label)
+        return self.log_info()
+
+    def log_stop(self) -> dict[str, Any]:
+        with self._lock:
+            lg, self.log = self.log, None
+        if lg is None:
+            return self.log_info()
+        lg.close()
+        return {"recording": False, "file": str(lg.force_path), "events_file": str(lg.events_path),
+                "rows": lg.rows, "duration_s": lg.duration_s}
+
+    def log_command(self, kind: str, data: dict) -> None:
+        """A command the server sent, stamped with the latest board time, into the events file."""
+        with self._lock:
+            if self.log is not None:
+                t = self.board.last.t_ms if self.board and self.board.last else 0
+                self.log.event(t, kind, json.dumps(data, separators=(",", ":")))
+
     def disconnect(self) -> None:
         with self._conn_lock:
             self._disconnect()
 
     def _disconnect(self) -> None:
+        self.log_stop()
         board, self.board, self.port = self.board, None, None
         self._ping_stop.set()
         if board is not None:
@@ -223,12 +322,20 @@ class Hub:
             item = _telemetry_dict(msg)
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
-            if self.modules_pending and msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
-                threading.Thread(target=self.apply_modules, daemon=True).start()   # not on the reader thread
+            if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
+                if self.modules_pending:
+                    threading.Thread(target=self.apply_modules, daemon=True).start()   # not on the reader thread
+                if self.settings_pending:
+                    threading.Thread(target=self.apply_settings, daemon=True).start()
         else:
             return
         with self._lock:
             clients = list(self._clients)
+            if self.log is not None:                # full board rate, before the stream thins it
+                if isinstance(msg, P.Telemetry):
+                    self.log.telemetry(msg)
+                else:
+                    self.log.event(msg.t_ms, msg.kind, " ".join(msg.args))
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
 
@@ -242,11 +349,13 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 
 # ---------- app ----------
 def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None,
-               modules: str | None = None, mode: str = "production") -> FastAPI:
-    """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists."""
+               modules: str | None = None, mode: str = "production",
+               settings: str | None = None, log_dir: str = "Logs") -> FastAPI:
+    """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists.
+    settings: JSON file of saved board parameters (None = off). log_dir: folder for recordings."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
-    hub = Hub(wd_ms, modules)
+    hub = Hub(wd_ms, modules, settings, log_dir)
 
     @asynccontextmanager
     async def lifespan(_):
@@ -312,6 +421,35 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                 raise ApiError(err.code, err.status, f"{name}: {err.message}") from None
         return hub.call(b.get)
 
+    # --- saved settings and recording ---
+    @app.get("/api/v1/settings")
+    def get_settings():
+        return hub.settings_info()
+
+    @app.post("/api/v1/settings")
+    def save_settings():
+        hub.save_settings()
+        return hub.settings_info()
+
+    @app.delete("/api/v1/settings")
+    def delete_settings():
+        if hub.settings_path is not None:
+            hub.settings_path.unlink(missing_ok=True)
+        hub.settings_applied, hub.settings_pending, hub.settings_message = False, False, None
+        return hub.settings_info()
+
+    @app.get("/api/v1/log")
+    def get_log():
+        return hub.log_info()
+
+    @app.post("/api/v1/log/start")
+    def log_start(body: LogStartBody | None = None):
+        return hub.log_start((body or LogStartBody()).label)
+
+    @app.post("/api/v1/log/stop")
+    def log_stop():
+        return hub.log_stop()
+
     def only(m: str) -> None:
         if mode != m:
             raise ApiError("wrong_mode", 409, f"server is in {mode} mode; this needs `bumpem serve --{m}`")
@@ -357,8 +495,9 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     @app.post("/api/v1/pulse")
     def pulse(body: PulseBody):
         only("production")
-        pid = send_pulse({k.upper(): v for k, v in body.amps.items()}, body.delay_ms, body.rise_ms,
-                         body.dur_ms, body.fall_ms)
+        amps = {k.upper(): v for k, v in body.amps.items()}
+        pid = send_pulse(amps, body.delay_ms, body.rise_ms, body.dur_ms, body.fall_ms)
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, **body.model_dump(exclude={"amps"})})
         return {"pulse_id": pid}
 
     # --- host layer ---
@@ -377,9 +516,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             amps = geometry.split(body.angle_deg, body.amplitude_n, enabled_modules())
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
-        except OSError as e:                                  # pyserial errors are OSErrors: the port is gone
-            raise ApiError("board_lost", 503, f"serial link lost ({e}): replug the Teensy, then Disconnect and Connect") from None
         pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, **body.model_dump()})
         return {"pulse_id": pid, "amps": amps}
 
     @app.post("/api/v1/test/pull")
@@ -387,6 +525,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         only("testing")
         m = body.module.upper()
         pid = hub.test_pull(m, body.force_n, body.dur_ms)
+        hub.log_command("CMD", {"pulse_id": pid, "test_pull": m, "force_n": body.force_n, "dur_ms": body.dur_ms})
         return {"pulse_id": pid, "module": m, "force_n": body.force_n, "dur_ms": body.dur_ms}
 
     # --- live stream ---

@@ -29,3 +29,4 @@ docs/diagrams/*
 fp-info-cache
 *-backups/
 hardware/carrier/fab/gerbers/
+settings.json

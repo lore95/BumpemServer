@@ -37,7 +37,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟠 Weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell on the 4th amplifier)
 - [ ] 🟠 Closed-loop test one module at a time: production page, Arm at 2–5 N, perturbation 10 N → 20 N; note target vs measured → Claude compares with `knowledge/results.md`
 - [ ] 🟢 Decide `i_full` 9.9 / `kt` (`knowledge/control.md`) after reading C's and D's ESCON configs
-- [ ] 🟢 Claude: CSV logging for the server (compare with `knowledge/results.md`); server applies saved settings (kff, offsets, baseline) at connect
+- [x] Claude: recording to CSV (`POST /log/start`, Record button) and saved settings applied at connect (`settings.json`, Save as default) (2026-10-12)
+- [ ] 🟢 On the real Teensy: production page → kff 2, baseline 2 → **Zero sensors** (ropes slack) → **Save as default** → replug the Teensy → Connect: values are back
 
 ## Front tower (B)
 - [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); not arrived by 2026-10-12

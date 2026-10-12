@@ -102,3 +102,14 @@ Alternatives: change the firmware defaults (PROTOCOL.md + re-flash); tick channe
 Decision: `bumpem serve --testing` / `--production` (default). Testing: `POST /api/v1/test/pull` does one open-loop pull on one module (save params → gains 0, kff 2, baseline 0, cap = force, arm_ms 0, only that module → ARM → PULSE → RELEASE 0 → restore params); arm / pulse / perturbation refused. Production: the full UI (arm with force feedback, perturbations); test pulls refused. Error code `wrong_mode` (409). UI: `/ui/testing.html` vs `/ui/`.
 Reason: the project lead wants a plain "does each motor react?" check without arming or constant tension, separate from the arming / feedback workflow; mixing both on one page caused confusion.
 Alternatives: one page with a test card (tried, confusing); CLI only.
+
+## D20 — 2026-10-12 — Saved settings, applied at connect
+Decision: one JSON file (`bumpem serve --settings`, default `BumpemServer/settings.json`, not in git) holds the board parameters; `POST /api/v1/settings` stores the board's current values, and the server writes the file to the board at every connect, only while DISARMED or ESTOP (else when it next disarms). Not stored: `ch_*` (owned by `--modules`), `wd_ms`, `loop_ms`, `tel_div`.
+Reason: parameters live in the Teensy's RAM; every replug silently brought back kff 7.5, baseline 5 N and zero offsets 0 (closed loop then holds ~15 N instead of the 2 N asked).
+Alternatives: store in the Teensy's EEPROM (firmware + PROTOCOL change, re-flash); CLI flags per parameter; the UI re-sends values (every client would need it).
+
+## D21 — 2026-10-12 — Recording on the server
+Decision: `POST /api/v1/log/start|stop` writes full-rate telemetry (`force_<ts>[_label].csv`, header of `bumpem/datalog.py`) and an events file (board events + one `CMD` row per pulse the server sent, as JSON) to `--log-dir` (default `BumpemServer/Logs/`, not in git).
+Reason: closed-loop tests need target vs measured at the board rate; the stream is thinned to 30 Hz for display, and the server already sees every line.
+Alternatives: log in the UI (browser, thinned data); always-on logging (fills the disk, no labels); a separate logger program (cannot share the serial port).
+---

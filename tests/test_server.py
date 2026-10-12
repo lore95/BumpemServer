@@ -228,3 +228,106 @@ def test_modes_refuse_each_other():
         c.post("/api/v1/connect", json={"port": "sim"})
         r = c.post("/api/v1/test/pull", json={"module": "C", "force_n": 5, "dur_ms": 300})
         assert r.status_code == 409 and err(r) == "wrong_mode"
+
+
+# ---------- saved settings and recording (docs/API.md) ----------
+@pytest.fixture
+def kept(tmp_path):
+    """Server with a settings file and a log folder in a temp dir."""
+    with TestClient(create_app(settings=str(tmp_path / "settings.json"), log_dir=str(tmp_path / "Logs"))) as c:
+        c.tmp = tmp_path
+        yield c
+
+
+def _connect(c):
+    assert c.post("/api/v1/connect", json={"port": "sim"}).status_code == 200
+
+
+def _wait_state(c, state, timeout=4.0):
+    end = time.monotonic() + timeout
+    while time.monotonic() < end:
+        if c.get("/api/v1/status").json()["state"] == state:
+            return
+        time.sleep(0.02)
+    raise AssertionError(f"never reached {state}")
+
+
+def test_settings_saved_and_applied_at_connect(kept):
+    _connect(kept)
+    assert kept.get("/api/v1/settings").json()["params"] is None
+    kept.patch("/api/v1/params", json={"kff": 2, "baseline_n": 3, "offset_A": -4.25})
+    s = kept.post("/api/v1/settings").json()
+    assert s["params"]["kff"] == 2 and s["saved"] and not any(k.startswith("ch_") or k == "wd_ms" for k in s["params"])
+    kept.post("/api/v1/disconnect")
+    _connect(kept)                                       # a new simulator = a replugged Teensy: firmware defaults
+    p = kept.get("/api/v1/params").json()
+    assert (p["kff"], p["baseline_n"], p["offset_A"]) == (2, 3, -4.25)
+    s = kept.get("/api/v1/settings").json()
+    assert s["applied"] and not s["pending"] and s["message"] is None
+
+
+def test_settings_order_baseline_and_cap(kept):
+    """Saved cap below the board's current baseline: needs the second pass."""
+    (kept.tmp / "settings.json").write_text('{"saved": "x", "params": {"fmax_n": 4, "baseline_n": 2}}')
+    _connect(kept)
+    p = kept.get("/api/v1/params").json()
+    assert (p["fmax_n"], p["baseline_n"]) == (4, 2)
+    assert kept.get("/api/v1/settings").json()["message"] is None
+
+
+def test_settings_wait_for_disarmed(kept):
+    _connect(kept)
+    kept.patch("/api/v1/params", json={"kff": 2, "arm_ms": 0})
+    kept.post("/api/v1/settings")
+    kept.patch("/api/v1/params", json={"kff": 5})
+    kept.post("/api/v1/arm"); _wait_state(kept, "ARMED")
+    hub = kept.app.state.hub
+    hub.apply_settings()                                 # as at a connect while armed
+    assert hub.settings_pending and kept.get("/api/v1/params").json()["kff"] == 5
+    kept.post("/api/v1/release", json={"ms": 0}); _wait_state(kept, "DISARMED")
+    end = time.monotonic() + 2
+    while hub.settings_pending and time.monotonic() < end:
+        time.sleep(0.02)
+    assert kept.get("/api/v1/params").json()["kff"] == 2
+
+
+def test_settings_delete_and_off(kept, client):
+    _connect(kept)
+    kept.post("/api/v1/settings")
+    assert kept.delete("/api/v1/settings").json()["params"] is None and not (kept.tmp / "settings.json").exists()
+    _connect(client)                                     # server started without a settings file
+    r = client.post("/api/v1/settings")
+    assert r.status_code == 422 and client.get("/api/v1/settings").json()["file"] is None
+
+
+def test_recording(kept):
+    assert kept.post("/api/v1/log/start").status_code == 409            # not connected
+    _connect(kept)
+    assert kept.get("/api/v1/log").json() == {"recording": False, "file": None, "events_file": None, "rows": 0, "duration_s": 0}
+    kept.patch("/api/v1/params", json={"arm_ms": 0})
+    r = kept.post("/api/v1/log/start", json={"label": "closedloop_A"}).json()
+    assert r["recording"] and r["file"].endswith("_closedloop_A.csv")
+    assert kept.post("/api/v1/log/start").status_code == 409            # already recording
+    kept.post("/api/v1/arm"); _wait_state(kept, "ARMED")
+    pid = kept.post("/api/v1/perturbation", json={"angle_deg": 90, "amplitude_n": 10, "phase1_ms": 20, "dur_ms": 120, "phase2_ms": 20}).json()["pulse_id"]
+    time.sleep(0.4)
+    done = kept.post("/api/v1/log/stop").json()
+    assert not done["recording"] and done["rows"] > 20 and done["duration_s"] > 0.2
+    force = open(done["file"]).read().splitlines()
+    assert force[0].startswith("time_ms,state,pulse_id,target_A,measured_A,dac_A") and len(force) == done["rows"] + 1
+    assert max(float(l.split(",")[3]) for l in force[1:]) > 10          # target_A went above baseline + 10 N
+    import csv, json
+    rows = list(csv.DictReader(open(done["events_file"])))
+    cmd = json.loads(next(r["args"] for r in rows if r["kind"] == "CMD"))
+    assert cmd["pulse_id"] == pid and cmd["angle_deg"] == 90 and cmd["amps"] == {"A": 10.0}
+    assert {"PSTART", "PEND"} <= {r["kind"] for r in rows}
+    assert kept.post("/api/v1/log/stop").json()["recording"] is False   # idle stop is fine
+    assert kept.post("/api/v1/log/start", json={"label": "bad label!"}).status_code == 422
+
+
+def test_recording_stops_at_disconnect(kept):
+    _connect(kept)
+    f = kept.post("/api/v1/log/start").json()["file"]
+    time.sleep(0.1)
+    kept.post("/api/v1/disconnect")
+    assert kept.app.state.hub.log is None and len(open(f).read().splitlines()) > 1

@@ -95,6 +95,10 @@ def main(argv=None):
     sv.add_argument("--modules", default="ACD",
                     help="mounted modules: their channels are switched on at connect, the others off "
                          "(default ACD = setup 2026-10-02; \"\" = keep firmware defaults)")
+    root = Path(__file__).resolve().parents[1]
+    sv.add_argument("--settings", default=str(root / "settings.json"),
+                    help="saved board parameters, written to the board at connect (default: BumpemServer/settings.json; \"\" = off)")
+    sv.add_argument("--log-dir", default=str(root / "Logs"), help="folder for recordings (default: BumpemServer/Logs)")
     sv.add_argument("--ui", default=str(Path(__file__).resolve().parents[2] / "BumpemUI" / "web"),
                     help="browser UI folder, served at /ui/ (default: ../BumpemUI/web)")
     args = ap.parse_args(argv)
@@ -108,7 +112,7 @@ def main(argv=None):
         page = "/ui/testing.html" if args.mode == "testing" else "/ui/"
         print(f"bumpem server ({args.mode} mode) on http://{args.host}:{args.port}  (UI: {page}, API test page: /docs)")
         uvicorn.run(create_app(wd_ms=args.wd_ms, board=args.board, ui_dir=args.ui, modules=args.modules or None,
-                               mode=args.mode),
+                               mode=args.mode, settings=args.settings or None, log_dir=args.log_dir),
                     host=args.host, port=args.port)
         return
 
