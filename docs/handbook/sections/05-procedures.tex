@@ -32,7 +32,7 @@ Reference values from the thesis: 100\,N target $\rightarrow$ peak 96.7 $\pm$ 12
 36 $\pm$ 5\,ms (\file{docs/knowledge/results.md}).
 \end{enumerate}
 
-\subsection{Configuring an ESCON}
+\subsection{Configuring an ESCON}\label{sec:escon}
 Configuration is done once per driver with ESCON Studio (Windows, USB on J7). No setting by hand.
 \begin{enumerate}
 \item Enable wire (J5 pin 2) unplugged, rope slack or off the drum, nobody near the tower.
@@ -48,7 +48,7 @@ controller.
 \end{enumerate}
 If ESCON Studio offers a firmware update, do not accept it without checking first.
 
-\subsection{Calibrating a load cell}
+\subsection{Calibrating a load cell}\label{sec:calibration}
 Hang 6, 8 and 12\,kg (58.9, 78.5, 117.7\,N). First check with a meter that the amplifier output stays
 $\leq$ 3.3\,V at the hardest pull (IAA100 DIP switches and zero/span pots). Small errors are corrected in
 software with \cmd{gain\_X} and \cmd{offset\_X}; save them with \emph{Save as default}.

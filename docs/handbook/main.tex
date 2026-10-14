@@ -23,7 +23,7 @@
 \DeclareUrlCommand\urlfile{\urlstyle{tt}}
 \DeclareRobustCommand{\file}[1]{\urlfile{#1}}   % repo paths: \file{docs/API.md}
 \newcommand{\cmd}[1]{\texttt{#1}}
-\newcommand{\fillin}[1]{\colorbox{yellow!40}{\textbf{TO FILL IN:} #1}}
+\newcommand{\fillin}[1]{\par\noindent\colorbox{yellow!40}{\parbox{\dimexpr\linewidth-2\fboxsep}{\raggedright\textbf{TO FILL IN:} #1}}\par}
 \newcommand{\warn}[1]{\par\smallskip\noindent\fcolorbox{red!70!black}{red!6}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{Danger.} #1}}\par\smallskip}
 
 \definecolor{wyellow}{HTML}{E8C21A}
@@ -61,6 +61,7 @@ tells you where to look.
 \clearpage
 
 \input{sections/01-overview}
+\input{sections/02-rebuild}
 \input{sections/02-hardware-review}
 \input{sections/03-cabling}
 \input{sections/04-software}
