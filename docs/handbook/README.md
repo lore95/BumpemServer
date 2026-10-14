@@ -1,6 +1,6 @@
 # Handbook (LaTeX)
 
-`main.tex` + `sections/*.tex` + `figures/` → PDF for future students: rebuild-from-zero path, hardware review (Stanford / thesis / built), parts bought, cabling maps, software from firmware to UI, procedures, faults found.
+`main.tex` + `sections/*.tex` + `figures/` → PDF for future students: Part I build walkthrough following the Stanford guide (tower, cabling, power, chopper + ESCON, printed holders, PCB, software), Part II reference: hardware review (Stanford / thesis / built), parts bought, cabling maps, software from firmware to UI, procedures, faults found.
 
 **Overleaf:** upload `bumpem-handbook-overleaf.zip` (New Project → Upload Project). Compiler pdfLaTeX, main document `main.tex`.
 **Local:** `pdflatex main.tex` twice (standard packages only, works with BasicTeX).

@@ -1,0 +1,86 @@
+\section{Step 7: software and first pulls}\label{sec:walk-software}
+How the software is built and how to change it: Sect.~\ref{sec:software}.
+
+\subsection{Download}
+Both repositories into the \emph{same} folder (the server finds the UI next to it):
+\begin{lstlisting}
+mkdir IBMS_Offenburg && cd IBMS_Offenburg
+git clone https://github.com/lore95/BumpemServer.git
+git clone <BumpemUI repository URL>
+\end{lstlisting}
+\fillin{BumpemUI repository URL (not on GitHub yet)}
+Large reference files are not in git (thesis, datasheets, photos, \file{legacy/}): copy them into
+\file{BumpemServer/docs/thesis/}, \file{docs/reference/}, \file{docs/hardware-photos/}, \file{legacy/}.
+\fillin{where they are stored}
+
+\subsection{Install}
+\begin{enumerate}
+\item Install Miniconda (\url{https://docs.conda.io/en/latest/miniconda.html}). Linux only: install the Teensy
+udev rule from pjrc.com.
+\item In a terminal:
+\begin{lstlisting}
+conda create -n BumpemHome python=3.12
+conda activate BumpemHome          # in every new terminal
+cd IBMS_Offenburg/BumpemServer
+pip install -e ".[server,dev]"
+pip install platformio
+pytest                             # 52 passed
+\end{lstlisting}
+\end{enumerate}
+
+\subsection{Run the server locally, without hardware}
+\begin{lstlisting}
+bumpem serve --board sim
+\end{lstlisting}
+Open \url{http://127.0.0.1:8000/} in Chrome or Firefox. \emph{Connect}, \emph{Arm}, \emph{Perturb now}: the
+live plot shows a pulse. \url{http://127.0.0.1:8000/docs} lists every API call. Stop the server with Ctrl+C.
+
+\textbf{Check:} 52 tests pass and the simulated pulse appears in the plot.
+
+\subsection{Flash the Teensy}
+Ask the project lead first: flashing erases what is on the Teensy.
+\begin{lstlisting}
+bumpem ports                       # e.g. /dev/cu.usbmodem169222501 or COM7 = PORT
+scripts/flash.sh                   # press the button on the Teensy if asked
+bumpem info --port PORT            # proto=1, fw=1.0.0
+bumpem monitor --port PORT         # about 100 lines per second, Ctrl+C to stop
+\end{lstlisting}
+If \cmd{info} says ``DAC init failed'': check DAC VCC, GND, SDA (pin 18), SCL (pin 19), replug USB. If
+replies stop at random: try another USB port or cable before suspecting the software.
+
+\subsection{Test pull per tower (testing mode)}
+\begin{lstlisting}
+bumpem serve --testing --board PORT --modules ABCD
+\end{lstlisting}
+Only list the towers that are plugged in (e.g.\ \cmd{--modules ACD}). Open \url{http://127.0.0.1:8000/}.
+Order: USB, then 24\,V, then the tower's 48\,V. Nobody near the ropes. On the testing page: Pull 5\,N, then
+10\,N, 400\,ms, one tower at a time.
+
+\textbf{Check:} only that tower's rope moves; 10\,N pulls visibly harder than 5\,N.
+
+\subsection{Closed loop (production mode)}
+\begin{lstlisting}
+bumpem serve --board PORT --modules ABCD
+\end{lstlisting}
+\begin{enumerate}
+\item Connect. Ropes slack: \emph{Zero sensors}.
+\item Settings: feedforward gain (\cmd{kff}) 2, baseline 2\,N, max force 40\,N. \emph{Save as default}
+(the server writes them to the board at every connect).
+\item Arm: each rope holds about 2\,N. \emph{Record}, perturbation 10\,N, stop recording: the CSV is in
+\file{BumpemServer/Logs/}.
+\item STOP (red button or Esc) and Release drop the rope tension: with a subject on the treadmill, stop the
+treadmill first.
+\end{enumerate}
+
+\subsection{You have reached the current version when}
+\begin{enumerate}
+\item every tower passes the test pull;
+\item at rest each force reads a few N and a hand pull changes only its own reading
+(\file{scripts/force_check.py});
+\item 6 / 8 / 12\,kg on each load cell read within about 2.5\,\% (Sect.~\ref{sec:calibration});
+\item after a Teensy replug and Connect, the saved settings are back;
+\item each tower holds 2\,N armed and a recorded 10\,N perturbation is in \file{Logs/};
+\item the e-stop switches every ESCON off.
+\end{enumerate}
+State on 14 October 2026: item 1 passed on A, C and D; A and D held 2\,N. Items 2--4, 6 and recording on the
+real board are still open; tower B waits for its new ESCON.

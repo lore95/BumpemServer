@@ -41,6 +41,8 @@ Configuration is done once per driver with ESCON Studio (Windows, USB on J7). No
 DigIN2, setpoint on AnIN2, 0--10\,V = 0--30\,A). \emph{Download parameters} writes it into the
 controller.
 \item \emph{Regulation Tuning} (auto-tuning) with the motor free to turn: adapts the gains to that motor.
+\item \emph{Store Parameters}, otherwise the driver forgets everything at power-off. Power-cycle and check
+the values in the Controller Monitor.
 \item Save the result as \file{escon/module<X>_<side>_<date>.edc} and commit it.
 \item LED: slow green blink = ready (disabled). Red = error; count the flashes and look them up in
 \file{escon/README.md}.

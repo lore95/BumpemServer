@@ -21,6 +21,7 @@
 \usepackage[hidelinks]{hyperref}
 
 \DeclareUrlCommand\urlfile{\urlstyle{tt}}
+\def\UrlBreaks{\do\/\do\-\do\_\do\.}
 \DeclareRobustCommand{\file}[1]{\urlfile{#1}}   % repo paths: \file{docs/API.md}
 \newcommand{\cmd}[1]{\texttt{#1}}
 \newcommand{\fillin}[1]{\par\noindent\colorbox{yellow!40}{\parbox{\dimexpr\linewidth-2\fboxsep}{\raggedright\textbf{TO FILL IN:} #1}}\par}
@@ -53,7 +54,8 @@
 system at IBMS Offenburg. It compares the original Stanford design and the 2026 master thesis with what is
 actually built in the lab, lists what was bought and why, maps every cable from the power supplies to the
 motor and from the control board to each module, and explains the software from the Teensy firmware to the
-browser UI. The repositories \file{BumpemServer} and \file{BumpemUI} hold the full details; this document
+browser UI. Part I is a step-by-step build walkthrough that follows the Stanford build guide; Part II
+is the reference behind it. The repositories \file{BumpemServer} and \file{BumpemUI} hold the full details; this document
 tells you where to look.
 \end{abstract}
 
@@ -67,8 +69,18 @@ tells you where to look.
 \tableofcontents
 \clearpage
 
+\part{Build walkthrough}
 \input{sections/01-overview}
-\input{sections/02-rebuild}
+\input{sections/10-start}
+\input{sections/11-tower}
+\input{sections/12-cabling-walk}
+\input{sections/13-power}
+\input{sections/14-chopper}
+\input{sections/15-printed}
+\input{sections/16-pcb}
+\input{sections/17-software}
+
+\part{Reference}
 \input{sections/02-hardware-review}
 \input{sections/03-cabling}
 \input{sections/04-software}

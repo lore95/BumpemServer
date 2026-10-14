@@ -1,0 +1,45 @@
+\section{Step 1: build a tower}\label{sec:walk-tower}
+Stanford guide: ``Assembly Instructions'' A (motor unit, pp.\,11--13) and C (harness, pp.\,18--20), with
+one video per step on the Stanford page.
+
+\subsection{Frame}
+\begin{enumerate}
+\item Aluminium profile \textbf{90$\times$90 light, B-type, slot 10} (e.g.\ Motedis ``Aluprofil 90x90 L B-Typ
+Nut 10''), on a floor mount, the rope height at the subject's centre of mass (thesis §2.9). Stanford uses
+80/20 inch profiles; their parts do not fit our slots.
+\item Everything that bolts to the profile uses \textbf{M6 ISO~7380 button heads} (4\,mm hex) in
+\textbf{slot-10 T-nuts}.
+\end{enumerate}
+\fillin{tower height, floor mount, distance from the treadmill, photo of a finished tower}
+
+\subsection{Motor unit}
+\begin{enumerate}
+\item \textbf{Print} Stanford's parts from their CAD folder ``1) Motor Unit'': Motor Mount Combined
+(4 shells, infill $\geq$ 50\,\%), Reel Drum (8 shells, $\geq$ 70\,\%), Reel Drum Cover Top (4 shells,
+$\geq$ 50\,\%). PLA, 0.2\,mm layers, oriented as in the guide p.\,6.
+\item \textbf{Reel drum} (A1): flanged shaft collar onto the drum, 3$\times$ \#6-32 $\times$ 1/2\,in socket bolts
+with washers.
+\item \textbf{Powertrain} (A2): maxon EC 90 flat (500267) onto the main mount with 3$\times$ M5$\times$12 and
+M5 washers; spider coupler (10\,mm hub on the motor, 3/8\,in hub on the shaft); 3/8\,in $\times$ 3\,in shaft
+in two flanged bearings; drum on the shaft. Our drum radius is 19.05\,mm (firmware \cmd{rc}).
+\item \textbf{Rope on the drum} (A3): length $X = W + 28$\,in ($W + 71$\,cm), where $W$ is how far the
+subject can move towards and away from the tower (e.g.\ the treadmill width). At least 3 turns stay on the
+drum when fully unwound. Figure-eight stopper knot at the drum.
+\item \textbf{Rope guide} (A4): eyebolt with a 1/4\,in-20 nut in the reel drum cover.
+\item Mount the motor unit on the tower. \fillin{how the motor unit is fixed to the 90$\times$90 profile at IBMS}
+\end{enumerate}
+\textbf{Check:} turning the drum by hand, it spins freely and the rope winds evenly through the eyebolt.
+
+\subsection{Force sensor and harness}
+\begin{enumerate}
+\item \textbf{Load cell}: a DYMH-103 (100\,kg, 1.6\,mV/V) goes into the rope between the motor unit and the
+harness, where Stanford puts the dogbone (their ropes ``Y'' and ``Z'', guide p.\,20). Keep it close to the
+tower so its cable to the amplifier stays short.
+\fillin{how the load cell is attached to the ropes at IBMS (shackles, knots), photo}
+\item \textbf{Breakaway} (C1): Berkley FireLine between rope and harness, surgeon's knot with about 6 throws.
+It is the weakest link on purpose: it must break before anything else.
+\item \textbf{Harness} (C2, C3): Black Diamond climbing harness, bowline knots. Rope lengths so that with the
+subject at the closest point to the tower, the breakaway cannot reach the eyebolt.
+\end{enumerate}
+\textbf{Check:} pull the harness end by hand: rope, load cell and breakaway run straight through the eyebolt
+without rubbing.

@@ -44,7 +44,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); not arrived by 2026-10-12
 - [ ] 🟢 Label the old one "faulty: USB + enable"; repair quote from maxon only as a spare (no rush)
 - [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
-- [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio, save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
+- [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio → Download → auto-tune → **Store Parameters** → power-cycle and check (Stanford guide p. 30), save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
 - [ ] 🟢 Start the server with `--modules ABCD` from then on
 
 ## 🔴 Safety · before long sessions or anyone attached

@@ -1,0 +1,62 @@
+\section{Before you start}\label{sec:start}
+
+\subsection{The reference: Stanford's Bump'em}
+Bump'em was designed at Stanford. Everything they published is on one page:
+\begin{center}
+\url{https://biomechatronics.stanford.edu/bump-em}
+\end{center}
+It has the paper (Bump'em, ICRA 2020), the \textbf{build guide} (copy in
+\file{docs/reference/stanford-bumpem-build-guide.pdf}), the \textbf{CAD files} for the printed motor parts,
+the \textbf{bill of materials} with order numbers, the \textbf{ESCON configuration file}, and short
+\textbf{assembly videos} for each step. This walkthrough follows the build guide and says, at each step,
+where IBMS does it differently. Keep the guide open next to this document.
+
+IBMS differences in one paragraph: force is measured with a DYMH-103 load cell and a Futek IAA100
+amplifier (Stanford's ``closed-loop'' option, but with a bought load cell instead of the home-made strain-gauge
+``dogbone''); one Teensy 4.1 with an MCP4728 DAC on a carrier board controls all four modules (Stanford
+used a Speedgoat real-time computer); the towers are 90$\times$90 aluminium profiles; the software is our own
+(firmware, Python server, browser UI). Sect.~\ref{sec:review} compares every part.
+
+\subsection{The order of this walkthrough}
+\begin{enumerate}
+\item Build a tower: frame, motor unit, rope, force sensor, harness (Sect.~\ref{sec:walk-tower}).
+\item Cabling: motor, force sensor, ground bridge, signal cable (Sect.~\ref{sec:walk-cabling}).
+\item Power supplies: 48\,V, 24\,V, power strips, e-stop (Sect.~\ref{sec:walk-power}).
+\item Chopper configuration, first power-on, ESCON setup (Sect.~\ref{sec:walk-chopper}).
+\item Install the 3D-printed holders (Sect.~\ref{sec:walk-printed}).
+\item Connect to the carrier PCB (Sect.~\ref{sec:walk-pcb}).
+\item Download the software, run the server, first pulls (Sect.~\ref{sec:walk-software}).
+\end{enumerate}
+Do steps 1--4 for \emph{one} tower and get it working before building the next. Each step ends with a
+\textbf{Check}; do not go on until it passes.
+
+\subsection{What you need}
+\begin{itemize}
+\item \textbf{Tools} (Stanford guide p.\,9): metric and imperial hex keys, small flat and Phillips
+screwdrivers, wire strippers and cutters, soldering iron, heat shrink. In addition: a \textbf{multimeter}
+(continuity, DC volts, diode test), a ferrule crimper and a crimper for insulated terminals, a 4\,mm hex key
+for the M6 button heads, a 3D printer (PETG or ASA).
+\item \textbf{A Windows PC} for ESCON Studio, and any PC (Windows, macOS, Linux) for the Bump'em software.
+\item \textbf{Parts}: Sect.~\ref{sec:bought} and \file{docs/parts-list.xlsx}.
+\item \textbf{People}: the university electrician for everything on the 230\,V side.
+\end{itemize}
+
+\warn{Never work on wiring with a supply plugged in. The 230\,V terminals of the supplies (L, N, earth) are
+electrician work only. The chopper holds its charge: before touching the 48\,V side, measure chopper pins
+4--5 below 1\,V. First motor tests: nobody near the rope, hand on the power strip switch.}
+
+\subsection{The version this walkthrough reaches}
+\begin{table}[H]\centering\small
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+Part & Version and how to check it \\
+\midrule
+Firmware & v1.0.0, protocol 1 (\cmd{bumpem info} prints \cmd{proto=1,fw=1.0.0}) \\
+Server & 0.4.0 (\cmd{GET /api/v1/info} prints \cmd{"server": "0.4.0"}) \\
+Repositories & \fillin{git tag of both repos, e.g.\ \cmd{v2026-10-14}} \\
+ESCON configuration & \file{escon/moduleA_left_2026-10-01.edc}, auto-tuned per driver \\
+Carrier board & v1, \file{hardware/carrier/fab/bumpem-carrier-gerbers.zip} \\
+Printed holders & \file{hardware/enclosures/out/*.stl}, \cmd{KEY\_CLEAR} 0.2\,mm \\
+\bottomrule
+\end{tabularx}
+\end{table}

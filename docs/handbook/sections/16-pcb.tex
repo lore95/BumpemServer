@@ -1,0 +1,34 @@
+\section{Step 6: connect to the carrier PCB}\label{sec:walk-pcb}
+One board for all four towers. Details, parts list and how to change it: Sect.~\ref{sec:carrier} and
+\file{hardware/carrier/README.md}.
+
+\subsection{Make and solder the board}
+\begin{enumerate}
+\item Have it made from \file{hardware/carrier/fab/bumpem-carrier-gerbers.zip} (any PCB maker, or the
+HS Offenburg makerspace; 2 layers, defaults are fine).
+\item Solder the low parts first: 4$\times$ 1\,k$\Omega$ (R1--R4), 4$\times$ 1\,M$\Omega$ (R5--R8),
+4$\times$ BAT85 diodes (D1--D4, band towards the 3.3\,V track); then the female headers for the Teensy
+(2$\times$ 24) and the DAC (2$\times$ 6); then the four Phoenix MSTB headers, plug side at the board edge.
+\end{enumerate}
+\textbf{Check} (bare board, meter): 3.3\,V to GND does \emph{not} beep; each plug's pin 3 and 4 beep to
+Teensy GND; plug pin 1 beeps to Teensy socket pin 27 / 28 / 29 / 30 (A / B / C / D); pin 5 to 14 / 15 / 16 /
+17 through 1\,k$\Omega$; neighbouring pins do not beep.
+
+\subsection{Teensy and DAC}
+Plug in the Teensy 4.1 (USB at the board edge) and the Adafruit MCP4728. USB to the PC, nothing else.
+Flash the firmware as in Sect.~\ref{sec:walk-software} (step ``Flash'').
+
+\textbf{Check:} \cmd{bumpem info --port PORT} answers \cmd{proto=1,fw=1.0.0}.
+
+\subsection{Plug in the towers, one at a time}
+\begin{enumerate}
+\item That tower's 48\,V off.
+\item Cut the five signal wires back to clean copper, crimp a \textbf{ferrule} (0.25--0.5\,mm$^2$) on each.
+Do not tin the tips: solder creeps under a screw and the contact loosens.
+\item Screw them into an MSTB plug, left to right: \textbf{1 yellow (EN), 2 blue (SP+), 3 green (SP$-$),
+4 white (GND), 5 brown (F)}.
+\item Plug into the tower's header (J1 = A left, J2 = B front, J3 = C right, J4 = D back) and tighten the
+two flange screws.
+\item Run the test pull for that tower (Sect.~\ref{sec:walk-software}) before plugging in the next.
+\end{enumerate}
+\textbf{Check:} with 24\,V on and the rope slack, that tower's force reads a few N, not tens.

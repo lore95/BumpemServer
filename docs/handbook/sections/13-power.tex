@@ -1,0 +1,49 @@
+\section{Step 3: power supplies}\label{sec:walk-power}
+Stanford guide B1, B2, B4, B5 (pp.\,13--16). Drawing: Fig.~\ref{fig:power}. Mains plugs out for the whole step.
+
+\subsection{48\,V motor supply}
+\begin{enumerate}
+\item Mean Well \textbf{RSP-2000-48}, one per tower. Ring terminals on its DC side:
+\textbf{+V $\rightarrow$ chopper pin 4}, \textbf{$-$V $\rightarrow$ chopper pin 5},
+\textbf{earth $\rightarrow$ chopper pin 3}. The earth terminal is shared with the mains cord, under a cover.
+\item Chopper \textbf{pin 6 $\rightarrow$ ESCON J1 +}, \textbf{pin 7 $\rightarrow$ ESCON J1 $-$}. Stanford
+uses 14\,AWG; that is too thick for the chopper terminals (max 1.5\,mm$^2$). Crimp blue insulated pin
+terminals (1.5--2.5\,mm$^2$) with a crimper for insulated terminals, or use 1.5\,mm$^2$ wire with ferrules.
+\item The mains cord (L, N, earth): \textbf{electrician}.
+\end{enumerate}
+
+\subsection{24\,V amplifier supply}
+Mean Well \textbf{RS-15-24}, one per amplifier: \textbf{+V $\rightarrow$ IAA100 pin 1},
+\textbf{$-$V $\rightarrow$ IAA100 pin 2}. Its mains terminals are open: the electrician fits the cord and a
+cover.
+
+\subsection{Mains}
+\begin{itemize}
+\item \textbf{One switched power strip per tower, each on its own wall socket.} Never plug a strip into a
+strip: an RSP-2000 draws up to 50\,A at switch-on and about 10\,A at full load.
+\item The RSP-2000 has no switch: the strip switch is how you turn the tower on and off.
+\end{itemize}
+
+\subsection{E-stop}
+Stanford B1--B2: an e-stop button with one \textbf{normally open} contact block per 48\,V supply, two wires
+to the supply's CN501 connector \textbf{pins 7 and 11} (DF11-12DS housing with crimp terminals, or solder).
+Pressed = contact closed = 48\,V off. Details and warnings: Sect.~\ref{sec:estop}. At IBMS this is not wired
+yet; until it is, the strip switch is the only stop and nobody is attached to the harness.
+
+\textbf{Check} (meter, mains out):
+\begin{table}[H]\centering\small
+\begin{tabularx}{\linewidth}{llX}
+\toprule
+\# & Measure & Pass \\
+\midrule
+T0 & DC V, supply +V to $-$V & about 0\,V (else wait for the capacitors) \\
+T1 & continuity, probes together & beep \\
+T2 & continuity, supply +V to $-$V & no steady beep (a short chirp is the capacitors charging) \\
+T3 & continuity & +V$\rightarrow$chopper 4, $-$V$\rightarrow$5, earth$\rightarrow$3, chopper 6$\rightarrow$J1+, 7$\rightarrow$J1$-$ all beep; +V to chopper 5 does \emph{not} \\
+T4 & continuity, +V to earth & no steady beep \\
+T5 & continuity across the e-stop wires & released: no beep; pressed: beep (NO contact) \\
+\bottomrule
+\end{tabularx}
+\caption{Checks before the first power-on (full sheet: \file{docs/tests/power-checks-module-C.md}).}
+\label{tab:powerchecks}
+\end{table}

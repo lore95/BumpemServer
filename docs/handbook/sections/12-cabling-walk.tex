@@ -1,0 +1,53 @@
+\section{Step 2: cabling}\label{sec:walk-cabling}
+Stanford guide B3, B6, B7 (pp.\,15--17). All supplies unplugged during this whole step. Full pin tables:
+Sect.~\ref{sec:cabling}.
+
+\subsection{Motor to ESCON}
+The motor has one cable with 3 winding wires and 5 Hall-sensor wires. On the ESCON 70/10:
+\begin{table}[H]\centering\small
+\begin{tabular}{llll}
+\toprule
+ESCON & Pin & Wire & Signal \\
+\midrule
+J2 Motor & 1 / 2 / 3 & red / brown / white & winding 1 / 2 / 3 \\
+         & 4 & \textbf{empty} & shield \\
+J3 Hall  & 1 / 2 / 3 & yellow / pink / grey & Hall 1 / 2 / 3 \\
+         & 4 & green & +5\,V Hall supply \\
+         & 5 & blue  & Hall GND \\
+\bottomrule
+\end{tabular}
+\end{table}
+The colours are the lab's extension wires. If yours differ, go by the motor's pin numbers
+(Sect.~\ref{sec:cabling}). Two modules had the blue Hall GND on J2 pin 4 and one had green and grey swapped;
+both make the motor fail or pull far too hard.
+
+\textbf{Check:} with a meter, J2 pin 1--2, 2--3, 3--1 read about 1\,$\Omega$ each (motor windings plus cable).
+
+\subsection{Load cell to amplifier}
+Load cell cable to the Futek IAA100 sensor side: 1 +excitation, 2 +signal, 3 $-$signal, 4 $-$excitation or
+shield. \fillin{DYMH-103 wire colours per IAA100 terminal}
+
+\subsection{Ground bridge}
+On the tower, one small bridge joins the grounds: ESCON J5 pin 5, ESCON J6 pin 7, IAA100 GND and the motor
+ground. From the bridge one \textbf{white} wire goes to the control board (Sect.~\ref{sec:ground}).
+
+\subsection{Signal cable to the control board}
+One multi-core cable per tower, five wires used. Label both ends.
+\begin{table}[H]\centering\small
+\begin{tabular}{lll}
+\toprule
+Wire & Tower end & Meaning \\
+\midrule
+\textcolor{wyellow}{\rule{1.2em}{0.6em}} yellow & ESCON J5 pin 2 (DigIN2) & enable \\
+\textcolor{wblue}{\rule{1.2em}{0.6em}} blue & ESCON J6 pin 3 (AnIN2+) & setpoint + \\
+\textcolor{wgreen}{\rule{1.2em}{0.6em}} green & ESCON J6 pin 4 (AnIN2$-$) & setpoint $-$ \\
+\textcolor{wwhite}{\rule{1.2em}{0.6em}} white & ground bridge & ground \\
+\textcolor{wbrown}{\rule{1.2em}{0.6em}} brown & IAA100 pin 5 (Vout) & force \\
+pink, black & nothing & spares, taped \\
+\bottomrule
+\end{tabular}
+\end{table}
+\warn{Never connect ESCON J5 pin 6 (+5\,V) or J6 pins 5--6 (analog outputs, down to $-4$\,V) to the control
+board: they would damage the Teensy.}
+
+\textbf{Check:} each wire beeps end to end; no two wires beep with each other; white beeps to ESCON J5 pin 5.

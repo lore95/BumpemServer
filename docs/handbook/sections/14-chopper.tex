@@ -1,0 +1,51 @@
+\section{Step 4: chopper, first power-on, ESCON setup}\label{sec:walk-chopper}
+
+\subsection{Chopper threshold}
+When the motor brakes it pushes energy back into the 48\,V line. The chopper (maxon DSR 70/30) burns it
+off above a threshold set by its DIP switches:
+\[ V_\mathrm{th} = 75\,\mathrm{V} - \text{(sum of the switches that are ON)} \times 1\,\mathrm{V} \]
+with S1 = 1, S2 = 2, S3 = 4, S4 = 8, S5 = 16, S6 = 32.
+\begin{enumerate}
+\item Mains out. Open the switch cover; use a small flat screwdriver.
+\item Set \textbf{S3 and S5 ON}, all others OFF: $75 - (4 + 16) = $ \textbf{55\,V} (Stanford guide p.\,16,
+and the three working IBMS towers). ``ON'' is printed on the side opposite the switch numbers.
+\end{enumerate}
+Why it matters: 55\,V is above the 48\,V supply and below the ESCON's 70\,V maximum. The broken IBMS tower
+had all switches OFF (75\,V): it would only act above the ESCON's limit, a plausible cause of that tower's failure.
+
+\textbf{Check:} photograph the switches; S3 and S5 ON.
+
+\subsection{First power-on}
+\begin{enumerate}
+\item Enable wire (yellow, ESCON J5 pin 2) unplugged so the motor cannot drive. Rope slack.
+\item Switch the tower's strip on. Watch for 30\,s: chopper LEDs (shunt active, over-temperature) stay off,
+the ESCON LED lights, no smell or noise.
+\item Meter, chopper pin 4 to pin 5: 47--49\,V.
+\item E-stop (if wired): press, ESCON LED off; release, back on.
+\item Strip off; wait a minute before touching wires.
+\end{enumerate}
+Anything else: strip off and find the cause before trying again (Sect.~\ref{sec:lessons}).
+
+\subsection{ESCON configuration}
+Stanford guide ``Motor Driver Setup'' (pp.\,27--32). Done once per driver on the Windows PC.
+\begin{enumerate}
+\item Install \textbf{ESCON Studio} (maxon website). Close the startup wizard.
+\item Enable unplugged, rope slack or off the drum, nobody near the tower.
+\item \textbf{USB into ESCON J7 first, then 48\,V on.} The status top right changes to ``connected''
+(binoculars button to search if not). Clear any old errors (right-click the error list, ``clear all
+entries'').
+\item Open \file{escon/moduleA_left_2026-10-01.edc} (our reference: current mode, enable on DigIN2,
+setpoint on AnIN2, 0--10\,V = 0--30\,A) and click \textbf{Download} (PC $\rightarrow$ driver).
+\item \textbf{Regulation Tuning} $\rightarrow$ auto-tuning, motor free to turn. This adapts the current
+controller to this motor.
+\item \textbf{Store Parameters.} Without this the driver forgets everything at power-off.
+\item Power-cycle (48\,V off, 30\,s, on) and check in the Controller Monitor that the settings stayed.
+\item \textbf{Diagnostics}: motor test and Hall sensor test must both pass.
+\item Upload (driver $\rightarrow$ PC) and save as \file{escon/module<X>_<side>_<date>.edc}; commit it.
+\item 48\,V off first, then USB out. Plug the enable wire back in.
+\end{enumerate}
+If ESCON Studio offers a firmware update, do not accept it without asking first. If commanding 0\,A later
+makes the motor creep or turn easier one way, adjust the offset in ESCON Studio (Stanford p.\,31).
+
+\textbf{Check:} with 48\,V on and the enable low, the ESCON LED \textbf{blinks green slowly} (ready).
+Red flashes: count them and look up the code in \file{escon/README.md}.
