@@ -1,0 +1,97 @@
+\section{The system in one page}
+
+Bump'em pulls a person through a waist harness with up to four motorised ropes while they walk or run
+on the GRAIL treadmill. Each rope comes from one \emph{cable module} (tower). One Teensy~4.1
+microcontroller controls all four modules: it reads the rope force of each module and commands the motor
+current so that the rope holds a small baseline tension (a few N) and, on command, delivers a short force
+pulse (the perturbation, up to about 100--150\,N).
+
+The design comes from the Stanford Biomechatronics Lab (Bump'em, ICRA 2020; build guide in
+\file{docs/reference/stanford-bumpem-build-guide.pdf}). It was rebuilt at IBMS for the master thesis of
+Palanisamy (2026, \file{docs/thesis/thesis.pdf}, user manual \file{docs/thesis/manual.pdf}). From
+September 2026 the hardware was re-checked and partly rewired, and the software was rewritten
+(firmware v1, Python server, browser UI). This handbook describes that state.
+
+\subsection{Modules and directions}
+Directions are given in Vicon axes, seen from above with the subject facing forward. The angle is the
+direction in which the subject is \emph{pulled}.
+
+\begin{table}[H]\centering
+\begin{tabular}{llrcccc}
+\toprule
+Module & Tower & Angle & Enable pin & DAC channel & Force pin & Thesis no. \\
+\midrule
+A & left  & $+90^\circ$  & 27 & VA & 14 (A0) & 1 \\
+B & front & $0^\circ$    & 28 & VB & 15 (A1) & 2 \\
+C & right & $-90^\circ$  & 29 & VC & 16 (A2) & 3 \\
+D & back  & $180^\circ$  & 30 & VD & 17 (A3) & -- (not in the thesis) \\
+\bottomrule
+\end{tabular}
+\caption{Module letters, directions and Teensy pins (\file{docs/knowledge/hardware.md}).}
+\end{table}
+
+A diagonal pull (e.g.\ $135^\circ$, back-left) is split over the two neighbouring ropes as a vector:
+at $45^\circ$ between two modules each pulls $1/\sqrt{2}$ of the amplitude.
+
+\subsection{Signal and power chain of one module}
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=2pt, align=center, font=\small, minimum height=1.0cm, inner sep=4pt},
+  sig/.style={-{Stealth}, thick, black!70},
+  pwr/.style={-{Stealth}, very thick, red!70!black},
+  lab/.style={font=\scriptsize, black!70, align=center}]
+  \node[box] (pc) {Lab PC\\\scriptsize bumpem server + UI};
+  \node[box, right=1.4cm of pc] (teensy) {Teensy 4.1\\\scriptsize firmware v1};
+  \node[box, right=1.4cm of teensy] (dac) {MCP4728\\\scriptsize DAC, 0--3.3\,V};
+  \node[box, right=1.4cm of dac] (escon) {ESCON 70/10\\\scriptsize current mode};
+  \node[box, below=1.4cm of escon] (motor) {maxon EC 90 flat\\\scriptsize 500267, Hall};
+  \node[box, left=1.4cm of motor] (drum) {Reel drum\\\scriptsize $r_c$ = 19.05\,mm};
+  \node[box, left=1.4cm of drum] (cell) {DYMH-103\\\scriptsize load cell};
+  \node[box, left=1.4cm of cell] (amp) {Futek IAA100\\\scriptsize 0--3.3\,V = 0--200\,N};
+  \node[box, above=1.2cm of escon, fill=red!5] (chop) {Brake chopper\\\scriptsize maxon DSR 70/30};
+  \node[box, left=1.4cm of chop, fill=red!5] (psu48) {48\,V supply\\\scriptsize RSP-2000-48};
+  \node[box, below=1.0cm of amp, fill=red!5] (psu24) {24\,V supply\\\scriptsize RS-15-24};
+  \node[box, below=1.0cm of drum] (subj) {Subject\\\scriptsize waist harness};
+
+  \draw[sig] (pc) -- node[lab, above]{USB serial} (teensy);
+  \draw[sig] (teensy) -- node[lab, above]{I$^2$C} (dac);
+  \draw[sig] (dac) -- node[lab, above]{setpoint\\AnIN2} (escon);
+  \draw[sig] (teensy.north) |- ++(0,0.5) -| node[lab, pos=0.25, above]{enable DigIN2 (3.3\,V)} (escon.north west);
+  \draw[sig] (escon) -- node[lab, right]{current} (motor);
+  \draw[sig] (motor) -- node[lab, above]{torque} (drum);
+  \draw[sig] (drum) -- node[lab, above]{rope} (cell);
+  \draw[sig] (cell) -- node[lab, above]{mV} (amp);
+  \draw[sig] (amp) -- node[lab, left]{force\\0--3.3\,V} (teensy);
+  \draw[sig] (drum) -- node[lab, right]{pull} (subj);
+  \draw[pwr] (psu48) -- (chop);
+  \draw[pwr] (chop) -- node[lab, right]{48\,V, J1} (escon);
+  \draw[pwr] (psu24) -- (amp);
+\end{tikzpicture}
+\caption{One module. Black: signals; red: power. Teensy, DAC and lab PC are shared by all four modules;
+everything else exists once per module.}
+\label{fig:chain}
+\end{figure}
+
+\subsection{State on 14 October 2026}
+\begin{table}[H]\centering
+\begin{tabularx}{\linewidth}{lX}
+\toprule
+Module & State \\
+\midrule
+A (left)  & Works open loop and closed loop (held 2\,N on 6 Oct). \\
+B (front) & Former broken tower. Chopper, motor and new 48\,V supply checked OK. Its ESCON is faulty
+            (enable ignored, USB not recognised); replacement ordered 7 Oct, not yet arrived. \\
+C (right) & Works open loop. Force reading invalid (about 73\,N at rest) because of a cut ground wire;
+            repaired when the cables move to the carrier board. \\
+D (back)  & Works open loop and closed loop (held 2\,N on 6 Oct). \\
+\midrule
+Control board & Teensy and DAC still on a breadboard. Carrier PCB being made by the HS Offenburg
+            makerspace (expected 16 Oct). \\
+Safety    & Hardware e-stop not wired yet: the power strip switch is the only stop for the motors. \\
+Software  & Firmware v1 on the Teensy; server 0.4.0 and UI tested on the simulator and partly on the real board.
+            Gait-triggered perturbations (PTO), trials and live Vicon are not built yet. \\
+\bottomrule
+\end{tabularx}
+\caption{Status. The live version is in \file{docs/STATUS.md} and \file{docs/TODO.md}.}
+\end{table}

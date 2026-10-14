@@ -16,6 +16,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `docs/power-estop-checklist.md` | Power + e-stop checklist (self-check; no technician): supply ratings, mains inspection, capacity, earthing, e-stop, sign-off |
 | `docs/tests/open-loop-test-module-C.md` | Preliminary open-loop test: Teensy drives module C without force sensor (settings, wiring, steps) |
 | `docs/tests/power-checks-module-C.md` | Self-contained electrical test spec before first 48 V power-on (continuity, polarity, e-stop, shunt threshold, first power-on) |
+| `docs/handbook/` | LaTeX handbook for future students (Overleaf zip + PDF built locally, not in git): hardware review, parts, cabling, software, procedures, faults |
 | `docs/TODO.md` | Daily checklist for lab and software work (ordered, with commands) |
 | `docs/QUESTIONS.md` | Open questions for the previous student (answers go back into the docs) |
 | `docs/API.md` | Server HTTP/WebSocket API, contract for every client (1.0-draft) |

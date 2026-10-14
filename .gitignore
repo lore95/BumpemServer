@@ -30,3 +30,7 @@ fp-info-cache
 *-backups/
 hardware/carrier/fab/gerbers/
 settings.json
+
+# handbook build products (rebuild: docs/handbook/README.md)
+docs/handbook/*.zip
+docs/handbook/*.pdf

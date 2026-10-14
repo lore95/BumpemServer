@@ -1,0 +1,31 @@
+\section{Faults found and what they teach}\label{sec:lessons}
+Every fault below cost hours. Most were wiring, none were software. Check these first.
+
+{\small
+\begin{longtable}{>{\raggedright}p{3.6cm} >{\raggedright}p{5.4cm} >{\raggedright\arraybackslash}p{5.6cm}}
+\toprule
+Symptom & Cause & Lesson \\
+\midrule\endhead
+\bottomrule\endfoot
+Module C: ESCON red LED, ``Hall sensor pattern error'' & Hall GND (blue) on J2 pin 4 (shield) instead of J3 pin 5. Same on a second module & Check J2/J3 colours against the table in Sect.~3 on every module. ESCON Studio's Diagnostics finds it. \\
+Module A pulled far too hard & J3 green and grey swapped (Hall supply on a Hall input) & Same check. Run Diagnostics before the first drive. \\
+Module D pulled far too hard at 2--5\,N & its green SP$-$ wire was on the 3.3\,V rail instead of GND & Breadboard rails are easy to confuse; the carrier board removes this. \\
+Module A did nothing & loose breadboard contact & Reseat; carrier board. \\
+C and D both on pin 17 & wiring error & One force pin per module (14--17). \\
+Module C reads $\approx$ 73\,N at rest & white ground wire cut & A floating ground gives a large false force; never arm a module whose rest reading is not a few N. \\
+``No reply'' timeouts at random & bad USB hub socket / cable; the link dropped even with 48\,V and 24\,V off & Check \cmd{bumpem monitor} gives 100 lines/s before suspecting software. Use the good socket. \\
+Tower B broken & old 48\,V supply faulty (white residue); chopper at 75\,V instead of 55\,V & Check the chopper DIP on every tower. \\
+Tower B: enable ignored, USB not seen & ESCON control side faulty (power stage passed meter tests) & Swap test: A's ESCON worked on the same PC and cable. \\
+Closed loop held $\approx$ 15\,N instead of 2\,N after a replug & parameters reset to firmware defaults (kff 7.5, baseline 5, no offsets) & Fixed: the server reapplies \file{settings.json} at every connect. \\
+\end{longtable}
+}
+
+\subsection{Open decisions}
+\begin{itemize}
+\item \cmd{i\_full} 9.9 (real ESCON scaling) and \cmd{kt} 0.231 (datasheet), after reading the configs of
+C and D and the closed-loop tests.
+\item Firmware boots with \cmd{ch\_D} = 0; the server switches it on. Changing the default needs a protocol
+update and a re-flash.
+\item Ropes are worn: choose a low-stretch rope with the breakaway as the weakest link.
+\item Fail-safe e-stop (needs extra hardware).
+\end{itemize}

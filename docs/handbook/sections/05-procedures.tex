@@ -1,0 +1,63 @@
+\section{Procedures}
+
+\subsection{Power order}
+\begin{description}
+\item[Up] Teensy USB (boots DISARMED) $\rightarrow$ 24\,V (amplifiers) $\rightarrow$ check the force readings
+$\rightarrow$ 48\,V $\rightarrow$ Arm.
+\item[Down] Treadmill stopped $\rightarrow$ Release (or STOP) $\rightarrow$ 48\,V off $\rightarrow$ 24\,V off
+$\rightarrow$ USB.
+\end{description}
+24\,V must come before 48\,V: without the amplifiers the Teensy reads 0\,N and the closed loop keeps raising
+the current.
+
+\subsection{Testing after any wiring change}
+\begin{enumerate}
+\item 48\,V off. Meter: continuity of each wire end to end; no continuity between 3.3\,V and GND.
+\item USB only: \cmd{bumpem monitor --port PORT} shows 100 telemetry lines per second; \cmd{bumpem info}
+answers.
+\item \cmd{bumpem serve --testing ...}, testing page, 48\,V on, one module at a time: Pull 5\,N then 10\,N,
+400--500\,ms. Only that module's rope moves.
+\item With 24\,V on and ropes slack: each module reads a few N; pulling a rope by hand moves only its own
+reading (\file{scripts/force_check.py}).
+\end{enumerate}
+
+\subsection{Closed loop}
+\begin{enumerate}
+\item Production page, connect, ropes slack: \emph{Zero sensors}.
+\item Set a low feedforward (e.g.\ \cmd{kff} 2) and baseline 2\,N, \cmd{fmax\_n} 40, then \emph{Save as
+default} so a replug keeps them.
+\item Nobody in the harness. Arm one module at a time; it should hold 2--5\,N.
+\item \emph{Record}, then perturbations of 10\,N, then 20\,N. Compare target and measured in the CSV.
+Reference values from the thesis: 100\,N target $\rightarrow$ peak 96.7 $\pm$ 12.3\,N, rise time (to 80\,\%)
+36 $\pm$ 5\,ms (\file{docs/knowledge/results.md}).
+\end{enumerate}
+
+\subsection{Configuring an ESCON}
+Configuration is done once per driver with ESCON Studio (Windows, USB on J7). No setting by hand.
+\begin{enumerate}
+\item Enable wire (J5 pin 2) unplugged, rope slack or off the drum, nobody near the tower.
+\item USB in first, then 48\,V on. Open ESCON Studio; the controller appears.
+\item Load a parameter file from \file{escon/} (module A's is the reference: current mode, enable on
+DigIN2, setpoint on AnIN2, 0--10\,V = 0--30\,A). \emph{Download parameters} writes it into the
+controller.
+\item \emph{Regulation Tuning} (auto-tuning) with the motor free to turn: adapts the gains to that motor.
+\item Save the result as \file{escon/module<X>_<side>_<date>.edc} and commit it.
+\item LED: slow green blink = ready (disabled). Red = error; count the flashes and look them up in
+\file{escon/README.md}.
+\item 48\,V off first, then USB out. Plug the enable wire back in.
+\end{enumerate}
+If ESCON Studio offers a firmware update, do not accept it without checking first.
+
+\subsection{Calibrating a load cell}
+Hang 6, 8 and 12\,kg (58.9, 78.5, 117.7\,N). First check with a meter that the amplifier output stays
+$\leq$ 3.3\,V at the hardest pull (IAA100 DIP switches and zero/span pots). Small errors are corrected in
+software with \cmd{gain\_X} and \cmd{offset\_X}; save them with \emph{Save as default}.
+
+\subsection{Safety rules}
+\begin{itemize}
+\item The GRAIL treadmill e-stop stays the primary stop. Stop the treadmill \emph{before} Release or STOP:
+both drop the rope tension.
+\item First tests on any module: nobody attached, hand on the power strip switch.
+\item Breakaway line on every rope; overhead fall-arrest harness for the subject.
+\item No person in the harness until the e-stop is wired and tested.
+\end{itemize}

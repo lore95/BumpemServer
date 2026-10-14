@@ -1,0 +1,39 @@
+\section{Where to find things}
+
+Repositories: \file{BumpemServer} (firmware, server, docs, hardware) and \file{BumpemUI} (web UI), side by
+side in one folder. Large reference files are kept on disk only, not in git: ask the project lead for
+\file{docs/thesis/}, \file{docs/reference/}, \file{docs/hardware-photos/} and \file{legacy/}.
+
+{\small
+\begin{longtable}{>{\raggedright}p{6.2cm} >{\raggedright\arraybackslash}p{8.6cm}}
+\toprule
+Path (in \file{BumpemServer} unless noted) & Contents \\
+\midrule\endhead
+\bottomrule\endfoot
+\file{docs/STATUS.md}, \file{docs/TODO.md} & current state, day-to-day checklist \\
+\file{docs/DECISIONS.md} & every design choice with its reason (D1, D2, \ldots) \\
+\file{docs/FILES.md} & full file index \\
+\file{docs/knowledge/} & facts extracted from thesis, manual and Stanford guide, with sources: hardware, wiring, control, calibration, safety, gait detection \\
+\file{docs/PROTOCOL.md} & serial protocol, all firmware parameters \\
+\file{docs/API.md} & server API \\
+\file{docs/tests/} & meter test sheets (module C power checks, broken tower diagnosis) \\
+\file{docs/power-estop-checklist.md} & power and e-stop checklist \\
+\file{docs/parts-list.xlsx}, \file{docs/parts-to-buy.xlsx} & parts with prices and links \\
+\file{escon/} & ESCON pin table, LED codes, parameter files (\file{.edc}) \\
+\file{hardware/carrier/} & carrier PCB: generator scripts, KiCad project, gerbers, BOM \\
+\file{hardware/enclosures/} & printed tower parts: CadQuery sources, STL/STEP, overview PDF \\
+\file{firmware/} & Teensy firmware v1 (PlatformIO) \\
+\file{bumpem/}, \file{tests/} & Python package and tests \\
+\file{scripts/} & \file{flash.sh}, \file{open_loop_test.sh}, \file{force_check.py} \\
+\file{legacy/} & original Arduino sketch and MATLAB script (read only) \\
+\file{BumpemUI/web/} & UI pages \\
+\file{docs/handbook/} & this document (LaTeX) \\
+\end{longtable}
+}
+
+\subsection*{Contacts}
+\begin{itemize}
+\item HS Offenburg makerspace (carrier PCB): Sebastian Stulz.
+\item maxon Germany (ESCON, chopper): info.de@maxongroup.com.
+\item Mains wiring of the supplies: university electrician.
+\end{itemize}

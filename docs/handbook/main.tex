@@ -1,0 +1,73 @@
+% Bump'em IBMS handbook. Overleaf: upload this folder as a zip, compiler pdfLaTeX, main document main.tex.
+\documentclass[11pt,a4paper]{article}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.2cm]{geometry}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage[table]{xcolor}
+\usepackage{listings}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{tikz}
+\usetikzlibrary{arrows.meta,positioning,fit,backgrounds,calc}
+\usepackage{url}
+\usepackage[hidelinks]{hyperref}
+
+\DeclareUrlCommand\urlfile{\urlstyle{tt}}
+\DeclareRobustCommand{\file}[1]{\urlfile{#1}}   % repo paths: \file{docs/API.md}
+\newcommand{\cmd}[1]{\texttt{#1}}
+\newcommand{\fillin}[1]{\colorbox{yellow!40}{\textbf{TO FILL IN:} #1}}
+\newcommand{\warn}[1]{\par\smallskip\noindent\fcolorbox{red!70!black}{red!6}{\parbox{\dimexpr\linewidth-2\fboxsep-2\fboxrule}{\textbf{Danger.} #1}}\par\smallskip}
+
+\definecolor{wyellow}{HTML}{E8C21A}
+\definecolor{wblue}{HTML}{2F6FD1}
+\definecolor{wgreen}{HTML}{2E9A3E}
+\definecolor{wbrown}{HTML}{7A4A21}
+\definecolor{wwhite}{HTML}{BBBBBB}
+
+\lstset{basicstyle=\ttfamily\small, columns=fullflexible, breaklines=true, frame=single,
+        framerule=0.3pt, rulecolor=\color{black!30}, backgroundcolor=\color{black!3},
+        upquote=true, keepspaces=true}
+
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.5em}
+\renewcommand{\arraystretch}{1.15}
+
+\title{\textbf{Bump'em at IBMS Offenburg}\\[0.3em]
+\large Hardware review, cabling and software handbook}
+\author{Lorenzo Lucchini}
+\date{Status: 14 October 2026}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent This handbook is for students who will use, repair or change the Bump'em cable-perturbation
+system at IBMS Offenburg. It compares the original Stanford design and the 2026 master thesis with what is
+actually built in the lab, lists what was bought and why, maps every cable from the power supplies to the
+motor and from the control board to each module, and explains the software from the Teensy firmware to the
+browser UI. The repositories \file{BumpemServer} and \file{BumpemUI} hold the full details; this document
+tells you where to look.
+\end{abstract}
+
+\tableofcontents
+\clearpage
+
+\input{sections/01-overview}
+\input{sections/02-hardware-review}
+\input{sections/03-cabling}
+\input{sections/04-software}
+\input{sections/05-procedures}
+\input{sections/06-lessons}
+
+\appendix
+\input{sections/A-files}
+
+\end{document}
