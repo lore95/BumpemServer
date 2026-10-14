@@ -34,6 +34,7 @@ Diagram: `docs/diagrams/cabling-4-modules.png`.
 Per module, the Teensy side uses 3 signal wires (enable, setpoint, force) plus grounds.
 Grounds: each module has its **own distributor board** in the frame (found 2026-09-30) joining ESCON J5.5, J6.7 and the IAA100 GND;
 one wire per module runs from it to Teensy GND. This is the manual's "Distributor".
+**2026-10-14 (project lead):** the bridge also joins a **motor ground**, so motor, ESCON and force sensor grounds all leave the tower on the white wire. Which motor conductor (Hall GND, cable shield, housing) and which IAA100 GND terminal (2 power, 4 output, or both): to confirm at the tower.
 
 ## Found on the lab cabling (2026-09-30): module C (right)
 Tape removed from the J5/J6 cable. Colours below are **at the ESCON end**; the jumper-end colours differ (spliced).

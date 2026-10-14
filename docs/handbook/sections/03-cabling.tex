@@ -62,11 +62,11 @@ J2 Motor & 1, 2, 3 & windings 1, 2, 3: red, brown, white \\
 J3 Hall  & 1, 2, 3 & Hall 1, 2, 3: yellow, pink, grey \\
          & 4, 5 & +5\,V Hall supply: green; GND: blue \\
 J5 Digital I/O & 2 & DigIN2 = \textbf{enable} $\leftarrow$ Teensy 27/28/29/30 (yellow) \\
-               & 5 & GND $\rightarrow$ ground distributor \\
+               & 5 & GND $\rightarrow$ ground bridge \\
                & 6 & +5\,V out: \textbf{never to a Teensy pin} \\
 J6 Analog I/O  & 3, 4 & AnIN2+ / AnIN2$-$ = \textbf{setpoint} $\leftarrow$ DAC VA--VD (blue) / DAC GND (green) \\
                & 5, 6 & analog outputs, $-4$\ldots$+4$\,V: \textbf{never to a Teensy pin} \\
-               & 7 & GND $\rightarrow$ ground distributor \\
+               & 7 & GND $\rightarrow$ ground bridge \\
 J7 USB & & ESCON Studio (Windows) for configuration only \\
 \bottomrule
 \end{tabularx}
@@ -91,7 +91,34 @@ shield pin; two modules had it wrong (Sect.~\ref{sec:lessons}).
 \paragraph{Futek IAA100.} Power side (5-way): 1 +Vin 12.5--26\,V, 2 GND (power), 3 shunt cal (empty),
 4 GND (output), 5 Vout. Sensor side (4-way): 1 +excitation, 2 +signal, 3 $-$signal,
 4 $-$excitation or shield.
-Vout (brown) goes to the Teensy force pin, output GND to the ground distributor.
+Vout (brown) goes to the Teensy force pin, output GND to the ground bridge.
+
+\subsection{Ground bridge per tower}\label{sec:ground}
+Each tower has a ground bridge (the manual's ``distributor'') in the frame. It joins the grounds of the motor,
+the ESCON and the force amplifier; one wire, the \textbf{white} one, carries this common ground to the
+control board. All signals of the module (enable, setpoint, force) are measured against it.
+
+\begin{figure}[H]\centering
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners=2pt, align=left, font=\small, inner sep=4pt, text width=3.4cm},
+  g/.style={very thick, black!75},
+  lab/.style={font=\scriptsize, above, inner sep=2pt}]
+  \node[box] (mot) at (0,1.4) {\textbf{Motor}\\ground conductor (to confirm)};
+  \node[box] (esc) at (0,0) {\textbf{ESCON 70/10}\\J5 pin 5, J6 pin 7};
+  \node[box] (amp) at (0,-1.4) {\textbf{Futek IAA100}\\GND (terminal to confirm)};
+  \node[draw, fill=black!8, minimum width=0.5cm, minimum height=3.9cm, font=\small] (br) at (4.0,0) {};
+  \node[font=\small, above=0.1cm of br] {bridge};
+  \node[box, text width=3.0cm] (cb) at (9.0,0) {\textbf{Carrier board}\\module plug pin 4 (GND)\\= Teensy GND};
+  \draw[g] (mot.east) -- (br.west |- mot.east);
+  \draw[g] (esc.east) -- (br.west |- esc.east);
+  \draw[g] (amp.east) -- (br.west |- amp.east);
+  \draw[line width=2.2pt, wwhite] (br.east) -- node[lab, text=black]{white wire} (cb.west);
+\end{tikzpicture}
+\caption{Common ground of one tower. If the white wire is open, the force reading floats (module C read
+about 73\,N at rest with a cut white wire) and the setpoint and enable lose their reference.}
+\end{figure}
+\fillin{which motor conductor goes to the bridge (Hall GND, cable shield or housing) and which IAA100
+ground terminal (2, 4 or both); photo of the bridge}
 
 \subsection{Control board $\leftrightarrow$ modules}
 
@@ -103,7 +130,7 @@ Wire & Colour & ESCON / amplifier end & A & B & C & D \\
 EN  & \textcolor{wyellow}{\rule{1.2em}{0.6em}} yellow & ESCON J5.2 (DigIN2) & T27 & T28 & T29 & T30 \\
 SP+ & \textcolor{wblue}{\rule{1.2em}{0.6em}} blue   & ESCON J6.3 (AnIN2+) & VA & VB & VC & VD \\
 SP$-$ & \textcolor{wgreen}{\rule{1.2em}{0.6em}} green & ESCON J6.4 (AnIN2$-$) & GND & GND & GND & GND \\
-GND & \textcolor{wwhite}{\rule{1.2em}{0.6em}} white  & ground distributor & GND & GND & GND & GND \\
+GND & \textcolor{wwhite}{\rule{1.2em}{0.6em}} white  & ground bridge (Sect.~\ref{sec:ground}) & GND & GND & GND & GND \\
 F   & \textcolor{wbrown}{\rule{1.2em}{0.6em}} brown  & IAA100 Vout & T14 & T15 & T16 & T17 \\
 \bottomrule
 \end{tabular}
