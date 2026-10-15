@@ -39,7 +39,7 @@ setpoint on AnIN2, 0--10\,V = 0--30\,A) and click \textbf{Download} (PC $\righta
 \item \textbf{Regulation Tuning} $\rightarrow$ auto-tuning, motor free to turn. This adapts the current
 controller to this motor.
 \item \textbf{Store Parameters.} Without this the driver forgets everything at power-off.
-\item Power-cycle (48\,V off, 30\,s, on) and check in the Controller Monitor that the settings stayed.
+\item Close ESCON Studio (USB stays in). Power-cycle (48\,V off, 30\,s, on), reopen Studio, connect, and check in the Controller Monitor that the settings stayed. Do not click Download here: it would rewrite them from the PC and hide a failed store.
 \item \textbf{Diagnostics}: motor test and Hall sensor test must both pass.
 \item Upload (driver $\rightarrow$ PC) and save as \file{escon/module<X>_<side>_<date>.edc}; commit it.
 \item 48\,V off first, then USB out. Plug the enable wire back in.
