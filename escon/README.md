@@ -82,3 +82,8 @@ Module C Diagnostics after the fix (2026-10-01): **all tests passed**; LED green
 Module C: upload still to do; if its gains equal the Stanford file (e.g. integral time 20000 µs), the accidental Download overwrote the tuning → re-run auto-tuning.
 
 **Module A (2026-10-02): first open-loop test pulled far too strong** (same settings as C, which was gentle). Cause found: **A's J3 green and grey swapped** (green = Hall supply on pin 3, grey = Hall 3 on pin 4) → Hall supply into Hall-3 output, wrong commutation. Fix: J3 = 1 yellow, 2 pink, 3 grey, 4 green, 5 blue (as C). Then Diagnostics on A (Hall test must pass: sensor 3 was tied to +5 V while swapped) before driving again.
+
+## Module B (front) driver configuration: `moduleB_front_2026-10-15.edc` (replacement ESCON 70/10, uploaded 2026-10-15)
+Made from A's file: Download → auto-tuning → Store Parameters → power cycle → Controller Monitor checked → upload (saved as `parametersForMotorB.edc`, renamed).
+Compared with A's file line by line: **all configuration identical** (current controller, DigIN2 = enable, AnIN2 = set value 0–10 V → 0–30 A, 30 A limit, 4.06 A nominal, 11 pole pairs, offset 0.0070 A, Hall rotor detection).
+25 values differ, all tuning/identification results, all within a few % of A's: R 0.938 Ω (A 0.909), L 0.943 mH (A 0.947), current controller P gain 192 / integral time 1005 µs (A 186 / 1041), speed controller gains, inertia.
