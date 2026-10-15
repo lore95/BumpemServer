@@ -43,7 +43,7 @@ Full list: `fab/bumpem-carrier-bom.csv`. Schematic: `fab/bumpem-carrier-schemati
 
 ## Assembly and first power-up
 1. Solder the low parts first: resistors, diodes (check the band!), then the female headers, then the 4 MSTB headers (plug side at the board edge).
-   **Sockets on the board are female; the male pins belong on the Teensy and the DAC** (the lab's Teensy and DAC already have them: they sit in the breadboard). Never solder male pins into the board: male meets male and nothing plugs in. Teensy and DAC are never soldered to the board, so either can be swapped.
+   **Sockets on the board are female; the male pins belong on the Teensy and the DAC** (the lab's Teensy and DAC already have them: they sit in the breadboard). Never solder male pins into the board: male meets male and nothing plugs in. Teensy and DAC are never soldered to the board, so either can be swapped. To keep the sockets straight while soldering, plug spare male pin strips into them (other ends in a breadboard) instead of the Teensy; solder one pin per end, check flat, then the rest.
 2. **No Teensy, no DAC, no modules.** Multimeter beep test: 3V3 ↔ GND must **not** beep; each connector pin 3 and 4 ↔ Teensy GND must beep; connector A pin 1 ↔ Teensy socket pin 27 must beep (same for B–D: 28, 29, 30).
 3. Plug in the DAC and the Teensy (USB at the board edge). USB only, no modules: `bumpem info --port <PORT>` must answer.
 4. One module at a time, 48 V off: screw that module's 5 wires into a plug (order as printed on the board: EN yellow, SP+ blue, SP− green, GND white, F brown), plug it in, tighten the two flange screws. Then repeat `scripts/open_loop_test.sh` for that module.
