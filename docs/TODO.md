@@ -19,7 +19,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Buy: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts; **ferrules 0.25–0.5 mm²** for the 5 signal wires per MSTB plug; pin terminals (blue, 1.5–2.5 mm²) for the chopper cables
 - [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf`: IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
 - [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
-- [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals): crimp pin terminals, 48 V off and chopper < 1 V first; check terminals 6/7 on the working towers
+- [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals; European pin terminals do not fit it, 2026-10-15): **replace with new 1.5 mm² fine-stranded wire** (H05V-K / H07V-K, red + black, or 2×1.5 mm² cable), 1.5 mm² insulated ferrules, short as the old one; first look what A / C / D use there; 48 V off and chopper < 1 V before removing the old one. Blocks B's ESCON setup
 - [ ] 🔴 Order the e-stop parts (Hirose DF11-12DS + crimp terminals per 48 V supply)
 - [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
 - [ ] 🟢 `git push`; motor test 3d on the front tower; label the old ESCON
