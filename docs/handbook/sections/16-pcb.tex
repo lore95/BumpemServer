@@ -9,6 +9,9 @@ HS Offenburg makerspace; 2 layers, defaults are fine).
 \item Solder the low parts first: 4$\times$ 1\,k$\Omega$ (R1--R4), 4$\times$ 1\,M$\Omega$ (R5--R8),
 4$\times$ BAT85 diodes (D1--D4, band towards the 3.3\,V track); then the female headers for the Teensy
 (2$\times$ 24) and the DAC (2$\times$ 6); then the four Phoenix MSTB headers, plug side at the board edge.
+\item The board gets \textbf{female} sockets; the \textbf{male} pins go on the Teensy and the DAC (solder
+them there if yours are new; the lab's already have them). Never solder male pins into the board, and never
+solder the Teensy or DAC to it: they stay pluggable so either can be swapped.
 \end{enumerate}
 \textbf{Check} (bare board, meter): 3.3\,V to GND does \emph{not} beep; each plug's pin 3 and 4 beep to
 Teensy GND; plug pin 1 beeps to Teensy socket pin 27 / 28 / 29 / 30 (A / B / C / D); pin 5 to 14 / 15 / 16 /
