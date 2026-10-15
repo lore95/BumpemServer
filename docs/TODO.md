@@ -10,7 +10,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - **A (left), C (right), D (back):** test pulls work (`bumpem serve --testing`); A + D held at 2 N closed loop (kff 2, offsets zeroed). C's force reads ~73 N at rest (cut ground wire).
 - **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement **ordered 2026-10-07**.
 - E-stop **not wired**: the power strip switch is the only stop.
-- Printed tower parts (`hardware/enclosures/`): being printed 2026-10-12. Carrier board: at the makerspace (Sebastian Stulz), expected **Fri 2026-10-16**. Replacement ESCON: not arrived yet (2026-10-12).
+- Printed tower parts (`hardware/enclosures/`): being printed 2026-10-12. Carrier board: at the makerspace (Sebastian Stulz), expected **Fri 2026-10-16**. Replacement ESCON **arrived 2026-10-15**, mounted and wired except the 24 V supply (IAA100).
 
 ---
 
@@ -41,10 +41,11 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 On the real Teensy: production page → kff 2, baseline 2 → **Zero sensors** (ropes slack) → **Save as default** → replug the Teensy → Connect: values are back
 
 ## Front tower (B)
-- [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); not arrived by 2026-10-12
+- [x] Replacement **ESCON 70/10** (maxon 422969) ordered (2026-10-07); arrived and wired 2026-10-15 (24 V still missing)
 - [ ] 🟢 Label the old one "faulty: USB + enable"; repair quote from maxon only as a spare (no rush)
 - [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
-- [ ] 🟠 New ESCON: mount, wire as before, load module A's `.edc` in ESCON Studio → Download → auto-tune → **Store Parameters** → power-cycle and check (Stanford guide p. 30), save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
+- [ ] 🟠 24 V for B's IAA100: RS-15-24 **unplugged**, +V → IAA100 pin 1, −V → pin 2 (DC side only; its 230 V side is the electrician's)
+- [ ] 🟠 New ESCON (mounted + wired 2026-10-15): load module A's `.edc` in ESCON Studio → Download → auto-tune → **Store Parameters** → power-cycle and check (Stanford guide p. 30), save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
 - [ ] 🟢 Start the server with `--modules ABCD` from then on
 
 ## 🔴 Safety · before long sessions or anyone attached
