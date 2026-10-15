@@ -8,7 +8,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 **State (2026-10-07):**
 - **A (left), C (right), D (back):** test pulls work (`bumpem serve --testing`); A + D held at 2 N closed loop (kff 2, offsets zeroed). C's force reads ~73 N at rest (cut ground wire).
-- **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK, breadboard wired (T28, VB, T15). **Its ESCON is faulty** (enable + USB dead) → replacement **ordered 2026-10-07**.
+- **B (front, the former broken tower):** chopper OK (DIP set to 55 V), motor windings + Halls OK, new 48 V supply OK. Replacement ESCON configured + stored 2026-10-15 (`escon/moduleB_front_2026-10-15.edc`). **Not yet driven by the Teensy.**
+- **Breadboard taken apart (2026-10-15):** no tower can be driven from the Teensy until the carrier board is in.
 - E-stop **not wired**: the power strip switch is the only stop.
 - Printed tower parts (`hardware/enclosures/`): being printed 2026-10-12. Carrier board: at the makerspace (Sebastian Stulz), expected **Fri 2026-10-16**. Replacement ESCON **arrived 2026-10-15**, mounted and wired except the 24 V supply (IAA100).
 
@@ -30,6 +31,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟠 Insert Teensy + DAC, USB only (no 24 V / 48 V): `bumpem monitor --port PORT` streams 100 lines/s; `bumpem info` answers
 - [ ] 🟠 Move **one module at a time** to its MSTB plug (5 wires: yellow enable, blue SP+, green SP−, white GND, brown force; colours `knowledge/wiring.md`): cut each wire back to clean copper, crimp a **ferrule** (do not tin the tip: solder creeps under a screw and the contact loosens), screw into the plug. After each: testing page, Pull 10 N, 500 ms → only that rope moves
 - [ ] 🔴 **C's cut white ground wire** is repaired in this step (cut behind the damage, new ferrule, into C's plug); C's rest reading must then drop from ~73 N to a few N
+- [ ] 🟠 **B's first Teensy-driven pull** happens here (J2); see Front tower (B)
 
 ## After the carrier board · force sensing → closed loop
 - [ ] 🟠 `scripts/force_check.py`: each module rests at a few N, a hand pull moves only its own reading
@@ -45,7 +47,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Label the old one "faulty: USB + enable"; repair quote from maxon only as a spare (no rush)
 - [ ] 🟢 Motor test 3d (red wire ↔ motor body: OL), optional 3e–3h (`docs/tests/broken-tower-diagnosis.md`)
 - [ ] 🟠 24 V for B's IAA100: RS-15-24 **unplugged**, +V → IAA100 pin 1, −V → pin 2 (DC side only; its 230 V side is the electrician's)
-- [ ] 🟠 New ESCON (mounted + wired 2026-10-15): load module A's `.edc` in ESCON Studio → Download → auto-tune → **Store Parameters** → close Studio → power-cycle → reopen and check, no Download (Stanford guide p. 30), save as `escon/moduleB_front_<date>.edc`; enable unplugged → LED slow green; then test pull B 5 N → 10 N
+- [x] New ESCON: A's `.edc` → Download → auto-tune → Store Parameters → power-cycle check → uploaded `escon/moduleB_front_2026-10-15.edc`, config identical to A's (2026-10-15)
+- [ ] 🟠 **Test pull B with the Teensy** (waits for the carrier board; breadboard taken apart 2026-10-15): B's 5 wires into plug **J2**, USB → 24 V → 48 V, testing page, Pull 5 N → 10 N, 400 ms → only B's rope moves, 10 N harder; rope slack → B's force a few N
 - [ ] 🟢 Start the server with `--modules ABCD` from then on
 
 ## 🔴 Safety · before long sessions or anyone attached
