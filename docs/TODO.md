@@ -17,10 +17,10 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 ## Mon 2026-10-12 · today
 - [ ] 🟢 Printed parts (ready in a few hours): test plate slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
-- [ ] 🟢 Buy: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts; **ferrules 0.25–0.5 mm²** for the 5 signal wires per MSTB plug; pin terminals (blue, 1.5–2.5 mm²) for the chopper cables
+- [x] Ordered 2026-10-19: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts; **ferrules 0.25–0.5 mm²** for the 5 signal wires per MSTB plug; 1.5 mm² wire + ferrules for B's chopper cable
 - [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf`: IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
 - [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
-- [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals; European pin terminals do not fit it, 2026-10-15): **replace with new 1.5 mm² fine-stranded wire** (H05V-K / H07V-K, red + black, or 2×1.5 mm² cable), 1.5 mm² insulated ferrules, short as the old one; first look what A / C / D use there; 48 V off and chopper < 1 V before removing the old one. Blocks B's ESCON setup
+- [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals; European pin terminals do not fit it, 2026-10-15): **replace with new 1.5 mm² fine-stranded wire** (H05V-K / H07V-K, red + black, or 2×1.5 mm² cable), 1.5 mm² insulated ferrules, short as the old one (**ordered 2026-10-19**); when it arrives: 48 V off and chopper < 1 V, photo of both ends, swap, meter check + to +, − to −, no short. Must be done before B's 48 V is used again
 - [ ] 🔴 Order the e-stop parts (Hirose DF11-12DS + crimp terminals per 48 V supply)
 - [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
 - [ ] 🟢 `git push`; motor test 3d on the front tower; label the old ESCON
@@ -57,7 +57,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] Ask the technician about a **fail-safe** e-stop (here a cut wire means the button does nothing)
 - [ ] **Test** before every session: 48 V on, press → every ESCON LED off; release → back on
 - [ ] Supervisor: electrical safety inspection (DGUV V3)? One power strip per tower, each on its own wall socket (no strips plugged into strips; RSP-2000 inrush 50 A)
-- [ ] 🟠 **Ropes** worn: measure rope / drum / eyebolt, photos → Claude proposes a low-stretch rope with the breakaway as weakest link
+- [x] Ropes worn → **3 mm** low-stretch rope (Dyneema / Kevlar, ≥ 2 kN) **ordered 2026-10-19** (drum tie hole 5.59 mm, `knowledge/hardware.md`)
+- [ ] 🟠 When the rope arrives: through the tie hole + eyebolt once before cutting; length W + 71 cm; ≥ 3 turns stay on the drum; figure-eight stopper knot
 
 ## Software (Claude builds, you test)
 - [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
