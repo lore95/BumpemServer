@@ -2,7 +2,7 @@
 
 Parts that bolt to the tower profile (90x90 light B-type, slot 10, `docs/knowledge/hardware.md`) with the existing M6 button-head screws and slot-10 T-nuts.
 All mounting dimensions live in `tower.py`; device sizes come from the datasheets in `docs/reference/` (Futek IAA100 FI1573, Mean Well RS-15 case 971A).
-Overview with renders: `out/parts-overview.pdf`.
+Overview with renders: `out/parts-overview.pdf`. **Assembly guide** (what goes on which tower face, screws per tower, steps): `out/assembly-guide.pdf` (`python assembly_guide.py`, after `overview.py`).
 
 | File | Part | Status |
 |---|---|---|

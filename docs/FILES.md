@@ -51,4 +51,5 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |
+| `hardware/enclosures/out/assembly-guide.pdf` | Printed holders: which device, which tower face (recommended layout), screws per tower, mounting steps (`assembly_guide.py`) |
 | `scripts/vicon_probe.py` | Read-only Vicon DataStream check: frame rate, devices + outputs, subjects, live Fz per plate (which plate is the left belt). Needs `vicon_dssdk`; untested on the lab system |
