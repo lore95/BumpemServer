@@ -67,7 +67,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] Step 4 **Vicon live** on the lab PC (DataStream SDK)
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (needs a file from the lab)
 - [ ] 🟢 Fix `scripts/open_loop_test.sh` (your uncommitted edit: `AC` mode, usage text, ACD prompt), then commit
-- [ ] 🟢 `git push` BumpemServer (many commits since 10-02); give BumpemUI a GitHub remote
+- [ ] 🟢 `git push` BumpemServer (many commits since 10-02); first push of BumpemUI (`git push -u origin main`; remote github.com/lore95/BumpemUI added 2026-10-19)
 - [ ] Decide: firmware boots with `ch_D = 1` (firmware change → `PROTOCOL.md` first, re-flash)
 
 ## Before final testing
