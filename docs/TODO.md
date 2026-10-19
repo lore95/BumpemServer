@@ -61,6 +61,13 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [x] Ropes worn → **3 mm** low-stretch rope (Dyneema / Kevlar, ≥ 2 kN) **ordered 2026-10-19** (drum tie hole 5.59 mm, `knowledge/hardware.md`)
 - [ ] 🟠 When the rope arrives: through the tie hole + eyebolt once before cutting; length W + 71 cm; ≥ 3 turns stay on the drum; figure-eight stopper knot
 
+## Vicon · data access (no hardware from us needed)
+- [ ] 🟢 Ask the Vicon administrator: which address the server PC should use (not the camera network), port 801 open, may the SDK / Python be installed (setup 1: own PC on the Vicon network; setup 3: on the Vicon PC, D22)
+- [ ] 🟢 Install the **Vicon DataStream SDK** (vicon.com, free account), then `pip install` its Python folder (`vicon_dssdk`) into `BumpemHome`
+- [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host <address>:801` → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
+- [ ] 🟢 Note: walking, running or both in the experiments
+- [ ] 🟢 Offline install (the Vicon network has no internet): note the server PC's OS (Windows?) and Python version → Claude prepares a USB bundle (Python installer, package wheels, both repos, SDK installer); flash the Teensy from a laptop with internet (PlatformIO downloads its toolchain)
+
 ## Software (Claude builds, you test)
 - [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
 - [ ] Step 3 **trials**: blocks, shuffle, 50–75 steps between perturbations, baseline first 3 s, logs
