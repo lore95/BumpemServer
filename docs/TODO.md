@@ -63,9 +63,11 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 ## Vicon · data access (no hardware from us needed)
 - [ ] 🟢 Ask the Vicon administrator: which address the server PC should use (not the camera network), port 801 open, may the SDK / Python be installed (setup 1: own PC on the Vicon network; setup 3: on the Vicon PC, D22)
-- [ ] 🟢 Find the Vicon PC (2026-10-19: on the two lab PCs checked, nothing listens on 801; only ESET `ekrn.exe` in the network list, Vicon probably not live). With Nexus **live** (+ GRAIL software running): `netstat -ano | findstr :801`, `tasklist | findstr /I "nexus shogun tracker vicon dflow"`, `ipconfig` on both PCs → Claude. ESET firewall may block 801 between PCs: IT allows it, not us
+- [x] Vicon reachable (2026-10-19): Nexus PC 192.168.1.60, DataStream on port 801 (all interfaces); D-Flow PC 192.168.1.50 → 192.168.1.60:801 TCP test OK
+- [ ] 🟢 Decide where the server runs: D-Flow PC (reaches Vicon, ask the GRAIL administrator) or Nexus PC (`127.0.0.1:801`); the Teensy's USB goes to that PC
+- [x] Find the Vicon PC (2026-10-19: on the two lab PCs checked, nothing listens on 801; only ESET `ekrn.exe` in the network list, Vicon probably not live). With Nexus **live** (+ GRAIL software running): `netstat -ano | findstr :801`, `tasklist | findstr /I "nexus shogun tracker vicon dflow"`, `ipconfig` on both PCs → Claude. ESET firewall may block 801 between PCs: IT allows it, not us
 - [ ] 🟢 Install the **Vicon DataStream SDK** (vicon.com, free account), then `pip install` its Python folder (`vicon_dssdk`) into `BumpemHome`
-- [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host <address>:801` → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
+- [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host 192.168.1.60:801` (needs Python + SDK on that PC: offline install) → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
 - [ ] 🟢 Note: walking, running or both in the experiments
 - [ ] 🟢 Offline install (the Vicon network has no internet): server PC = **Windows 10, 64-bit (to confirm: Settings → System → About)**, Python free to choose → 3.12. **On hold until the project lead asks** (2026-10-19); then Claude prepares a USB bundle (Python installer, package wheels, both repos, SDK installer); flash the Teensy from a laptop with internet (PlatformIO downloads its toolchain)
 
