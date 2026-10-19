@@ -10,6 +10,7 @@ Source: `legacy/MATLAB_script.m`, thesis §4.3 + Appendix.
 ## Lab system (project lead, 2026-10-19)
 - Vicon cameras + **GRAIL treadmill, split belt: independent left and right belts, each with its own force plate**, platform tilts on 2 axes. **All data (markers, force plates) is read through Vicon** (DataStream).
 - Consequence: FS / TO can be detected **per foot** (one plate per belt) instead of on the sum. The sum (legacy) only works for running: in walking one foot is always down, so the sum never falls below `Fz_th` and TO is never seen. Per-belt detection gives left/right events for walking and running.
+- Access: Nexus serves DataStream on port 801 while it runs in Live mode; clients use the free Vicon DataStream SDK (Python package `vicon_dssdk`). First check: `scripts/vicon_probe.py` (read-only, lists devices, prints Fz per plate). The legacy host 192.168.10.1 may be the Vicon PC's camera-network port: ask the Vicon administrator which address the server PC should use.
 - Still to check: which Vicon device index is the left belt (Nexus device names); crossover steps (a foot landing on the other belt) mislabel the side; platform tilt: use each plate's own Fz (normal to the belt), as legacy did.
 - The towers stand on the floor, the platform moves: when it tilts, rope angle and length change. Test tilting with the towers before using it in a protocol.
 
