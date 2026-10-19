@@ -63,7 +63,7 @@ Day-to-day checklist: `docs/TODO.md` (keep it in step with this list).
 - **ESCON model known: 70/10 (422969)**; hardware reference + J5/J6 pin table in `escon/`. Still needed: wire colour ↔ J5/J6 position on each driver (each has 7 wires, 5 needed: J5.2, J5.5, J6.3, J6.4, J6.7); J5.6 (+5 V) and J6.5–6 (AnOUT, ±4 V) must never reach a Teensy pin.
 - ESCON parameter file → `escon/`: can be read back from each driver with ESCON Studio (Windows, USB J7) instead of waiting for the Drive link.
 - A recorded MATLAB log pair (event + perturbation CSV) → `tests/data/`.
-- Vicon DataStream SDK Python bindings (installed with the SDK; check version on lab PC).
+- Vicon DataStream SDK Python bindings (installed with the SDK; check version on lab PC). Lab system (2026-10-19): Vicon + GRAIL split belt (left / right plate each, 2-axis tilt), everything read through Vicon → per-foot gait detection (`knowledge/gait_detection.md`). Open: which device index is the left belt; walking, running or both.
 - **Balance-recovery algorithm** (D7): source code, language, inputs (which markers/segments, rate), output (recovered yes/no? score?), latency. Needed to define the hook.
 
 ## Open issues found in legacy code
