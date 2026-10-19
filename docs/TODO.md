@@ -36,7 +36,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 ## After the carrier board · force sensing → closed loop
 - [ ] 🟠 `scripts/force_check.py`: each module rests at a few N, a hand pull moves only its own reading
 - [ ] 🟠 **Amplifier range** per module (meter): pull hard, IAA100 output **≤ 3.3 V** (`knowledge/calibration.md`: 0–3.3 V = 0–200 N)
-- [ ] 🟠 Weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell on the 4th amplifier)
+- [ ] 🟠 Weight calibration 6 / 8 / 12 kg per module (incl. the 200 kg cell, on tower B: also compare its noise at rest with A / C / D; decide whether to buy a 100 kg DYMH-103)
 - [ ] 🟠 Closed-loop test one module at a time: production page, Arm at 2–5 N, perturbation 10 N → 20 N; note target vs measured → Claude compares with `knowledge/results.md`
 - [ ] 🟢 Decide `i_full` 9.9 / `kt` (`knowledge/control.md`) after reading C's and D's ESCON configs
 - [x] Claude: recording to CSV (`POST /log/start`, Record button) and saved settings applied at connect (`settings.json`, Save as default) (2026-10-12)
