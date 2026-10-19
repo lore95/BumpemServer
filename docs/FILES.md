@@ -33,6 +33,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `docs/reference/meanwell-rsp-2000-spec.pdf` | Mean Well RSP-2000 datasheet (48 V supply: CN501 pins, remote ON-OFF for the e-stop) |
 | `docs/reference/futek-iaa100-drawing.pdf` | Futek IAA100 drawing FI1573 (66.8 × 50.4 × 17.8 mm, DIN clip, terminal pinout) |
 | `docs/reference/meanwell-rs-15-spec.pdf` | Mean Well RS-15 datasheet, case 971A (62.5 × 51 × 28 mm, 2 × M3 base holes) |
+| `docs/reference/stanford-cad/` | Stanford Bump'em CAD (SolidWorks 2020: SLDPRT + STEP/STL), from the "CAD" link on biomechatronics.stanford.edu/bump-em (2026-10-19). `1) Motor Unit/Reel Drum.STEP`: drum 38.10 mm, tie hole 5.59 mm |
 | `docs/reference/maxon-235811-dsr-70-30-operating-instructions.pdf` | maxon DSR 70/30 shunt regulator / brake chopper (terminals 1–10, DIP threshold, LEDs, 8800 µF) |
 | `docs/reference/stanford-bumpem-build-guide.pdf` | Stanford Bump'em build instructions (source of `knowledge/controller.md`) |
 | `escon/` | ESCON 70/10 notes + J5/J6 pin table (`README.md`), maxon hardware reference PDF; parameter file (missing) |
