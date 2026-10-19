@@ -16,7 +16,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 ---
 
 ## Mon 2026-10-12 · today
-- [ ] 🟢 Printed parts (ready in a few hours): test plate slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
+- [ ] 🟠 Printed parts **failed 4× (2026-10-19)**: tall parts standing on end toppled halfway. Re-exported **flat, key side down** (`hardware/enclosures/out/`, fit_check 174 × 170 × 18 mm): send the new STLs to the makerspace; supports under the plate wings + DIN rail flanges; keep the fit dimensions (`hardware/enclosures/README.md`)
+- [ ] 🟢 Printed parts (when printed): test plate slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed
 - [x] Ordered 2026-10-19: M3 × 6 (RS-15 plates), M4 × 12 (RSP brackets), M6 × 16 button heads, slot-10 T-nuts; **ferrules 0.25–0.5 mm²** for the 5 signal wires per MSTB plug; 1.5 mm² wire + ferrules for B's chopper cable
 - [ ] 🟢 Per tower, following `hardware/enclosures/out/fit_check.pdf`: IAA100 on its DIN rail mount, RS-15-24 on its plate, then remove the tape
 - [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician

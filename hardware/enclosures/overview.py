@@ -80,7 +80,7 @@ def cover(pdf):
     fig.text(0.07, 0.94, "Bump'em tower: printed parts", fontsize=20, weight="bold")
     info = [f"Profile: 90x90 light, B-type (Bosch-compatible), slot {P.SLOT_OPEN:.0f}, 2 slots per face {P.SLOT_PITCH:.0f} mm apart",
             f"Fasteners: {P.BOLT} ISO 7380 button head (4 mm hex) + existing slot-10 T-nuts; plates {P.PLATE_T:.0f} mm thick",
-            "Material: PETG or ASA (not PLA: softens near warm drivers / supplies). No supports needed.",
+            "Material: PETG or ASA (not PLA: softens near warm drivers / supplies). Print flat, key side down; supports from the build plate under the plate wings.",
             "Device sizes: Futek IAA100 drawing FI1573, Mean Well RS-15 case 971A (docs/reference/).",
             "48 V supply RSP-2000-48 (295x127x41 mm, 1.95 kg, case 952D): 2 printed end brackets, 10 mm air gap, ASA preferred.",
             "Source: BumpemServer/hardware/enclosures (CadQuery). Dimensions in tower.py."]

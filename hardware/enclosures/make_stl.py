@@ -1,5 +1,7 @@
 """Export the ready parts as STL + STEP in print orientation.  Run: python make_stl.py  ->  out/<name>.stl
-Plates with a key and a rail/ledge on opposite faces print standing on their end (cross-section on the bed): no supports; use a brim."""
+Every part prints flat, key side down (the key on the bed keeps it accurate): supports from the build plate under the plate wings
+(2.5 mm, against the profile face, so a rough finish there is fine). Standing on end (up to 107 mm, small footprint) toppled halfway
+on the makerspace printer (2026-10-19)."""
 from pathlib import Path
 
 import cadquery as cq
@@ -7,30 +9,22 @@ import cadquery as cq
 import parts
 
 
-def on_end(wp: cq.Workplane) -> cq.Workplane:
-    """Stand the part on its -x end: the slot direction becomes vertical."""
-    w = wp.rotate((0, 0, 0), (0, 1, 0), -90)
-    bb = w.val().BoundingBox()
-    return w.translate((-bb.center.x, -bb.center.y, -bb.zmin))
-
-
-def on_side(wp: cq.Workplane) -> cq.Workplane:
-    """Lay the part on its -y side (holes and keys horizontal)."""
-    w = wp.rotate((0, 0, 0), (1, 0, 0), -90)
-    bb = w.val().BoundingBox()
-    return w.translate((-bb.center.x, -bb.center.y, -bb.zmin))
+def flat(wp: cq.Workplane) -> cq.Workplane:
+    """As modelled: back face down, key on the bed."""
+    bb = wp.val().BoundingBox()
+    return wp.translate((-bb.center.x, -bb.center.y, -bb.zmin))
 
 
 def rsp_pair() -> cq.Workplane:
-    a, b = on_side(parts.rsp_bracket("A")), on_side(parts.rsp_bracket("B"))
+    a, b = flat(parts.rsp_bracket("A")), flat(parts.rsp_bracket("B"))
     bb = a.val().BoundingBox()
     return a.union(b.translate((0, bb.ylen + 10, 0)))
 
 
 READY = {
     "rsp2000_brackets": rsp_pair,
-    "iaa100_din_mount": lambda: on_end(parts.din_rail_mount()),
-    "rs15_plate": lambda: on_end(parts.rs15_holder()),
+    "iaa100_din_mount": lambda: flat(parts.din_rail_mount()),
+    "rs15_plate": lambda: flat(parts.rs15_holder()),
 }
 
 if __name__ == "__main__":

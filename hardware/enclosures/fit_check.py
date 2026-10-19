@@ -19,13 +19,19 @@ def test_plate() -> cq.Workplane:
 
 
 def layout() -> cq.Workplane:
-    items = [test_plate(), make_stl.on_end(parts.din_rail_mount()), make_stl.on_end(parts.rs15_holder()), make_stl.on_side(parts.rsp_bracket("A"))]
-    out, x = None, 0.0
-    for wp in items:
-        bb = wp.val().BoundingBox()
-        wp = wp.translate((x - bb.xmin, -bb.center.y, 0))
-        out = wp if out is None else out.union(wp)
-        x += bb.xlen + GAP
+    """Two rows of two, so the bed stays well under 256 x 256 mm."""
+    rows = [[make_stl.flat(parts.din_rail_mount()), make_stl.flat(parts.rsp_bracket("A"))],
+            [make_stl.flat(parts.rs15_holder()), test_plate()]]
+    out, y = None, 0.0
+    for row in rows:
+        x, h = 0.0, 0.0
+        for wp in row:
+            bb = wp.val().BoundingBox()
+            wp = wp.translate((x - bb.xmin, y - bb.ymin, 0))
+            out = wp if out is None else out.union(wp)
+            x += bb.xlen + GAP
+            h = max(h, bb.ylen)
+        y += h + GAP
     return out
 
 

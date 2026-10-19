@@ -6,8 +6,8 @@ cabling. Files: \file{hardware/enclosures/out/}; overview with pictures and moun
 
 \subsection{Print}
 \begin{enumerate}
-\item PETG or ASA, no supports, brim recommended; the two holders stand on their end.
-\item Print \file{fit_check.stl} first: one test plate and one of each holder on one bed (157$\times$51\,mm).
+\item PETG or ASA, \textbf{flat, key side down} as exported. Supports from the build plate under the plate wings (2.5\,mm, the face against the profile, so a rough finish is fine) and under the DIN rail's flanges. Do not stand the parts on their end: our first version did, and it toppled halfway.
+\item Print \file{fit_check.stl} first: one test plate and one of each holder on one bed (174$\times$170\,mm, 18\,mm high).
 \item Push the test plate into a profile slot. It should slide in without play. If it is too tight or loose,
 print \file{test_fit.stl} (clearance 0.1 / 0.2 / 0.3\,mm per side, marked with 1 / 2 / 3 notches), set
 \cmd{KEY\_CLEAR} in \file{tower.py} to the best one and run \cmd{python make\_stl.py} again.
@@ -35,7 +35,7 @@ T-nut (probably M6$\times$16; confirm on the test print).
 \item The 48\,V supply: two people, fan ends free.
 \item Remove the old tape.
 \end{enumerate}
-\textbf{Check:} push each device by hand: nothing moves; the supply's fans are not blocked.
+Keep these dimensions if the part is changed for printing: key 9.6$\times$2.5\,mm, 5\,mm plate under the M6 heads, hole positions, DIN rail 35$\times$7.5\,mm with 1\,mm flanges, 10\,mm pad on the 48\,V brackets.\par\n\textbf{Check:} push each device by hand: nothing moves; the supply's fans are not blocked.
 
 \begin{figure}[H]\centering
 \begin{minipage}{0.32\linewidth}\centering\includegraphics[width=\linewidth]{figures/render-iaa100.png}\\\scriptsize IAA100 on its DIN rail\end{minipage}\hfill
