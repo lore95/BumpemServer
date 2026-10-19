@@ -66,7 +66,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Install the **Vicon DataStream SDK** (vicon.com, free account), then `pip install` its Python folder (`vicon_dssdk`) into `BumpemHome`
 - [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host <address>:801` → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
 - [ ] 🟢 Note: walking, running or both in the experiments
-- [ ] 🟢 Offline install (the Vicon network has no internet): note the server PC's OS (Windows?) and Python version → Claude prepares a USB bundle (Python installer, package wheels, both repos, SDK installer); flash the Teensy from a laptop with internet (PlatformIO downloads its toolchain)
+- [ ] 🟢 Offline install (the Vicon network has no internet): server PC = **Windows 10, 64-bit (to confirm: Settings → System → About)**, Python free to choose → 3.12. **On hold until the project lead asks** (2026-10-19); then Claude prepares a USB bundle (Python installer, package wheels, both repos, SDK installer); flash the Teensy from a laptop with internet (PlatformIO downloads its toolchain)
 
 ## Software (Claude builds, you test)
 - [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
