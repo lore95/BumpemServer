@@ -63,6 +63,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 ## Vicon · data access (no hardware from us needed)
 - [ ] 🟢 Ask the Vicon administrator: which address the server PC should use (not the camera network), port 801 open, may the SDK / Python be installed (setup 1: own PC on the Vicon network; setup 3: on the Vicon PC, D22)
+- [ ] 🟢 Find the Vicon PC (2026-10-19: on the two lab PCs checked, nothing listens on 801; only ESET `ekrn.exe` in the network list, Vicon probably not live). With Nexus **live** (+ GRAIL software running): `netstat -ano | findstr :801`, `tasklist | findstr /I "nexus shogun tracker vicon dflow"`, `ipconfig` on both PCs → Claude. ESET firewall may block 801 between PCs: IT allows it, not us
 - [ ] 🟢 Install the **Vicon DataStream SDK** (vicon.com, free account), then `pip install` its Python folder (`vicon_dssdk`) into `BumpemHome`
 - [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host <address>:801` → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
 - [ ] 🟢 Note: walking, running or both in the experiments
