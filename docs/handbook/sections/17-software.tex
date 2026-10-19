@@ -23,7 +23,7 @@ conda activate BumpemHome          # in every new terminal
 cd IBMS_Offenburg/BumpemServer
 pip install -e ".[server,dev]"
 pip install platformio
-pytest                             # 52 passed
+pytest                             # 61 passed
 \end{lstlisting}
 \end{enumerate}
 
@@ -32,9 +32,9 @@ pytest                             # 52 passed
 bumpem serve --board sim
 \end{lstlisting}
 Open \url{http://127.0.0.1:8000/} in Chrome or Firefox. \emph{Connect}, \emph{Arm}, \emph{Perturb now}: the
-live plot shows a pulse. \url{http://127.0.0.1:8000/docs} lists every API call. Stop the server with Ctrl+C.
+live plot shows a pulse. The server only accepts connections from this computer and has no login (Sect.~\ref{sec:software}): run the browser on the same PC. \url{http://127.0.0.1:8000/docs} lists every API call. Stop the server with Ctrl+C.
 
-\textbf{Check:} 52 tests pass and the simulated pulse appears in the plot.
+\textbf{Check:} 61 tests pass and the simulated pulse appears in the plot.
 
 \subsection{Flash the Teensy}
 Ask the project lead first: flashing erases what is on the Teensy.

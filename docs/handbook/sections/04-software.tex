@@ -88,7 +88,7 @@ Install once (conda env \cmd{BumpemHome} on the lab Mac):
 \begin{lstlisting}
 cd BumpemServer
 pip install -e ".[server,dev]"
-pytest                      # 52 tests, no hardware needed
+pytest                      # 61 tests, no hardware needed
 \end{lstlisting}
 
 \begin{table}[H]\centering\small
@@ -117,7 +117,7 @@ bumpem serve --board sim                                        # no hardware
 Then open \url{http://127.0.0.1:8000/} (UI) or \url{http://127.0.0.1:8000/docs} (try every endpoint).
 Options: \cmd{--modules} (mounted modules; use \cmd{ABCD} once tower B runs), \cmd{--settings}
 (default \file{settings.json}), \cmd{--log-dir} (default \file{Logs/}), \cmd{--wd-ms} (board watchdog,
-default 1000), \cmd{--host} (default 127.0.0.1, this PC only), \cmd{--ui}.
+default 1000), \cmd{--host} (default 127.0.0.1, this PC only), \cmd{--ui}. The API has no login: the server runs on the PC the operator uses (or on the Vicon PC), and a \cmd{--host} other computers can reach is refused unless \cmd{--allow-network} is given (D22).
 
 \begin{table}[H]\centering\small
 \begin{tabularx}{\linewidth}{llX}

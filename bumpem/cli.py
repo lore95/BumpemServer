@@ -2,12 +2,23 @@
 from __future__ import annotations
 
 import argparse
+import ipaddress
 import sys
 import time
 from pathlib import Path
 
 from . import protocol as P
 from .device import Board, BoardError
+
+
+def is_loopback(host: str) -> bool:
+    """True when only this computer can reach `host`."""
+    if host == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(host).is_loopback
+    except ValueError:
+        return False
 
 
 def _open(args) -> Board:
@@ -82,7 +93,9 @@ def main(argv=None):
         if name in ("pulse", "perturb", "arm"):
             p.add_argument("--watch", type=float, default=0, help="then monitor for N seconds")
     sv = sub.add_parser("serve", help="HTTP/WebSocket API server (docs/API.md); test page at /docs")
-    sv.add_argument("--host", default="127.0.0.1")
+    sv.add_argument("--host", default="127.0.0.1", help="listen address; only this computer by default (D22)")
+    sv.add_argument("--allow-network", action="store_true",
+                    help="allow a --host other computers can reach (no authentication: D22)")
     sv.add_argument("--port", type=int, default=8000, help="HTTP port")
     sv.add_argument("--board", help="serial device to connect at startup, or 'sim'")
     sv.add_argument("--wd-ms", type=int, default=1000, help="board watchdog while served (0 = off)")
@@ -109,6 +122,9 @@ def main(argv=None):
             from .server import create_app
         except ImportError:
             sys.exit('server extras missing: pip install -e ".[server]"')
+        if not is_loopback(args.host) and not args.allow_network:
+            sys.exit(f"--host {args.host} lets other computers control the towers and the API has no authentication "
+                     "(docs/DECISIONS.md D22). Run the browser on this computer, or add --allow-network.")
         page = "/ui/testing.html" if args.mode == "testing" else "/ui/"
         print(f"bumpem server ({args.mode} mode) on http://{args.host}:{args.port}  (UI: {page}, API test page: /docs)")
         uvicorn.run(create_app(wd_ms=args.wd_ms, board=args.board, ui_dir=args.ui, modules=args.modules or None,

@@ -11,7 +11,7 @@ version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 `planned` = needs gait events / trials (PTO, scheduling); schema is a proposal.
 
 ## Basics
-- Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). Other hosts only if started with `--host`.
+- Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). **No authentication** (D22): a `--host` other computers can reach is refused unless `--allow-network` is given.
 - UI: the same server serves the browser UI (`../BumpemUI/web`) at **`http://127.0.0.1:8000/ui/`**; `/` redirects there. Other folder: `bumpem serve --ui PATH`. Same origin, so the UI needs no cross-origin setup.
 - One server per PC. The server alone opens the Teensy's serial port (or the simulator).
 - JSON everywhere. Units: force N, time ms, angle degrees.

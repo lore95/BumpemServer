@@ -113,3 +113,8 @@ Decision: `POST /api/v1/log/start|stop` writes full-rate telemetry (`force_<ts>[
 Reason: closed-loop tests need target vs measured at the board rate; the stream is thinned to 30 Hz for display, and the server already sees every line.
 Alternatives: log in the UI (browser, thinned data); always-on logging (fills the disk, no labels); a separate logger program (cannot share the serial port).
 ---
+
+## D22 — 2026-10-19 — Access control: the server stays on this computer, no authentication
+Decision: the server runs on the computer the operator sits at (setup 1: Teensy on USB, Vicon over Ethernet, browser on the same PC) or on the Vicon PC itself (setup 3). It listens on 127.0.0.1 only; `bumpem serve` refuses a non-loopback `--host` unless `--allow-network` is given. No login or token.
+Reason: the project lead wants no unauthorized connections; with the browser on the same computer nothing else needs to connect, so the OS login is the access control and STOP stays reachable without credentials. The Vicon network still has to reach the server's computer (DataStream is Ethernet), so binding to loopback is what keeps the lab network out.
+Alternatives: a separate operator laptop over a direct Ethernet cable with a token, one controlling client, STOP open to all (setup 2: API change, kept for later if the operator cannot sit at the server); USB networking between two PCs (same as Ethernet, fiddlier); TLS (pointless without network access).
