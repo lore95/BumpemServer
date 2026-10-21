@@ -23,7 +23,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap. Mains side stays with the electrician
 - [ ] 🔴 Front tower chopper → ESCON cable (14 AWG, too thick for the chopper's 1.5 mm² terminals; European pin terminals do not fit it, 2026-10-15): **replace with new 1.5 mm² fine-stranded wire** (H05V-K / H07V-K, red + black, or 2×1.5 mm² cable), 1.5 mm² insulated ferrules, short as the old one (**ordered 2026-10-19**); when it arrives: 48 V off and chopper < 1 V, photo of both ends, swap, meter check + to +, − to −, no short. Must be done before B's 48 V is used again
 - [ ] 🔴 Order the e-stop parts (Hirose DF11-12DS + crimp terminals per 48 V supply)
-- [ ] 🔴 Ask the electrician: cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
+- [ ] 🔴 Ask the electrician: which breakers / circuits feed the towers' wall sockets (4 towers ≤ ~2.1 kW peak at the current 9.9 A limit, `knowledge/hardware.md` → Power); cover for the RS-15-24's open 230 V terminals; earth wire supply ⏚ → chopper terminal 3 on the front tower
 - [ ] 🟢 `git push`; motor test 3d on the front tower; label the old ESCON
 
 ## Fri 2026-10-16 · carrier board (makerspace is making it; expected Friday)
