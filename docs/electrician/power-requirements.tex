@@ -1,0 +1,92 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=18mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+\newcommand{\q}[1]{\par\smallskip\colorbox{yellow!35}{\parbox{\dimexpr\linewidth-2\fboxsep}{\textbf{Question:} #1}}\par}
+
+\begin{document}
+{\Large\textbf{Bump'em perturbation system: mains power requirements}}\\[2pt]
+IBMS lab, Hochschule Offenburg \quad$\cdot$\quad for the building electrician \quad$\cdot$\quad 21 October 2026 \quad$\cdot$\quad prepared by Lorenzo Lucchini
+
+\section*{1. The system}
+Four identical towers (A, B, C, D) stand around the GRAIL treadmill. Each tower pulls a rope attached to a person on the
+treadmill with an electric motor. The mains loads are only the power supplies listed below; all other parts run on their DC
+outputs (48\,V motor driver, 24\,V force amplifier). One control PC (laptop, own power supply) connects to the towers by USB.
+
+\textbf{Today:} each tower's supplies are plugged into a power strip; there is \textbf{no wall socket per tower}, and we do
+not know which circuits and breakers the strips end up on. Nobody on our side works on the 230\,V side.
+
+\section*{2. Mains loads per tower (manufacturer data)}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+ & \textbf{Mean Well RSP-2000-48} (48\,V motor supply) & \textbf{Mean Well RS-15-24} (24\,V amplifier supply) \\
+\midrule
+Rated output & 48\,V, 42\,A, 2016\,W & 24\,V, 0.625\,A, 15\,W \\
+Input voltage / frequency & 90--264\,VAC (full power from 200\,VAC), 47--63\,Hz & 85--264\,VAC, 47--63\,Hz \\
+Input current, nameplate & \textbf{12.3\,A} at 200--240\,VAC & 0.35\,A at 100--240\,VAC \\
+Input current, typ.\ at full load & 10\,A at 230\,VAC & 0.25\,A at 230\,VAC \\
+Inrush current (cold start, typ.) & \textbf{50\,A} & \textbf{65\,A} at 230\,VAC \\
+Earth leakage current & $<$ 2\,mA at 240\,VAC & $<$ 2\,mA at 240\,VAC \\
+Power factor / efficiency & 0.97 at 230\,VAC full load / 92\,\% & -- / 82\,\% \\
+Mains connection & screw terminals L, N, PE (protection class I) & screw terminals L, N, PE; \textbf{open, not covered} \\
+Other & internal fans; overload protection 105--125\,\% & no-load power $<$ 0.5\,W \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+\textbf{Per tower, nameplate:} 12.3 + 0.35 $\approx$ \textbf{12.7\,A} at 230\,V. \quad
+\textbf{All four towers, nameplate:} $\approx$ \textbf{51\,A}.\\
+Sources: Mean Well datasheets RSP-2000 and RS-15, and the device labels.
+
+\section*{3. Load actually drawn by this system}
+The nameplate is what the supplies \emph{could} deliver. In this system the motor current is limited by the motor drivers'
+configuration to 9.9\,A per motor, which caps what each tower can take:
+
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r r}
+\toprule
+Situation & per tower & 4 towers together \\
+\midrule
+Switched on, idle (no pull; not specified by Mean Well) & small & small \\
+Holding the rope slightly taut (normal use) & $<$ 50\,W & $<$ 200\,W \\
+\textbf{Maximum pull, current setup} (motor 9.9\,A at 48\,V) & $\le$ 520\,W ($\approx$ 2.3\,A) & $\le$ \textbf{2.1\,kW ($\approx$ 9.3\,A)} \\
+Possible future setting (software force limit 200\,N, $\approx$ 16.8\,A motor current) & $\le$ 870\,W ($\approx$ 3.8\,A) & $\le$ 3.5\,kW ($\approx$ 15\,A) \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+Maximum pulls are short: a pull lasts at most 0.6\,s, typically a few per minute. Energy from braking the motor is burnt in a
+resistor on the 48\,V side (brake chopper); nothing is fed back into the mains. Estimate by us from the drive settings, not a
+measurement; we can measure with a plug-in power meter if useful.
+
+\section*{4. What we would like, and our questions}
+\begin{enumerate}
+\item \textbf{A supply point at each tower:} one earthed 230\,V socket (Schuko, 16\,A) or equivalent per tower, so each tower
+has its own connection instead of chained power strips.
+\q{Which circuits / breakers can feed the four towers? Our suggestion: at least two circuits (two towers each), so the possible
+future 3.5\,kW and the inrush below are covered with reserve.}
+\item \textbf{Inrush:} each tower draws up to about 50\,A (RSP-2000) plus 65\,A (RS-15) for a few milliseconds at switch-on. We
+plan to switch the towers on one at a time.
+\q{Is the breaker characteristic (B or C) suitable for this inrush?}
+\item \textbf{Residual current devices:} leakage up to 2\,mA per supply, i.e.\ up to 4\,mA per tower and 16\,mA for all four.
+\q{How many towers per 30\,mA RCD, and which RCD type for switch-mode supplies with power-factor correction?}
+\item \textbf{Protective earth:} each supply has a PE terminal. On tower B the PE connection to the brake chopper's earth
+terminal (terminal 3) is still to be made, as on the other towers.
+\q{Please check PE on all four towers.}
+\item \textbf{Touch protection:} the four RS-15-24 have open 230\,V screw terminals.
+\q{Please fit a cover (or a suitable enclosure) on each.}
+\item \textbf{Emergency stop:} our planned emergency-stop button switches off the 48\,V outputs through the supplies' remote
+on/off input. It does \emph{not} disconnect the mains.
+\q{Is a mains emergency-off needed for this setup in the lab? Is an electrical safety inspection (DGUV V3) needed before use
+with test persons?}
+\end{enumerate}
+
+\vfill
+\small Tower layout: A left, B front, C right, D back of the treadmill. Datasheets and the full technical documentation can
+be provided on request.
+\end{document}
