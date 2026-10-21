@@ -52,5 +52,6 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |
 | `hardware/enclosures/out/assembly-guide.pdf` | Printed holders: which device, which tower face (recommended layout), screws per tower, mounting steps (`assembly_guide.py`) |
+| `docs/electrician/power-requirements-de.tex` / `.pdf` | German 1-page version, sections 1–3 only (system, mains data per tower, expected load) |
 | `docs/electrician/power-requirements.tex` / `.pdf` | 2-page sheet for the building electrician: mains data per tower (RSP-2000-48, RS-15-24), expected load, inrush, leakage, questions |
 | `scripts/vicon_probe.py` | Read-only Vicon DataStream check: frame rate, devices + outputs, subjects, live Fz per plate (which plate is the left belt). Needs `vicon_dssdk`; untested on the lab system |

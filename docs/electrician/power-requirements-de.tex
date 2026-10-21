@@ -1,0 +1,69 @@
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=16mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[ngerman]{babel}
+\usepackage{booktabs,tabularx,array}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{document}
+{\Large\textbf{Bump'em: Anforderungen an die Stromversorgung}}\\[2pt]
+IBMS-Labor, Hochschule Offenburg \quad$\cdot$\quad für die Elektrofachkraft \quad$\cdot$\quad 21.~Oktober 2026 \quad$\cdot$\quad Lorenzo Lucchini
+
+\section*{1. Das System}
+Vier baugleiche Türme (A, B, C, D) stehen um das GRAIL-Laufband. Jeder Turm zieht mit einem Elektromotor an einem Seil, das an
+einer Person auf dem Laufband befestigt ist. Netzseitige Verbraucher sind nur die unten aufgeführten Netzteile; alle anderen
+Komponenten werden über deren Gleichspannungsausgänge versorgt (48\,V Motortreiber, 24\,V Kraftmessverstärker). Ein Steuer-PC
+(Laptop mit eigenem Netzteil) ist per USB mit den Türmen verbunden.
+
+\section*{2. Netzseitige Verbraucher je Turm (Herstellerangaben)}
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}p{4.2cm}>{\raggedright\arraybackslash}X>{\raggedright\arraybackslash}X}
+\toprule
+ & \textbf{Mean Well RSP-2000-48} (48-V-Motornetzteil) & \textbf{Mean Well RS-15-24} (24-V-Netzteil für den Messverstärker) \\
+\midrule
+Ausgangsnennwerte & 48\,V, 42\,A, 2016\,W & 24\,V, 0,625\,A, 15\,W \\
+Eingangsspannung / Frequenz & 90--264\,VAC (volle Leistung ab 200\,VAC), 47--63\,Hz & 85--264\,VAC, 47--63\,Hz \\
+Eingangsstrom laut Typenschild & \textbf{12,3\,A} bei 200--240\,VAC & 0,35\,A bei 100--240\,VAC \\
+Eingangsstrom typ.\ bei Volllast & 10\,A bei 230\,VAC & 0,25\,A bei 230\,VAC \\
+Einschaltstrom (Kaltstart, typ.) & \textbf{50\,A} & \textbf{65\,A} bei 230\,VAC \\
+Ableitstrom & $<$ 2\,mA bei 240\,VAC & $<$ 2\,mA bei 240\,VAC \\
+Leistungsfaktor / Wirkungsgrad & 0,97 bei 230\,VAC Volllast / 92\,\% & -- / 82\,\% \\
+Netzanschluss & Schraubklemmen L, N, PE (Schutzklasse~I) & Schraubklemmen L, N, PE; \textbf{offen, nicht abgedeckt} \\
+Sonstiges & interne Lüfter; Überlastschutz 105--125\,\% & Leerlaufleistung $<$ 0,5\,W \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+\textbf{Je Turm, laut Typenschild:} 12,3 + 0,35 $\approx$ \textbf{12,7\,A} bei 230\,V. \quad
+\textbf{Alle vier Türme, laut Typenschild:} $\approx$ \textbf{51\,A}.\\
+Quellen: Mean-Well-Datenblätter RSP-2000 und RS-15 sowie die Typenschilder der Geräte.
+
+\section*{3. Tatsächliche Leistungsaufnahme dieses Systems}
+Das Typenschild gibt an, was die Netzteile \emph{liefern könnten}. In diesem System ist der Motorstrom durch die Konfiguration
+der Motortreiber auf 9,9\,A je Motor begrenzt; das begrenzt die Leistungsaufnahme jedes Turms:
+
+\begin{tabularx}{\linewidth}{>{\raggedright\arraybackslash}X r r}
+\toprule
+Betriebszustand & je Turm & 4 Türme gleichzeitig \\
+\midrule
+Eingeschaltet, Leerlauf (kein Zug; von Mean Well nicht angegeben) & gering & gering \\
+Seil leicht gespannt halten (Normalbetrieb) & $<$ 50\,W & $<$ 200\,W \\
+\textbf{Maximaler Zug, aktuelle Einstellung} (Motor 9,9\,A bei 48\,V) & $\le$ 520\,W ($\approx$ 2,3\,A) & $\le$ \textbf{2,1\,kW ($\approx$ 9,3\,A)} \\
+Mögliche spätere Einstellung (Software-Kraftgrenze 200\,N, $\approx$ 16,8\,A Motorstrom) & $\le$ 870\,W ($\approx$ 3,8\,A) & $\le$ 3,5\,kW ($\approx$ 15\,A) \\
+\bottomrule
+\end{tabularx}
+
+\smallskip
+Maximale Züge sind kurz: Ein Zug dauert höchstens 0,6\,s, typischerweise einige pro Minute. Die Bremsenergie des Motors wird
+auf der 48-V-Seite in einem Widerstand (Bremschopper) in Wärme umgesetzt; es wird nichts ins Netz zurückgespeist. Die Werte
+sind unsere Abschätzung aus den Antriebseinstellungen, keine Messung; bei Bedarf messen wir mit einem
+Zwischenstecker-Leistungsmessgerät nach.
+
+\smallskip
+\small Anordnung der Türme: A links, B vorne, C rechts, D hinten am Laufband. Datenblätter und die vollständige technische
+Dokumentation stellen wir gerne zur Verfügung.
+\end{document}
