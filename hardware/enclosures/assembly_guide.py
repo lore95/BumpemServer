@@ -89,14 +89,14 @@ def page_print(pdf):
              "other sat under the mains cables); bracket B (fan end) was never in the fit check and is now 20 mm longer past the "
              "supply, so its T-nuts have room.", 100)
     y -= 0.012
-    y = text(fig, 0.07, y, "Three files, one per bed, laid out like the fit check: out/print_bed_1.stl (4 RS-15, 2 IAA100), "
-             "print_bed_2.stl (3 A, 2 B), print_bed_3.stl (2 B, 1 IAA100); each at most 250 x 210 mm. Print each once: 14 parts.", 100)
+    y = text(fig, 0.07, y, "One file: out/tower_set.stl, the 4 parts of one tower on one bed (200 x 166 mm), laid out like the "
+             "fit check. Print it 4 times, once per tower (the fit-check A and IAA100 mount become spares).", 100)
     y -= 0.008
-    y = table(fig, y, ["Part (in print_bed_1-3.stl)", "How many", "Bed size (mm)", "Note"], [
-        ["rs15_plate", "4 (1 per tower)", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
-        ["rsp2000_bracket_A", "3", "62 x 107 x 18", "towers 2-4; tower 1 uses the fit-check A"],
-        ["rsp2000_bracket_B", "4", "82 x 107 x 18", "towers 1-4; ASA, or PETG with 40 %+ infill"],
-        ["iaa100_din_mount", "3", "100 x 40 x 15", "towers 2-4; the fit-check one is tower 1's"],
+    y = table(fig, y, ["Part (in tower_set.stl)", "Per set", "Size (mm)", "Note"], [
+        ["rs15_plate", "1", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
+        ["rsp2000_bracket_A", "1", "62 x 107 x 18", "48 V, cable end; unchanged"],
+        ["rsp2000_bracket_B", "1", "82 x 107 x 18", "48 V, fan end; ASA, or PETG with 40 %+ infill"],
+        ["iaa100_din_mount", "1", "100 x 40 x 15", "unchanged"],
     ], [0.07, 0.36, 0.53, 0.71])
     y -= 0.012
     fig.text(0.07, y, "Print settings (same as the fit check, which printed fine)", fontsize=11, weight="bold"); y -= 0.022

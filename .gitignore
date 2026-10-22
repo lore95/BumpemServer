@@ -34,3 +34,6 @@ settings.json
 # handbook build products (rebuild: docs/handbook/README.md)
 docs/handbook/*.zip
 docs/handbook/*.pdf
+
+# unzipped print jobs (send the zip)
+hardware/enclosures/out/bumpem-druckauftrag-*/
