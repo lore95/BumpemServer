@@ -17,6 +17,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 ## Mon 2026-10-12 · today
 - [ ] 🟠 Printed parts **failed 4× (2026-10-19)**: tall parts standing on end toppled halfway. Re-exported **flat, key side down** (`hardware/enclosures/out/`, fit_check 174 × 170 × 18 mm): send the new STLs to the makerspace; supports under the plate wings + DIN rail flanges; keep the fit dimensions (`hardware/enclosures/README.md`)
+- [ ] 🟢 **Send print job 2 to the makerspace (2026-10-22):** `hardware/enclosures/out/bumpem-druckauftrag-2026-10-22.zip` (handoff PDF + 4 STLs: 4 × RS-15 plate, 1 × bracket B, 3 × bracket pair, 3 × IAA100 mount)
 - [ ] 🟢 **Reprint the RS-15 plate (2026-10-22):** `hardware/enclosures/out/rs15_plate.stl` (128 × 51 × 14 mm, flat): both M6 holes moved outwards (end-stop side +8 mm, terminal side +25 mm, away from the mains cables). Check: bolt + T-nut go in at both ends, the cables don't touch the bolt heads
 - [ ] 🟢 **RSP-2000 bracket B (2026-10-22):** not printed yet (`fit_check.stl` has only bracket A). Print `hardware/enclosures/out/rsp2000_bracket_B.stl` (62 × 107 × 18 mm, flat, same settings). Then hold it on the fan end: its hole over the middle hole (34.5 mm from the fan end, 59 mm from the edge) → screw M4 × 12. Off → measure the hole centre, tell Claude
 - [ ] 🟢 Printed parts (when printed): test plate slides into the slot without play? M6 bolt long enough (≥ ~5 mm thread in the T-nut; probably **M6 × 16**)? Tell Claude → `KEY_CLEAR` / bolt length, regenerate if needed

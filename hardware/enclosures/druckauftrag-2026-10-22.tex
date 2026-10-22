@@ -1,0 +1,56 @@
+% Print handoff for the makerspace (German). Build: ./druckauftrag.sh  ->  out/bumpem-druckauftrag-2026-10-22.zip
+\documentclass[10pt,a4paper]{article}
+\usepackage[margin=17mm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[ngerman]{babel}
+\usepackage{booktabs,tabularx,array}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{4pt}
+\renewcommand{\arraystretch}{1.15}
+
+\begin{document}
+{\Large\textbf{Bump'em Turmhalter: Druckauftrag 2}}\\[2pt]
+IBMS-Labor, Hochschule Offenburg \quad$\cdot$\quad 22.~Oktober 2026 \quad$\cdot$\quad Lorenzo Lucchini
+
+\section*{1. Ergebnis des Probedrucks (\texttt{fit\_check.stl})}
+Alles passt: Die Nutleiste (0,2\,mm Spiel je Seite) sitzt ohne Wackeln in der Profilnut; der IAA100-Verstärker rastet auf der
+DIN-Schiene ein; das RS-15-Netzteil und das 48-V-Netzteil (Halter A) passen auf ihre Halter. Vielen Dank!
+
+\section*{2. Änderungen seit dem Probedruck}
+\begin{itemize}
+\item \textbf{RS-15-Platte (\texttt{rs15\_plate.stl}):} jetzt 128 statt 95\,mm lang, nur die beiden M6-Löcher sind nach außen
+  gewandert: +8\,mm auf der Anschlagseite (der Schraubenkopf stieß an den Anschlag) und +25\,mm auf der Klemmenseite
+  (der Kopf lag unter den Netzkabeln). Lage des Netzteils und seiner M3-Löcher unverändert.
+\item \textbf{48-V-Halter B (\texttt{rsp2000\_bracket\_B.stl}):} neu als Einzeldatei; er war im Probedruck nicht enthalten.
+\item Alle anderen Teile sind unverändert.
+\end{itemize}
+
+\section*{3. Zu drucken (alle Dateien im Zip)}
+\begin{tabularx}{\linewidth}{>{\ttfamily}l c l X}
+\toprule
+\normalfont\textbf{Datei} & \textbf{Anzahl} & \textbf{Größe auf dem Bett (mm)} & \textbf{Hinweis} \\
+\midrule
+rs15\_plate.stl & 4 & 128 $\times$ 51 $\times$ 14 & neue Version (Probedruck-Platte wird nicht verwendet) \\
+rsp2000\_bracket\_B.stl & 1 & 62 $\times$ 107 $\times$ 18 & ergänzt Halter A aus dem Probedruck \\
+rsp2000\_brackets.stl & 3 & 62 $\times$ 224 $\times$ 18 & je ein Paar A + B (zwei Teile pro Datei) \\
+iaa100\_din\_mount.stl & 3 & 100 $\times$ 40 $\times$ 15 & \\
+\bottomrule
+\end{tabularx}
+
+\section*{4. Druckeinstellungen (wie beim Probedruck)}
+\begin{itemize}
+\item \textbf{Liegend, Nutleiste unten}, genau wie exportiert (max.\ 18\,mm hoch). Bitte nicht aufrecht stellen: so sind die
+  ersten Versuche viermal umgekippt.
+\item \textbf{Stützen nur von der Druckplatte} unter: den Plattenflügeln (2,5\,mm über dem Bett, alle Teile), den seitlichen
+  Absätzen der 48-V-Halter (10,5\,mm überstehend, 7,5\,mm hoch) und den Flanschen der DIN-Schiene (14\,mm hoch). Die runden
+  Schraubenkopf-Taschen auf der Unterseite (Ø\,6--8\,mm) brücken ohne Stützen.
+\item \textbf{Material:} PETG oder ASA. Für die 48-V-Halter bitte \textbf{kein PLA} (sitzen auf einem warmen Netzteil).
+\item \textbf{Bei PETG:} Stützen-Z-Abstand 0,2--0,25\,mm (die 1\,mm dünnen DIN-Flansche brechen sonst beim Entfernen),
+  4 Wände, mindestens 40\,\% Infill; auf glattem PEI Klebestift als Trennschicht.
+\item \textbf{Bitte nicht skalieren oder verstärken:} Nutleiste 9,6 $\times$ 2,5\,mm, 5\,mm Plattenstärke unter den
+  M6-Köpfen und alle Lochpositionen bestimmen die Passung. Mehr Material an anderen Stellen ist unkritisch.
+\end{itemize}
+
+Bei Fragen oder wenn etwas im Slicer auffällt, melden Sie sich gerne bei mir.
+\end{document}
