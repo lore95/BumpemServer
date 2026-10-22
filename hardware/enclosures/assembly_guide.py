@@ -89,10 +89,10 @@ def page_print(pdf):
              "other sat under the mains cables); bracket B (fan end) was never in the fit check and is now 20 mm longer past the "
              "supply, so its T-nuts have room.", 100)
     y -= 0.012
-    y = text(fig, 0.07, y, "One file: out/all_parts.3mf, 14 parts, each a separate object, already in the right numbers. They do not "
-             "fit one bed: 3 groups of 250 x 210 mm side by side, group 1 on the bed (Bambu / Orca: Arrange spreads them onto plates).", 100)
+    y = text(fig, 0.07, y, "Three files, one per bed, laid out like the fit check: out/print_bed_1.stl (4 RS-15, 2 IAA100), "
+             "print_bed_2.stl (3 A, 2 B), print_bed_3.stl (2 B, 1 IAA100); each at most 250 x 210 mm. Print each once: 14 parts.", 100)
     y -= 0.008
-    y = table(fig, y, ["Part (in all_parts.3mf)", "How many", "Bed size (mm)", "Note"], [
+    y = table(fig, y, ["Part (in print_bed_1-3.stl)", "How many", "Bed size (mm)", "Note"], [
         ["rs15_plate", "4 (1 per tower)", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
         ["rsp2000_bracket_A", "3", "62 x 107 x 18", "towers 2-4; tower 1 uses the fit-check A"],
         ["rsp2000_bracket_B", "4", "82 x 107 x 18", "towers 1-4; ASA, or PETG with 40 %+ infill"],

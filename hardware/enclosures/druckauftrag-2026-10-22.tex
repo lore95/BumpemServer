@@ -27,14 +27,13 @@ DIN-Schiene ein; das RS-15-Netzteil und das 48-V-Netzteil (Halter A) passen auf 
 \item Alle anderen Teile sind unverändert.
 \end{itemize}
 
-\section*{3. Zu drucken: eine Datei, \texttt{all\_parts.3mf} (14 Teile, alle schon in der richtigen Anzahl)}
-Jedes Teil ist ein eigenes Objekt mit Namen. Zusammen passen sie nicht auf ein Bett: Die Datei legt sie in
-\textbf{3 Gruppen zu je 250\,$\times$\,210\,mm} nebeneinander; Gruppe 1 liegt auf dem Bett. Bambu Studio / OrcaSlicer:
-\glqq Anordnen\grqq{} verteilt alles auf Platten. PrusaSlicer / Cura: Gruppe für Gruppe drucken.
+\section*{3. Zu drucken: 3 Druckbetten, je eine STL (14 Teile, schon in der richtigen Anzahl)}
+Wie beim Probedruck liegen alle Teile eines Betts in einer STL, fertig angeordnet: \texttt{print\_bed\_1.stl},
+\texttt{print\_bed\_2.stl}, \texttt{print\_bed\_3.stl}, jede höchstens 250\,$\times$\,210\,mm. Jede Datei einmal drucken.
 
 \begin{tabularx}{\linewidth}{c >{\ttfamily}l c l X}
 \toprule
-\textbf{Gruppe} & \normalfont\textbf{Teil} & \textbf{Anzahl} & \textbf{Größe (mm)} & \textbf{Hinweis} \\
+\textbf{Bett} & \normalfont\textbf{Teil} & \textbf{Anzahl} & \textbf{Größe (mm)} & \textbf{Hinweis} \\
 \midrule
 1 & rs15\_plate & 4 & 128 $\times$ 51 $\times$ 14 & neue Version (Probedruck-Platte wird nicht verwendet) \\
 1, 3 & iaa100\_din\_mount & 2 + 1 & 100 $\times$ 40 $\times$ 15 & \\
