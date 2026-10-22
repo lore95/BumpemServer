@@ -23,6 +23,7 @@ def rsp_pair() -> cq.Workplane:
 
 READY = {
     "rsp2000_brackets": rsp_pair,
+    "rsp2000_bracket_B": lambda: flat(parts.rsp_bracket("B")),   # fan end alone: fit_check has only A (2026-10-22)
     "iaa100_din_mount": lambda: flat(parts.din_rail_mount()),
     "rs15_plate": lambda: flat(parts.rs15_holder()),
 }
