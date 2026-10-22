@@ -51,7 +51,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |
-| `hardware/enclosures/out/bumpem-druckauftrag-2026-10-22.zip` | Print job 2 for the makerspace: handoff PDF (German, `druckauftrag-2026-10-22.tex`, built by `druckauftrag.sh`) + assembly guide + the 4 STLs to print |
+| `hardware/enclosures/out/bumpem-druckauftrag-2026-10-22.zip` | Print job 2 for the makerspace: handoff PDF (German, `druckauftrag-2026-10-22.tex`, built by `druckauftrag.sh`) + assembly guide + `all_parts.3mf` (all 14 parts to print in one file, `make_stl.py`) |
 | `hardware/enclosures/out/assembly-guide.pdf` | Printed holders: which device, which tower face (recommended layout), screws per tower, mounting steps (`assembly_guide.py`) |
 | `docs/electrician/power-requirements-de.tex` / `.pdf` | German 1-page version, sections 1–3 only (system, mains data per tower, expected load) |
 | `docs/electrician/power-requirements.tex` / `.pdf` | 2-page sheet for the building electrician: mains data per tower (RSP-2000-48, RS-15-24), expected load, inrush, leakage, questions |
