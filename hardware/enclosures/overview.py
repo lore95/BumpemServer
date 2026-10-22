@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 from matplotlib.backends.backend_pdf import PdfPages
 import numpy as np
 
+import make_stl
 import parts
 import test_fit
 import render
@@ -22,7 +23,7 @@ def images(name, wp, status):
     TMP.mkdir(parents=True, exist_ok=True)
     col = (0.55, 0.66, 0.80) if status != "CONCEPT" else (0.90, 0.72, 0.45)
     alone = TMP / f"{name}.png"
-    render.render_png([(wp, col, 1.0)], alone)
+    render.render_png([(make_stl.rsp_pair() if name.startswith("48 V") else wp, col, 1.0)], alone)   # 48 V: both brackets, as printed
     ctx = parts.CONTEXT.get(name)
     if not ctx:
         return alone, None

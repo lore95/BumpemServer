@@ -166,10 +166,10 @@ def page_layout(pdf):
     pdf.savefig(fig); plt.close(fig)
 
 
-def page_part(pdf, title, render_name, guide_key, extra):
+def page_part(pdf, title, render_name, guide_key, extra, cap_part="The printed part"):
     fig = plt.figure(figsize=A4)
     fig.text(0.07, 0.95, title, fontsize=18, weight="bold")
-    for rect, img, cap in (([0.03, 0.62, 0.46, 0.30], R / f"{render_name}.png", "The printed part"),
+    for rect, img, cap in (([0.03, 0.62, 0.46, 0.30], R / f"{render_name}.png", cap_part),
                            ([0.51, 0.62, 0.46, 0.30], R / f"{render_name} mounted.png", "On the profile (grey), device (red)")):
         ax = fig.add_axes(rect); ax.imshow(plt.imread(img)); ax.set_axis_off(); ax.set_title(cap, fontsize=9, color="#555")
     role, todo = parts.GUIDE[guide_key]
@@ -194,5 +194,6 @@ if __name__ == "__main__":
         page_part(pdf, "2. RS-15-24 on the 24 V plate", "24 V supply plate (RS-15-24)", "24 V supply plate (RS-15-24)",
                   "Supply sits flat against the end stop; screws not longer than M3x6 (max 3 mm into the case). Both M6 heads clear: the mains cables do not touch the one at the terminal end. 230 V terminals covered before the strip is plugged in.")
         page_part(pdf, "3. RSP-2000-48 on the two brackets", "48 V supply brackets (RSP-2000-48)", "48 V supply brackets (RSP-2000-48)",
-                  "Two people. Push the supply: nothing moves, keys sit in both slots. Fans and vents free, 10 mm gap behind. Output cables reach chopper pins 4 / 5 without strain.")
+                  "Two people. Push the supply: nothing moves, keys sit in both slots. Fans and vents free, 10 mm gap behind. Output cables reach chopper pins 4 / 5 without strain.",
+                  cap_part="2 printed parts: bracket A (2 small holes) and B (1 small hole)")
     print("written", out)
