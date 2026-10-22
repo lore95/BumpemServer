@@ -116,8 +116,8 @@ PARTS = {
     "Slot test plates": (None, "READY TO PRINT", "3 small plates, key clearance 0.1 / 0.2 / 0.3 mm (1/2/3 notches). Sets KEY_CLEAR for all parts.", "nothing"),
     "Base mount plate": (lambda: base(80.0, slots=2), "READY (geometry)", "Covers one face, 2 keys in both slots, 4 M6 holes with head seats. Template for wider parts.", "test-fit result (KEY_CLEAR), bolt length"),
     "IAA100 DIN-rail mount": (din_rail_mount, "READY (datasheet)", "100 mm printed 35 mm top-hat rail on a one-slot plate. The Futek IAA100 clips on (spring DIN clip, FI1573); plugs point up and down along the profile. Alternative: bolt a short steel DIN rail instead.", "check your IAA100 has the DIN clip (66.8 x 50.4 x 17.8 mm version)"),
-    "24 V supply plate (RS-15-24)": (rs15_holder, "READY (datasheet)", "Plate under the Mean Well RS-15-24 (62.5 x 51 x 28 mm, case 971A), held by its 2 bottom M3 holes with M3 x 6 screws from the back; end stop opposite the terminals.", "M3 x 6 screws; a cover for the open 230 V terminals (electrician)"),
-    "48 V supply brackets (RSP-2000-48)": (lambda: rsp_bracket("A"), "READY (datasheet)", "Two end brackets (A: 2 x M4, B: 1 x M4) under the Mean Well RSP-2000-48 (295 x 127 x 41 mm, 1.95 kg, case 952D). Keyed into both slots; M6 bolts past the supply ends stay reachable; 10 mm air gap behind the supply; fan ends free. Screw the supply onto both brackets first (M4 x 12 from the back, max 4 mm into the case), then bolt them to the profile. Print in ASA or PETG.", "M4 x 12 screws; check the supply's 3 M4 holes on the wide face match (case 952D)"),
+    "24 V supply plate (RS-15-24)": (rs15_holder, "READY (datasheet)", "Plate under the Mean Well RS-15-24 (62.5 x 51 x 28 mm, case 971A), held by its 2 bottom M3 holes with M3 x 6 screws from the back; end stop opposite the terminals. M6 holes 24 / 41 mm past the supply ends (clear of the stop and the mains cables).", "M3 x 6 screws; a cover for the open 230 V terminals (electrician)"),
+    "48 V supply brackets (RSP-2000-48)": (lambda: rsp_bracket("A"), "READY (datasheet)", "Two end brackets (A: 2 x M4, B: 1 x M4) under the Mean Well RSP-2000-48 (295 x 127 x 41 mm, 1.95 kg, case 952D). Keyed into both slots; M6 bolts past the supply ends stay reachable; 10 mm air gap behind the supply; fan ends free. Screw the supply onto both brackets first (M4 x 12 from the back, max 4 mm into the case), then bolt them to the profile. Print in ASA or PETG.", "M4 x 12 screws (hole pattern checked against RSP-2000-SPEC p. 6)"),
     "Signal connector plate": (connector_plate, "CONCEPT", "Upright panel holding the tower's 5-pin MSTB socket: the single signal cable to the breadboard / carrier board.", "MSTB panel part + cut-out size"),
     "Cable clip": (cable_clip, "CONCEPT", "Snap-in clip guiding a cable along the profile (mains, signal, motor).", "cable diameters (PLACEHOLDER 8 mm)"),
     "Power-strip hook (x2)": (strip_hooks, "CONCEPT", "Two hooks carrying the tower's power strip. Holder only, no mains parts inside the print.", "power strip L x W x H"),
@@ -187,7 +187,8 @@ GUIDE = {
         ["Mains first: the supply stays unplugged; its 230 V terminals are wired and covered only by the electrician.",
          "Put the supply on the plate, the end stop against the end opposite the screw terminals.",
          "From the back of the plate, screw 2 M3 x 6 screws into the supply's bottom holes (max 3 mm into the case: no longer screws).",
-         "Slide 2 slot-10 T-nuts into a slot; bolt the plate on with 2 M6 bolts through the holes at both ends.",
+         "Slide 2 slot-10 T-nuts into a slot, 128 mm free; bolt the plate on with 2 M6 bolts through the holes at both ends "
+         "(the one at the terminal end is 25 mm past the supply, away from the mains cables).",
          "Route the 24 V output (+V, -V) to the IAA100 power plug (pin 1 +Vin, pin 2 GND)."]),
     "48 V supply brackets (RSP-2000-48)": (
         "Hold the Mean Well RSP-2000-48, the motor supply (1.95 kg), on one profile face with a 10 mm air gap. "
@@ -195,7 +196,8 @@ GUIDE = {
         ["Supply switched off and unplugged; leave its mains side to the electrician.",
          "Lay the supply with its wide face (the one with 3 M4 holes, case 952D) up. Put bracket A on the end with 2 holes and "
          "bracket B on the fan end, pads on the supply, the bolt flanges pointing away from the supply.",
-         "Screw M4 x 12 screws from the back of each bracket into the supply (2 in A, 1 in B); max 4 mm into the case.",
+         "Screw M4 x 12 screws from the back of each bracket into the supply (2 in A, 1 in B); max 4 mm into the case. "
+         "B's screw goes into the hole near the middle of the fan end (34.5 mm from the end); the 2 small holes beside it are not for mounting.",
          "Slide 4 slot-10 T-nuts into the tower face: one in each of its 2 slots for each bracket. The two brackets' bolts end up 319 mm apart.",
          "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds.",
          "Check: fans and vents free, 10 mm gap behind the supply, output cables (+V, -V) reach the chopper terminals 4 / 5."]),

@@ -56,7 +56,7 @@ def page_overview(pdf):
     y = table(fig, y, ["Printed part (file)", "Device it carries", "Device held by", "Holder fixed to tower by"], [
         ["DIN-rail mount (iaa100_din_mount.stl)", "Futek IAA100 force amplifier (small black box, load-cell cable)", "nothing: the IAA100 clicks onto the rail", "2 x M6x16 + 2 T-nuts, one slot"],
         ["24 V plate (rs15_plate.stl)", "Mean Well RS-15-24 (small 24 V supply)", "2 x M3x6 from the back", "2 x M6x16 + 2 T-nuts, one slot"],
-        ["48 V brackets A + B (rsp2000_brackets.stl)", "Mean Well RSP-2000-48 (large 48 V supply, 1.95 kg)", "A: 2 x M4x12, B: 1 x M4x12, from the back", "2 x M6x16 + 2 T-nuts each, both slots of one face"],
+        ["48 V brackets A + B (rsp2000_brackets.stl; B alone: rsp2000_bracket_B.stl)", "Mean Well RSP-2000-48 (large 48 V supply, 1.95 kg)", "A: 2 x M4x12, B: 1 x M4x12, from the back", "2 x M6x16 + 2 T-nuts each, both slots of one face"],
     ], [0.07, 0.30, 0.51, 0.72])
     y -= 0.01
     fig.text(0.07, y, "Per tower / for all 4 towers", fontsize=11, weight="bold"); y -= 0.022
@@ -68,7 +68,7 @@ def page_overview(pdf):
         "Power: the tower's power strip unplugged from the wall. Mains wiring (230 V side of both supplies) stays with the electrician.",
         "T-nuts: slide-in T-nuts only go in from the end of the profile. If the profile ends are blocked (motor unit on top, floor "
         "mount at the bottom), use drop-in (swivel / hammer-head) slot-10 T-nuts: they go in from the front and turn 90 degrees when tightened.",
-        "Fit test first: push the test plate's key (the ridge on its back) into a slot. It must slide without play. Too tight or loose: tell Claude before printing the rest.",
+        "Fit: done with the fit-check print (2026-10-22): the key (0.2 mm clearance) slides into the slot without play. Keep it for all parts.",
         "Always fit the device to its holder first, then the holder to the tower.",
     ])
     y -= 0.01
@@ -77,6 +77,30 @@ def page_overview(pdf):
         "Key: the 9.6 mm ridge on the back of each holder. It sits in the profile slot and stops the holder from turning.",
         "Slot: the groove along each face of the aluminium profile. Each 90 mm face has two slots, 45 mm apart.",
         "Face: one of the four flat sides of the tower profile.",
+    ])
+    pdf.savefig(fig); plt.close(fig)
+
+
+def page_print(pdf):
+    fig = plt.figure(figsize=A4)
+    fig.text(0.07, 0.95, "What to print now", fontsize=18, weight="bold")
+    y = text(fig, 0.07, 0.925, "Fit-check print (2026-10-22): IAA100 mount and RS-15 plate fit the devices, 48 V bracket A fits the "
+             "supply's cable end. Two changes since then: the RS-15 plate is longer (M6 holes moved out: one hit the end stop, the "
+             "other sat under the mains cables), and bracket B (fan end) was never in the fit check.", 100)
+    y -= 0.012
+    y = table(fig, y, ["File (hardware/enclosures/out/)", "How many", "Bed size (mm)", "Note"], [
+        ["rs15_plate.stl", "4 (1 per tower)", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
+        ["rsp2000_bracket_B.stl", "1", "62 x 107 x 18", "completes tower 1 with the fit-check bracket A"],
+        ["rsp2000_brackets.stl", "3 (A + B each)", "62 x 224 x 18", "towers 2-4; ASA, or PETG with 40 %+ infill"],
+        ["iaa100_din_mount.stl", "3", "100 x 40 x 15", "towers 2-4; the fit-check one is tower 1's"],
+    ], [0.07, 0.36, 0.53, 0.71])
+    y -= 0.012
+    fig.text(0.07, y, "Print settings (same as the fit check, which printed fine)", fontsize=11, weight="bold"); y -= 0.022
+    steps(fig, 0.07, y, [
+        "Flat, key side down, exactly as exported: no part is taller than 18 mm. Do not stand parts on end (that toppled 4 times, 2026-10-19).",
+        "Supports from the build plate under the plate wings (2.5 mm) and under the DIN rail flanges.",
+        "Do not scale and do not thicken the key, the 5 mm plate under the M6 heads or the hole positions: they set the fit.",
+        "PETG or ASA. The 48 V brackets carry 1.95 kg and get warm: ASA, or PETG with 40 % or more infill.",
     ])
     pdf.savefig(fig); plt.close(fig)
 
@@ -134,7 +158,7 @@ def page_layout(pdf):
     steps(fig, 0.06, y, [
         "IAA100: within reach of the load-cell cable (the load cell hangs in the rope near the eyebolt), and of the 5-wire signal cable.",
         "RS-15-24 next to the IAA100: its +V / -V go to IAA100 pins 1 / 2. Its 230 V terminals face away from hands; the electrician covers them.",
-        "IAA100 and RS-15 use the same slot, one above the other (side by side they would overlap by 0.5 mm).",
+        "IAA100 and RS-15 use the same slot, one above the other (side by side they would overlap by 0.5 mm). The RS-15 plate is 128 mm long.",
         "RSP-2000 low on the tower: 1.95 kg, close to the power strip and to the chopper (its +V / -V go to chopper pins 4 / 5). "
         "Hang it along the profile, both brackets in both slots, fans at the ends not blocked, 10 mm air gap behind.",
         "Leave a hand's width free around the chopper and ESCON: they get warm.",
@@ -163,11 +187,12 @@ if __name__ == "__main__":
     out = OUT / "assembly-guide.pdf"
     with PdfPages(out) as pdf:
         page_overview(pdf)
+        page_print(pdf)
         page_layout(pdf)
         page_part(pdf, "1. IAA100 on the DIN-rail mount", "IAA100 DIN-rail mount", "IAA100 DIN-rail mount",
                   "Push the amplifier: it does not move. Load-cell cable and signal cable reach without pulling.")
         page_part(pdf, "2. RS-15-24 on the 24 V plate", "24 V supply plate (RS-15-24)", "24 V supply plate (RS-15-24)",
-                  "Supply sits flat against the end stop; screws not longer than M3x6 (max 3 mm into the case). 230 V terminals covered before the strip is plugged in.")
+                  "Supply sits flat against the end stop; screws not longer than M3x6 (max 3 mm into the case). Both M6 heads clear: the mains cables do not touch the one at the terminal end. 230 V terminals covered before the strip is plugged in.")
         page_part(pdf, "3. RSP-2000-48 on the two brackets", "48 V supply brackets (RSP-2000-48)", "48 V supply brackets (RSP-2000-48)",
                   "Two people. Push the supply: nothing moves, keys sit in both slots. Fans and vents free, 10 mm gap behind. Output cables reach chopper pins 4 / 5 without strain.")
     print("written", out)
