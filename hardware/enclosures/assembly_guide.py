@@ -119,7 +119,7 @@ def page_layout(pdf):
                     ha="left" if side > 0 else "right", va="center", arrowprops=dict(arrowstyle="-", color="#333", lw=0.6))
 
     holder(1050, 100, -42.5, 40, "DIN-rail mount", "IAA100 (amplifier)\nnear the load-cell cable", 1)
-    holder(880, 120, -48, 51, "24 V plate", "RS-15-24\nright under the IAA100:\nshort 24 V wires", -1)
+    holder(870, 128, -48, 51, "24 V plate", "RS-15-24\nright under the IAA100:\nshort 24 V wires", -1)
     ax.add_patch(Rectangle((-63.5, 180), 127, 295, color=AMBER, alpha=0.5))           # RSP-2000 outline
     for yb in (180 - 24, 475 - 38):                                                    # brackets: 62 mm, 24 beyond each end
         ax.add_patch(Rectangle((-43, yb), 86, 62, color=BLUE))

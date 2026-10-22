@@ -40,10 +40,10 @@ def rs15_holder() -> cq.Workplane:
     """Plate for the Mean Well RS-15-24, fixed by its 2 bottom M3 holes (screws from the back, M3 x 6: max 3 mm into the case).
     Screw the supply on first, then bolt the plate to the profile. Mains terminals (AC/L, AC/N, FG) stay exposed: cover them."""
     r = RS15
-    end_t, end_s = 16.0, 24.0                                 # plate beyond the supply: terminal end / end-stop end. 16 at the
-    ln = r["L"] + end_t + end_s                               # stop put the M6 head recess 2.75 mm into the stop (printed 2026-10-22)
+    end_t, end_s = 41.0, 24.0                                 # plate beyond the supply: terminal end / end-stop end (printed 2026-10-22,
+    ln = r["L"] + end_t + end_s                               # both were 16: head under the mains cables / 2.75 mm into the stop)
     part = base(ln, slots=1, width=r["W"]).translate(((end_s - end_t) / 2, 0, 0))
-    x0 = -r["L"] / 2                                         # supply at the same place as before, terminal end at -x
+    x0 = -r["L"] / 2                                         # supply at x0..x0 + L, terminal end at -x
     for x in (x0 + r["L"] - r["m3_from_end"], x0 + r["L"] - r["m3_from_end"] - r["m3_pitch"]):
         y = r["m3_from_side"] - r["W"] / 2
         part = part.cut(cq.Workplane("XY").circle(1.7).extrude(20).translate((x, y, -P.KEY_H - 1)))
