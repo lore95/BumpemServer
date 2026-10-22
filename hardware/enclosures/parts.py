@@ -51,7 +51,7 @@ def rs15_holder() -> cq.Workplane:
     return part.union(ledge)                                 # end stop opposite the terminals
 
 
-RSP = dict(L=295.0, W=127.0, H=41.0,                       # Mean Well RSP-2000 case 952D, wide face ("top view") toward the profile
+RSP = dict(L=295.0, W=127.0, H=41.0,                       # Mean Well RSP-2000 case 952D (RSP-2000-SPEC 2026-04-24 p. 6), wide face ("top view") toward the profile
            holes_a=[(21.0, 18.5), (21.0, 108.5)],           # (from end A, from long edge): M4, max 4 mm deep
            holes_b=[(34.5, 59.0)])                          # from end B (fan end)
 GAP = 10.0                                                  # air gap between profile face and supply
