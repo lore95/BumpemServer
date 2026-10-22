@@ -85,13 +85,14 @@ def page_print(pdf):
     fig = plt.figure(figsize=A4)
     fig.text(0.07, 0.95, "What to print now", fontsize=18, weight="bold")
     y = text(fig, 0.07, 0.925, "Fit-check print (2026-10-22): IAA100 mount and RS-15 plate fit the devices, 48 V bracket A fits the "
-             "supply's cable end. Two changes since then: the RS-15 plate is longer (M6 holes moved out: one hit the end stop, the "
-             "other sat under the mains cables), and bracket B (fan end) was never in the fit check.", 100)
+             "supply's cable end. Changes since then: the RS-15 plate is longer (M6 holes moved out: one hit the end stop, the "
+             "other sat under the mains cables); bracket B (fan end) was never in the fit check and is now 20 mm longer past the "
+             "supply, so its T-nuts have room.", 100)
     y -= 0.012
     y = table(fig, y, ["File (hardware/enclosures/out/)", "How many", "Bed size (mm)", "Note"], [
         ["rs15_plate.stl", "4 (1 per tower)", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
-        ["rsp2000_bracket_B.stl", "1", "62 x 107 x 18", "completes tower 1 with the fit-check bracket A"],
-        ["rsp2000_brackets.stl", "3 (A + B each)", "62 x 224 x 18", "towers 2-4; ASA, or PETG with 40 %+ infill"],
+        ["rsp2000_bracket_B.stl", "1", "82 x 107 x 18", "completes tower 1 with the fit-check bracket A"],
+        ["rsp2000_brackets.stl", "3 (A + B each)", "82 x 224 x 18", "towers 2-4; ASA, or PETG with 40 %+ infill"],
         ["iaa100_din_mount.stl", "3", "100 x 40 x 15", "towers 2-4; the fit-check one is tower 1's"],
     ], [0.07, 0.36, 0.53, 0.71])
     y -= 0.012
@@ -150,8 +151,8 @@ def page_layout(pdf):
     holder(1050, 100, -42.5, 40, "DIN-rail mount", "IAA100 (amplifier)\nnear the load-cell cable", 1)
     holder(870, 128, -48, 51, "24 V plate", "RS-15-24\nright under the IAA100:\nshort 24 V wires", -1)
     ax.add_patch(Rectangle((-63.5, 180), 127, 295, color=AMBER, alpha=0.5))           # RSP-2000 outline
-    for yb in (180 - 24, 475 - 38):                                                    # brackets: 62 mm, 24 beyond each end
-        ax.add_patch(Rectangle((-43, yb), 86, 62, color=BLUE))
+    for yb, h in ((180 - 24, 62), (475 - 38, 82)):                                     # A: 24 beyond the cable end, B: 44 beyond the fan end
+        ax.add_patch(Rectangle((-43, yb), 86, h, color=BLUE))
     ax.annotate("48 V brackets A + B (blue)\nRSP-2000-48 (red), lowest:\nheaviest part; fans free;\nnear chopper + power strip",
                 (63.5, 330), (80, 330), fontsize=8, ha="left", va="center", arrowprops=dict(arrowstyle="-", color="#333", lw=0.6))
     ax.text(0, 60, "floor mount", ha="center", fontsize=8)

@@ -10,7 +10,7 @@ Overview with renders: `out/parts-overview.pdf`. **Assembly guide** (what goes o
 | `out/test_fit.stl` | 3 test plates, slot key clearance 0.1 / 0.2 / 0.3 mm per side (1 / 2 / 3 notches) | if 0.2 does not fit |
 | `out/iaa100_din_mount.stl` | printed 35 mm DIN rail for the Futek IAA100's spring clip | ready (from datasheet) |
 | `out/rsp2000_brackets.stl` | 2 end brackets for the Mean Well RSP-2000-48 (case 952D): A 2 × M4, B 1 × M4 (M4 × 12 from the back), 10 mm air gap | ready (from datasheet) |
-| `out/rsp2000_bracket_B.stl` | bracket B alone (fan end, 1 × M4): `fit_check.stl` contains only A, so print this to complete one tower | ready (from datasheet) |
+| `out/rsp2000_bracket_B.stl` | bracket B alone (fan end, 1 × M4), 82 × 107 mm: 44 mm past the supply (A: 24) so the T-nuts fit (2026-10-22). `fit_check.stl` contains only A, so print this to complete one tower | ready |
 | `out/rs15_plate.stl` | plate for the Mean Well RS-15-24, 2 × M3 × 6 from the back, 128 × 51 × 14 mm (M6 holes moved out 2026-10-22) | ready, reprint |
 | `parts.py` | concepts: signal connector plate, cable clip, power-strip hooks | sizes missing |
 

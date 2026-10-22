@@ -63,9 +63,10 @@ def rsp_bracket(end: str = "A") -> cq.Workplane:
     raised pad under the supply with M4 x 12 screws from the back into the case holes. Supply end at x = 0, supply over x > 0.
     Assemble: screw the supply onto both brackets first, then bolt the brackets to the profile."""
     r, holes = RSP, (RSP["holes_a"] if end == "A" else RSP["holes_b"])
-    pad_len, out_len = 38.0, 24.0                            # pad under the supply / plate beyond its end
-    ln = pad_len + out_len
-    part = base(ln, slots=2, xs=[-(ln / 2 - out_len / 2)]).translate((ln / 2 - out_len, 0, 0))   # M6 pair at x = -12
+    pad_len = 38.0                                           # pad under the supply
+    out_len = 24.0 if end == "A" else 44.0                   # plate beyond the supply end; B +20 mm: at 24 the T-nuts sat right at
+    ln = pad_len + out_len                                   # the fan end, no room to fit them (2026-10-22)
+    part = base(ln, slots=2, xs=[-(ln / 2 - 12)]).translate((ln / 2 - out_len, 0, 0))   # M6 pair 12 mm from the outer end
     pad = cq.Workplane("XY").box(pad_len, r["W"] - 20, GAP, centered=(False, True, False)).translate((0, 0, P.PLATE_T))
     part = part.union(pad)
     top = P.PLATE_T + GAP
@@ -154,7 +155,7 @@ CONTEXT = {   # name -> (profile length, slots, [device envelopes])
     "Base mount plate": (120.0, 2, []),
     "IAA100 DIN-rail mount": (140.0, 1, [iaa100_box]),
     "24 V supply plate (RS-15-24)": (130.0, 1, [rs15_box]),
-    "48 V supply brackets (RSP-2000-48)": (360.0, 2, [(rsp_bracket_far, (0.55, 0.66, 0.80), 1.0), rsp_box]),
+    "48 V supply brackets (RSP-2000-48)": (400.0, 2, [(rsp_bracket_far, (0.55, 0.66, 0.80), 1.0), rsp_box]),
     "Signal connector plate": (90.0, 1, []),
     "Cable clip": (70.0, 1, []),
     "Power-strip hook (x2)": (70.0, 1, []),
@@ -198,7 +199,7 @@ GUIDE = {
          "bracket B on the fan end, pads on the supply, the bolt flanges pointing away from the supply.",
          "Screw M4 x 12 screws from the back of each bracket into the supply (2 in A, 1 in B); max 4 mm into the case. "
          "B's screw goes into the hole near the middle of the fan end (34.5 mm from the end); the 2 small holes beside it are not for mounting.",
-         "Slide 4 slot-10 T-nuts into the tower face: one in each of its 2 slots for each bracket. The two brackets' bolts end up 319 mm apart.",
+         "Slide 4 slot-10 T-nuts into the tower face: one in each of its 2 slots for each bracket. The two brackets' bolts end up 339 mm apart.",
          "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds. "
          "Tighten firmly with the short end of the hex key only (about 2 N m): more crushes the plastic under the head.",
          "Check: fans and vents free, 10 mm gap behind the supply, output cables (+V, -V) reach the chopper terminals 4 / 5."]),
