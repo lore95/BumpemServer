@@ -1,6 +1,6 @@
 """Export the ready parts as STL + STEP in print orientation.  Run: python make_stl.py  ->  out/<name>.stl
 Every part prints flat, key side down (the key on the bed keeps it accurate): supports from the build plate under the plate wings
-(2.5 mm, against the profile face, so a rough finish there is fine). Standing on end (up to 107 mm, small footprint) toppled halfway
+(2.5 mm, against the profile face, so a rough finish there is fine), the 48 V pad ledges and the DIN rail flanges. Standing on end (up to 107 mm, small footprint) toppled halfway
 on the makerspace printer (2026-10-19)."""
 from pathlib import Path
 

@@ -199,7 +199,8 @@ GUIDE = {
          "Screw M4 x 12 screws from the back of each bracket into the supply (2 in A, 1 in B); max 4 mm into the case. "
          "B's screw goes into the hole near the middle of the fan end (34.5 mm from the end); the 2 small holes beside it are not for mounting.",
          "Slide 4 slot-10 T-nuts into the tower face: one in each of its 2 slots for each bracket. The two brackets' bolts end up 319 mm apart.",
-         "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds.",
+         "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds. "
+         "Tighten firmly with the short end of the hex key only (about 2 N m): more crushes the plastic under the head.",
          "Check: fans and vents free, 10 mm gap behind the supply, output cables (+V, -V) reach the chopper terminals 4 / 5."]),
 }
 GUIDE["Slot test plates"] = GUIDE["Slot test plate"]

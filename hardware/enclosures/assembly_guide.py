@@ -98,9 +98,14 @@ def page_print(pdf):
     fig.text(0.07, y, "Print settings (same as the fit check, which printed fine)", fontsize=11, weight="bold"); y -= 0.022
     steps(fig, 0.07, y, [
         "Flat, key side down, exactly as exported: no part is taller than 18 mm. Do not stand parts on end (that toppled 4 times, 2026-10-19).",
-        "Supports from the build plate under the plate wings (2.5 mm) and under the DIN rail flanges.",
+        "Supports touching the build plate, under: the plate wings (2.5 mm above the bed, every part), the 48 V brackets' pad ledges "
+        "(10.5 mm beyond the plate at both sides, 7.5 mm above the bed) and the DIN rail flanges (14 mm above the bed). Small round "
+        "pockets on the bottom (screw-head recesses, 6-8 mm) bridge without support.",
+        "PETG: support Z gap 0.2-0.25 mm (PETG welds to its supports; the 1 mm DIN rail flanges break if supports are pried off hard), "
+        "4 walls, 40 % or more infill. On a smooth PEI bed use glue stick as a release layer.",
         "Do not scale and do not thicken the key, the 5 mm plate under the M6 heads or the hole positions: they set the fit.",
-        "PETG or ASA. The 48 V brackets carry 1.95 kg and get warm: ASA, or PETG with 40 % or more infill.",
+        "PETG or ASA, not PLA for the 48 V brackets (PLA softens around 55-60 C, on a warm supply). PETG holds the 1.95 kg easily; "
+        "its limit is heat (softens around 70 C): touch the brackets after the first long session, they should feel only warm.",
     ])
     pdf.savefig(fig); plt.close(fig)
 
