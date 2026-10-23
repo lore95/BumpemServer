@@ -91,16 +91,17 @@ def page_print(pdf):
              "other sat under the mains cables); bracket B (fan end) was never in the fit check and is now 20 mm longer past the "
              "supply, so its T-nuts have room.", 100)
     y -= 0.012
-    y = text(fig, 0.07, y, "One file: out/tower_set.stl, the 5 parts of one tower on one bed (235 x 166 mm), laid out like the "
-             "fit check. Print it 4 times, once per tower (the fit-check A and IAA100 mount become spares).", 100)
+    y = text(fig, 0.07, y, "Two files. out/tower_set.stl: the 4 parts of one tower on one bed (200 x 166 mm), laid out like the "
+             "fit check. Print it 4 times, once per tower (the fit-check A and IAA100 mount become spares). out/second_print.stl: "
+             "the carrier board plate + 4 ground bar plates (242 x 167 mm). Print it once.", 100)
     y -= 0.008
-    y = table(fig, y, ["Part (in tower_set.stl)", "Per set", "Size (mm)", "Note"], [
-        ["rs15_plate", "1", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
-        ["rsp2000_bracket_A", "1", "62 x 107 x 18", "48 V, cable end; unchanged"],
-        ["rsp2000_bracket_B", "1", "82 x 107 x 18", "48 V, fan end; ASA, or PETG with 40 %+ infill"],
-        ["iaa100_din_mount", "1", "100 x 40 x 15", "unchanged"],
-        ["ground_bar_mount", "1", "117 x 32 x 14", "new: ONPIRA V 1x12 ground bar; page 8"],
-        ["carrier_plate.stl (own file)", "1 in total", "204 x 86 x 18", "only for the tower with the carrier board; page 7"],
+    y = table(fig, y, ["Part (file: part)", "How many", "Size (mm)", "Note"], [
+        ["tower_set: rs15_plate", "4 (1 per tower)", "128 x 51 x 14", "new version; the fit-check RS-15 plate is not used"],
+        ["tower_set: rsp2000_bracket_A", "4 (1 per tower)", "62 x 107 x 18", "48 V, cable end; unchanged"],
+        ["tower_set: rsp2000_bracket_B", "4 (1 per tower)", "82 x 107 x 18", "48 V, fan end; ASA, or PETG with 40 %+ infill"],
+        ["tower_set: iaa100_din_mount", "4 (1 per tower)", "100 x 40 x 15", "unchanged"],
+        ["second_print: carrier_plate", "1 in total", "204 x 86 x 18", "only for the tower with the carrier board; page 7"],
+        ["second_print: ground_bar_mount", "4 (1 per tower)", "117 x 32 x 14", "ONPIRA V 1x12 ground bar; page 8"],
     ], [0.07, 0.36, 0.53, 0.71])
     y -= 0.012
     fig.text(0.07, y, "Print settings (same as the fit check, which printed fine)", fontsize=11, weight="bold"); y -= 0.022

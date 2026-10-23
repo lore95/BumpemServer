@@ -30,27 +30,33 @@ READY = {
     "carrier_plate": lambda: flat(parts.carrier_plate()),                 # once: the tower with the carrier board (2026-10-23)
 }
 
-# One tower's set on one bed, like fit_check.stl; print it 4 times (2026-10-22; + ground bar 2026-10-23): (name, part, rotate 90 deg, centre x, y)
-SET = [("rsp2000_bracket_A", lambda: flat(parts.rsp_bracket("A")), False, 39, 58.5),
-       ("rsp2000_bracket_B", lambda: flat(parts.rsp_bracket("B")), False, 119, 58.5),
-       ("iaa100_din_mount", lambda: flat(parts.din_rail_mount()), True, 185, 55),
-       ("ground_bar_mount", lambda: flat(parts.ground_bar_mount()), True, 227, 63.5),   # ONPIRA V 1x12 (2026-10-23)
-       ("rs15_plate", lambda: flat(parts.rs15_holder()), False, 75, 145.5)]
+# Beds laid out like fit_check.stl: (name, part, rotate 90 deg, centre x, y)
+_GND = lambda: flat(parts.ground_bar_mount())
+BEDS = {
+    "tower_set": [                                           # one tower's set; print it 4 times (2026-10-22)
+        ("rsp2000_bracket_A", lambda: flat(parts.rsp_bracket("A")), False, 41, 58.5),
+        ("rsp2000_bracket_B", lambda: flat(parts.rsp_bracket("B")), False, 125, 58.5),
+        ("iaa100_din_mount", lambda: flat(parts.din_rail_mount()), True, 190, 55),
+        ("rs15_plate", lambda: flat(parts.rs15_holder()), False, 75, 145.5)],
+    "second_print": [                                        # once: carrier board plate + 4 ground bar plates (2026-10-23)
+        ("carrier_plate", lambda: flat(parts.carrier_plate()), False, 125, 48)]
+        + [(f"ground_bar_mount_{i + 1}", _GND, False, x, y) for i, (x, y) in enumerate([(64.5, 116), (189.5, 116), (64.5, 156), (189.5, 156)])],
+}
 BED = (250, 210)
 
 
-def tower_set() -> cq.Workplane:
-    """The 4 parts of one tower, centred like the other STLs; a part past the bed or < 4 mm from another raises."""
+def bed(name: str) -> cq.Workplane:
+    """One print bed, centred like the other STLs; a part past the bed or < 4 mm from another raises."""
     out, boxes = None, []
-    for name, build, rot, cx, cy in SET:
+    for part, build, rot, cx, cy in BEDS[name]:
         wp = build()
         if rot:
             wp = wp.rotate((0, 0, 0), (0, 0, 1), 90)
         wp = wp.translate((cx, cy, 0))
         bb = wp.val().BoundingBox()
-        assert 0 <= bb.xmin and bb.xmax <= BED[0] and 0 <= bb.ymin and bb.ymax <= BED[1], f"{name} off the bed"
+        assert 0 <= bb.xmin and bb.xmax <= BED[0] and 0 <= bb.ymin and bb.ymax <= BED[1], f"{part} off the bed"
         for o in boxes:
-            assert bb.xmax + 4 <= o.xmin or o.xmax + 4 <= bb.xmin or bb.ymax + 4 <= o.ymin or o.ymax + 4 <= bb.ymin, f"{name} too close"
+            assert bb.xmax + 4 <= o.xmin or o.xmax + 4 <= bb.xmin or bb.ymax + 4 <= o.ymin or o.ymax + 4 <= bb.ymin, f"{part} too close"
         boxes.append(bb)
         out = wp if out is None else out.union(wp)
     return flat(out)
@@ -65,7 +71,8 @@ if __name__ == "__main__":
         cq.exporters.export(wp, str(d / f"{name}.step"))
         bb = wp.val().BoundingBox()
         print(f"{name}: {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm (bed x, y, height)")
-    wp = tower_set()
-    cq.exporters.export(wp, str(d / "tower_set.stl"))
-    bb = wp.val().BoundingBox()
-    print(f"tower_set.stl: {len(wp.solids().vals())} parts, {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm")
+    for name in BEDS:
+        wp = bed(name)
+        cq.exporters.export(wp, str(d / f"{name}.stl"))
+        bb = wp.val().BoundingBox()
+        print(f"{name}.stl: {len(wp.solids().vals())} parts, {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm")
