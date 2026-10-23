@@ -50,19 +50,20 @@ def table(fig, y, head, rows, xs, size=9):
 def page_overview(pdf):
     fig = plt.figure(figsize=A4)
     fig.text(0.07, 0.95, "Printed holders: what goes where", fontsize=18, weight="bold")
-    y = text(fig, 0.07, 0.925, "Every tower gets the same three holders. Each holder carries one device that is taped to the tower now; "
+    y = text(fig, 0.07, 0.925, "Every tower gets the same four holders. Each holder carries one device that is taped to the tower now; "
              "the chopper, ESCON and motor unit stay where they are.", 100)
     y -= 0.01
     y = table(fig, y, ["Printed part (file)", "Device it carries", "Device held by", "Holder fixed to tower by"], [
         ["DIN-rail mount (iaa100_din_mount.stl)", "Futek IAA100 force amplifier (small black box, load-cell cable)", "nothing: the IAA100 clicks onto the rail", "2 x M6x16 + 2 T-nuts, one slot"],
         ["24 V plate (rs15_plate.stl)", "Mean Well RS-15-24 (small 24 V supply)", "2 x M3x6 from the back", "2 x M6x16 + 2 T-nuts, one slot"],
         ["48 V brackets A + B (rsp2000_brackets.stl; B alone: rsp2000_bracket_B.stl)", "Mean Well RSP-2000-48 (large 48 V supply, 1.95 kg)", "A: 2 x M4x12, B: 1 x M4x12, from the back", "2 x M6x16 + 2 T-nuts each, both slots of one face"],
+        ["Ground bar plate (ground_bar_mount.stl)", "ONPIRA V 1x12 distributor (12 screw terminals, all connected): the tower's ground wires", "2 x M3x12 + 2 M3 nuts", "2 x M6x16 + 2 T-nuts, one slot"],
     ], [0.07, 0.30, 0.51, 0.72])
     y -= 0.01
     fig.text(0.07, y, "Per tower / for all 4 towers", fontsize=11, weight="bold"); y -= 0.022
-    y = text(fig, 0.07, y, "Printed: 1 DIN-rail mount, 1 24 V plate, 1 pair of 48 V brackets  /  4, 4, 4 pairs.", 100)
+    y = text(fig, 0.07, y, "Printed: 1 DIN-rail mount, 1 24 V plate, 1 pair of 48 V brackets, 1 ground bar plate  /  4, 4, 4 pairs, 4.", 100)
     y = text(fig, 0.07, y, "Plus once, on the tower with the carrier board: 1 carrier board plate, 2 x M6x16, 2 T-nuts, 4 x M3x16 + 4 M3 nuts.", 100)
-    y = text(fig, 0.07, y, "Screws: 8 x M6x16 button head, 8 slot-10 T-nuts, 2 x M3x6, 3 x M4x12  /  32, 32, 8, 12.", 100)
+    y = text(fig, 0.07, y, "Screws: 10 x M6x16 button head, 10 slot-10 T-nuts, 2 x M3x6, 3 x M4x12, 2 x M3x12 + 2 M3 nuts  /  40, 40, 8, 12, 8 + 8.", 100)
     y -= 0.012
     fig.text(0.07, y, "Before you start", fontsize=11, weight="bold"); y -= 0.022
     y = steps(fig, 0.07, y, [
@@ -90,7 +91,7 @@ def page_print(pdf):
              "other sat under the mains cables); bracket B (fan end) was never in the fit check and is now 20 mm longer past the "
              "supply, so its T-nuts have room.", 100)
     y -= 0.012
-    y = text(fig, 0.07, y, "One file: out/tower_set.stl, the 4 parts of one tower on one bed (200 x 166 mm), laid out like the "
+    y = text(fig, 0.07, y, "One file: out/tower_set.stl, the 5 parts of one tower on one bed (235 x 166 mm), laid out like the "
              "fit check. Print it 4 times, once per tower (the fit-check A and IAA100 mount become spares).", 100)
     y -= 0.008
     y = table(fig, y, ["Part (in tower_set.stl)", "Per set", "Size (mm)", "Note"], [
@@ -98,6 +99,7 @@ def page_print(pdf):
         ["rsp2000_bracket_A", "1", "62 x 107 x 18", "48 V, cable end; unchanged"],
         ["rsp2000_bracket_B", "1", "82 x 107 x 18", "48 V, fan end; ASA, or PETG with 40 %+ infill"],
         ["iaa100_din_mount", "1", "100 x 40 x 15", "unchanged"],
+        ["ground_bar_mount", "1", "117 x 32 x 14", "new: ONPIRA V 1x12 ground bar; page 8"],
         ["carrier_plate.stl (own file)", "1 in total", "204 x 86 x 18", "only for the tower with the carrier board; page 7"],
     ], [0.07, 0.36, 0.53, 0.71])
     y -= 0.012
@@ -210,4 +212,7 @@ if __name__ == "__main__":
         page_part(pdf, "4. Carrier board on its plate (one tower)", "Carrier board plate", "Carrier board plate",
                   "Board does not rock; no solder joint underneath touches the plate (10 mm gap). USB and the 4 module plugs reachable, "
                   "cables without strain. Both M6 heads can be reached past the board ends.", cap_part="The printed part (4 standoffs)")
+        page_part(pdf, "5. Ground bar (ONPIRA V 1x12)", "Ground bar plate (ONPIRA V 1x12)", "Ground bar plate (ONPIRA V 1x12)",
+                  "Bar does not move; both M3 screws found their nuts (if a hole is outside the slot, measure the hole spacing and tell "
+                  "Claude). Ground wires reach without strain.", cap_part="The printed part (slots for any hole spacing 62-74 mm)")
     print("written", out)

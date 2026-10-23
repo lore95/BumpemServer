@@ -137,6 +137,26 @@ def carrier_plate() -> cq.Workplane:
     return part
 
 
+GND_BAR = dict(L=77.0, W=11.0, hole=3.0)                   # ONPIRA V 1x12 ground distributor (eBay 111052305404; Pollin 452458: 77 x 11 mm, 2 x 3 mm holes
+GND_DY, GND_PAD = 10.0, 6.0                                 # at the ends, 5 mm sleeves). Hole spacing not published: slots fit 62-74 mm
+
+
+def ground_bar_mount() -> cq.Workplane:
+    """One-slot plate for the ONPIRA V 1x12 (12 screw terminals, all connected: the tower's ground bus). Board beside the key on
+    two 6 mm pads; each end an M3 slot over a nut channel in the back (nut slides to the hole, cannot turn): M3 x 12 + nut.
+    M6 bolts 20 mm past the board ends."""
+    g, ext = GND_BAR, 20.0
+    ln = g["L"] + 2 * ext
+    part = base(ln, slots=1, width=32.0)
+    for s in (-1, 1):
+        cx = s * 34.0                                        # slot centre: hole spacing 62-74 mm
+        pad = cq.Workplane("XY").box(16.0, g["W"], GND_PAD, centered=(True, True, False)).translate((cx, GND_DY, P.PLATE_T))
+        part = part.union(pad)
+        part = part.cut(cq.Workplane("XY").slot2D(6.0 + 3.4, 3.4).extrude(P.PLATE_T + GND_PAD + 2).translate((cx, GND_DY, -1)))
+        part = part.cut(cq.Workplane("XY").slot2D(6.0 + 5.9, 5.9).extrude(2.6).translate((cx, GND_DY, 0)))  # M3 nut channel, 5.5 AF
+    return part
+
+
 # name: (builder, status, what it is, still needed)
 PARTS = {
     "Slot test plates": (None, "READY TO PRINT", "3 small plates, key clearance 0.1 / 0.2 / 0.3 mm (1/2/3 notches). Sets KEY_CLEAR for all parts.", "nothing"),
@@ -145,6 +165,7 @@ PARTS = {
     "24 V supply plate (RS-15-24)": (rs15_holder, "READY (datasheet)", "Plate under the Mean Well RS-15-24 (62.5 x 51 x 28 mm, case 971A), held by its 2 bottom M3 holes with M3 x 6 screws from the back; end stop opposite the terminals. M6 holes 24 / 41 mm past the supply ends (clear of the stop and the mains cables).", "M3 x 6 screws; a cover for the open 230 V terminals (electrician)"),
     "48 V supply brackets (RSP-2000-48)": (lambda: rsp_bracket("A"), "READY (datasheet)", "Two end brackets (A: 2 x M4, B: 1 x M4) under the Mean Well RSP-2000-48 (295 x 127 x 41 mm, 1.95 kg, case 952D). Keyed into both slots; M6 bolts past the supply ends stay reachable; 10 mm air gap behind the supply; fan ends free. Screw the supply onto both brackets first (M4 x 12 from the back, max 4 mm into the case), then bolt them to the profile. Print in ASA or PETG.", "M4 x 12 screws (hole pattern checked against RSP-2000-SPEC p. 6)"),
     "Carrier board plate": (carrier_plate, "READY (KiCad)", "Plate for the carrier PCB (154 x 96 mm, Teensy + DAC + 4 module plugs), keyed into both slots of one face, 204 x 86 mm. Board on 4 printed 10 mm standoffs, M3 x 16 from the top into M3 nuts in the back; 2 M6 bolts past the board ends. One plate, for the tower that carries the board.", "M3 x 16 + M3 nuts (4)"),
+    "Ground bar plate (ONPIRA V 1x12)": (ground_bar_mount, "READY (listing)", "One-slot plate, 117 x 32 mm, for the ONPIRA V 1x12 distributor (77 x 11 mm board, 12 screw terminals all connected): the tower's ground connections. Board beside the key on 2 pads (6 mm); slots at both ends fit any hole spacing 62-74 mm (not published), M3 x 12 into M3 nuts sliding in channels in the back.", "2 x M3 x 12 + 2 M3 nuts per plate"),
     "Signal connector plate": (connector_plate, "CONCEPT", "Upright panel holding the tower's 5-pin MSTB socket: the single signal cable to the breadboard / carrier board.", "MSTB panel part + cut-out size"),
     "Cable clip": (cable_clip, "CONCEPT", "Snap-in clip guiding a cable along the profile (mains, signal, motor).", "cable diameters (PLACEHOLDER 8 mm)"),
     "Power-strip hook (x2)": (strip_hooks, "CONCEPT", "Two hooks carrying the tower's power strip. Holder only, no mains parts inside the print.", "power strip L x W x H"),
@@ -164,6 +185,11 @@ def profile_block(length: float, slots: int) -> cq.Workplane:
 def carrier_board() -> cq.Workplane:
     c = CARRIER
     return cq.Workplane("XY").box(c["L"], c["W"], c["T"], centered=(True, True, False)).translate((0, CARRIER_DY, P.PLATE_T + STANDOFF))
+
+
+def ground_bar() -> cq.Workplane:
+    g = GND_BAR                                              # board + terminal row (height ~10 mm, not published)
+    return cq.Workplane("XY").box(g["L"], g["W"], 11.6, centered=(True, True, False)).translate((0, GND_DY, P.PLATE_T + GND_PAD))
 
 
 def iaa100_box() -> cq.Workplane:
@@ -188,6 +214,7 @@ CONTEXT = {   # name -> (profile length, slots, [device envelopes])
     "24 V supply plate (RS-15-24)": (130.0, 1, [rs15_box]),
     "48 V supply brackets (RSP-2000-48)": (400.0, 2, [(rsp_bracket_far, (0.55, 0.66, 0.80), 1.0), rsp_box]),
     "Carrier board plate": (220.0, 2, [carrier_board]),
+    "Ground bar plate (ONPIRA V 1x12)": (140.0, 1, [ground_bar]),
     "Signal connector plate": (90.0, 1, []),
     "Cable clip": (70.0, 1, []),
     "Power-strip hook (x2)": (70.0, 1, []),
@@ -245,5 +272,13 @@ GUIDE = {
          "Screw 4 M3 x 16 through the board into the nuts, gently: plastic underneath.",
          "Teensy USB end up or down as the cables run best: turn the plate 180 degrees before bolting it on. "
          "Module plugs face one side: route the 4 module cables and the USB cable without strain."]),
+    "Ground bar plate (ONPIRA V 1x12)": (
+        "Holds the ONPIRA V 1x12 distributor: 12 screw terminals, all connected, so every ground wire of the tower (ESCON, "
+        "IAA100, supplies' -V, module cable) lands on one bar instead of a twisted bundle.",
+        ["Slide an M3 nut into each of the 2 channels in the back of the plate (flat side up): it slides along, it cannot turn.",
+         "Put the board on the 2 pads (terminal screws up, beside the key, not over it). Line each nut up under the board's hole; "
+         "push an M3 x 12 through the board into it and tighten gently. The included 5 mm sleeves and wood screws are not needed.",
+         "Slide 2 slot-10 T-nuts into a slot, 97 mm apart; bolt the plate on with 2 M6 bolts at its ends.",
+         "Wire the grounds; mark the bar GND. No 230 V protective earth on this bar (that stays with the electrician)."]),
 }
 GUIDE["Slot test plates"] = GUIDE["Slot test plate"]

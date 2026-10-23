@@ -26,13 +26,15 @@ READY = {
     "rsp2000_bracket_B": lambda: flat(parts.rsp_bracket("B")),   # fan end alone: fit_check has only A (2026-10-22)
     "iaa100_din_mount": lambda: flat(parts.din_rail_mount()),
     "rs15_plate": lambda: flat(parts.rs15_holder()),
+    "ground_bar_mount": lambda: flat(parts.ground_bar_mount()),
     "carrier_plate": lambda: flat(parts.carrier_plate()),                 # once: the tower with the carrier board (2026-10-23)
 }
 
-# One tower's set on one bed, like fit_check.stl; print it 4 times (2026-10-22): (name, part, rotate 90 deg, centre x, y)
-SET = [("rsp2000_bracket_A", lambda: flat(parts.rsp_bracket("A")), False, 41, 58.5),
-       ("rsp2000_bracket_B", lambda: flat(parts.rsp_bracket("B")), False, 125, 58.5),
-       ("iaa100_din_mount", lambda: flat(parts.din_rail_mount()), True, 190, 55),
+# One tower's set on one bed, like fit_check.stl; print it 4 times (2026-10-22; + ground bar 2026-10-23): (name, part, rotate 90 deg, centre x, y)
+SET = [("rsp2000_bracket_A", lambda: flat(parts.rsp_bracket("A")), False, 39, 58.5),
+       ("rsp2000_bracket_B", lambda: flat(parts.rsp_bracket("B")), False, 119, 58.5),
+       ("iaa100_din_mount", lambda: flat(parts.din_rail_mount()), True, 185, 55),
+       ("ground_bar_mount", lambda: flat(parts.ground_bar_mount()), True, 227, 63.5),   # ONPIRA V 1x12 (2026-10-23)
        ("rs15_plate", lambda: flat(parts.rs15_holder()), False, 75, 145.5)]
 BED = (250, 210)
 
