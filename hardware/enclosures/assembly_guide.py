@@ -61,6 +61,7 @@ def page_overview(pdf):
     y -= 0.01
     fig.text(0.07, y, "Per tower / for all 4 towers", fontsize=11, weight="bold"); y -= 0.022
     y = text(fig, 0.07, y, "Printed: 1 DIN-rail mount, 1 24 V plate, 1 pair of 48 V brackets  /  4, 4, 4 pairs.", 100)
+    y = text(fig, 0.07, y, "Plus once, on the tower with the carrier board: 1 carrier board plate, 2 x M6x16, 2 T-nuts, 4 x M3x16 + 4 M3 nuts.", 100)
     y = text(fig, 0.07, y, "Screws: 8 x M6x16 button head, 8 slot-10 T-nuts, 2 x M3x6, 3 x M4x12  /  32, 32, 8, 12.", 100)
     y -= 0.012
     fig.text(0.07, y, "Before you start", fontsize=11, weight="bold"); y -= 0.022
@@ -69,7 +70,7 @@ def page_overview(pdf):
         "T-nuts: slide-in T-nuts only go in from the end of the profile. If the profile ends are blocked (motor unit on top, floor "
         "mount at the bottom), use drop-in (swivel / hammer-head) slot-10 T-nuts: they go in from the front and turn 90 degrees when tightened.",
         "Fit: done with the fit-check print (2026-10-22): the key (0.2 mm clearance) slides into the slot without play. Keep it for all parts.",
-        "Always fit the device to its holder first, then the holder to the tower.",
+        "Always fit the device to its holder first, then the holder to the tower (the carrier board plate is the other way round: page 7).",
     ])
     y -= 0.01
     fig.text(0.07, y, "Words used", fontsize=11, weight="bold"); y -= 0.022
@@ -97,6 +98,7 @@ def page_print(pdf):
         ["rsp2000_bracket_A", "1", "62 x 107 x 18", "48 V, cable end; unchanged"],
         ["rsp2000_bracket_B", "1", "82 x 107 x 18", "48 V, fan end; ASA, or PETG with 40 %+ infill"],
         ["iaa100_din_mount", "1", "100 x 40 x 15", "unchanged"],
+        ["carrier_plate.stl (own file)", "1 in total", "204 x 86 x 18", "only for the tower with the carrier board; page 7"],
     ], [0.07, 0.36, 0.53, 0.71])
     y -= 0.012
     fig.text(0.07, y, "Print settings (same as the fit check, which printed fine)", fontsize=11, weight="bold"); y -= 0.022
@@ -205,4 +207,7 @@ if __name__ == "__main__":
         page_part(pdf, "3. RSP-2000-48 on the two brackets", "48 V supply brackets (RSP-2000-48)", "48 V supply brackets (RSP-2000-48)",
                   "Two people. Push the supply: nothing moves, keys sit in both slots. Fans and vents free, 10 mm gap behind. Output cables reach chopper pins 4 / 5 without strain.",
                   cap_part="2 printed parts: bracket A (2 small holes) and B (1 small hole)")
+        page_part(pdf, "4. Carrier board on its plate (one tower)", "Carrier board plate", "Carrier board plate",
+                  "Board does not rock; no solder joint underneath touches the plate (10 mm gap). USB and the 4 module plugs reachable, "
+                  "cables without strain. Both M6 heads can be reached past the board ends.", cap_part="The printed part (4 standoffs)")
     print("written", out)

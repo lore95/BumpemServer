@@ -26,6 +26,7 @@ READY = {
     "rsp2000_bracket_B": lambda: flat(parts.rsp_bracket("B")),   # fan end alone: fit_check has only A (2026-10-22)
     "iaa100_din_mount": lambda: flat(parts.din_rail_mount()),
     "rs15_plate": lambda: flat(parts.rs15_holder()),
+    "carrier_plate": lambda: flat(parts.carrier_plate()),                 # once: the tower with the carrier board (2026-10-23)
 }
 
 # One tower's set on one bed, like fit_check.stl; print it 4 times (2026-10-22): (name, part, rotate 90 deg, centre x, y)

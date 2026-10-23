@@ -112,6 +112,31 @@ def strip_hooks(depth: float = 45.0, h: float = 40.0) -> cq.Workplane:
     return part.union(arm).union(lip)
 
 
+CARRIER = dict(L=154.0, W=96.0, T=1.6,                     # carrier board v1 (hardware/carrier/gen_carrier.py): KiCad x along L, y down from
+               holes=[(4.0, 32.0), (4.0, 58.0), (150.0, 10.0), (150.0, 45.0)])   # the top edge; MSTB plugs at y = 96, Teensy USB at x = 0
+STANDOFF = 10.0                                             # plate top to board bottom: through-hole leads + solder underneath
+CARRIER_DY = -3.5                                           # board 3.5 mm off the face centre: the nut pockets clear the keys
+
+
+def carrier_plate() -> cq.Workplane:
+    """Plate for the carrier board, keyed into both slots, board nearly centred on the face (over by 6.5 / 0), long side along the
+    profile. 4 printed standoffs, M3 x 16 from the top into an M3 nut in a pocket in the back. 2 M6 bolts (diagonal) 13 mm past
+    the board ends: reachable with the board on. Bolt the plate on first, then the board."""
+    c, ext = CARRIER, 25.0
+    ln = c["L"] + 2 * ext
+    part = base(ln, slots=2, xs=[])
+    part = part.cut(cq.Workplane("XY").box(110.0, 26.0, 20.0).translate((0, 0, 0)))          # window between the keys: less plastic
+    for x, y in ((-(ln / 2 - 12), -P.SLOT_PITCH / 2), (ln / 2 - 12, P.SLOT_PITCH / 2)):
+        part = part.cut(cq.Workplane("XY").circle(P.BOLT_HOLE / 2).extrude(P.PLATE_T + P.KEY_H + 2).translate((x, y, -P.KEY_H - 1)))
+        part = part.cut(cq.Workplane("XY").circle(P.HEAD_D / 2 + 0.5).extrude(P.PLATE_T).translate((x, y, P.PLATE_T - 1.5)))
+    for hx, hy in c["holes"]:
+        x, y = hx - c["L"] / 2, c["W"] / 2 - hy + CARRIER_DY    # board's top edge (KiCad y = 0) at +y
+        part = part.union(cq.Workplane("XY").circle(4.0).extrude(STANDOFF).translate((x, y, P.PLATE_T)))
+        part = part.cut(cq.Workplane("XY").circle(1.7).extrude(P.PLATE_T + STANDOFF + 1).translate((x, y, -0.5)))
+        part = part.cut(cq.Workplane("XY").polygon(6, 6.6).extrude(4.0).translate((x, y, 0)))   # M3 nut (5.5 AF) from the back
+    return part
+
+
 # name: (builder, status, what it is, still needed)
 PARTS = {
     "Slot test plates": (None, "READY TO PRINT", "3 small plates, key clearance 0.1 / 0.2 / 0.3 mm (1/2/3 notches). Sets KEY_CLEAR for all parts.", "nothing"),
@@ -119,6 +144,7 @@ PARTS = {
     "IAA100 DIN-rail mount": (din_rail_mount, "READY (datasheet)", "100 mm printed 35 mm top-hat rail on a one-slot plate. The Futek IAA100 clips on (spring DIN clip, FI1573); plugs point up and down along the profile. Alternative: bolt a short steel DIN rail instead.", "check your IAA100 has the DIN clip (66.8 x 50.4 x 17.8 mm version)"),
     "24 V supply plate (RS-15-24)": (rs15_holder, "READY (datasheet)", "Plate under the Mean Well RS-15-24 (62.5 x 51 x 28 mm, case 971A), held by its 2 bottom M3 holes with M3 x 6 screws from the back; end stop opposite the terminals. M6 holes 24 / 41 mm past the supply ends (clear of the stop and the mains cables).", "M3 x 6 screws; a cover for the open 230 V terminals (electrician)"),
     "48 V supply brackets (RSP-2000-48)": (lambda: rsp_bracket("A"), "READY (datasheet)", "Two end brackets (A: 2 x M4, B: 1 x M4) under the Mean Well RSP-2000-48 (295 x 127 x 41 mm, 1.95 kg, case 952D). Keyed into both slots; M6 bolts past the supply ends stay reachable; 10 mm air gap behind the supply; fan ends free. Screw the supply onto both brackets first (M4 x 12 from the back, max 4 mm into the case), then bolt them to the profile. Print in ASA or PETG.", "M4 x 12 screws (hole pattern checked against RSP-2000-SPEC p. 6)"),
+    "Carrier board plate": (carrier_plate, "READY (KiCad)", "Plate for the carrier PCB (154 x 96 mm, Teensy + DAC + 4 module plugs), keyed into both slots of one face, 204 x 86 mm. Board on 4 printed 10 mm standoffs, M3 x 16 from the top into M3 nuts in the back; 2 M6 bolts past the board ends. One plate, for the tower that carries the board.", "M3 x 16 + M3 nuts (4)"),
     "Signal connector plate": (connector_plate, "CONCEPT", "Upright panel holding the tower's 5-pin MSTB socket: the single signal cable to the breadboard / carrier board.", "MSTB panel part + cut-out size"),
     "Cable clip": (cable_clip, "CONCEPT", "Snap-in clip guiding a cable along the profile (mains, signal, motor).", "cable diameters (PLACEHOLDER 8 mm)"),
     "Power-strip hook (x2)": (strip_hooks, "CONCEPT", "Two hooks carrying the tower's power strip. Holder only, no mains parts inside the print.", "power strip L x W x H"),
@@ -133,6 +159,11 @@ def profile_block(length: float, slots: int) -> cq.Workplane:
     for dy in (-P.SLOT_PITCH / 2, P.SLOT_PITCH / 2):
         blk = blk.cut(cq.Workplane("XY").box(length + 2, P.SLOT_OPEN, 14.0, centered=(True, True, False)).translate((0, yc + dy, -14.0)))
     return blk
+
+
+def carrier_board() -> cq.Workplane:
+    c = CARRIER
+    return cq.Workplane("XY").box(c["L"], c["W"], c["T"], centered=(True, True, False)).translate((0, CARRIER_DY, P.PLATE_T + STANDOFF))
 
 
 def iaa100_box() -> cq.Workplane:
@@ -156,6 +187,7 @@ CONTEXT = {   # name -> (profile length, slots, [device envelopes])
     "IAA100 DIN-rail mount": (140.0, 1, [iaa100_box]),
     "24 V supply plate (RS-15-24)": (130.0, 1, [rs15_box]),
     "48 V supply brackets (RSP-2000-48)": (400.0, 2, [(rsp_bracket_far, (0.55, 0.66, 0.80), 1.0), rsp_box]),
+    "Carrier board plate": (220.0, 2, [carrier_board]),
     "Signal connector plate": (90.0, 1, []),
     "Cable clip": (70.0, 1, []),
     "Power-strip hook (x2)": (70.0, 1, []),
@@ -203,5 +235,15 @@ GUIDE = {
          "Lift supply + brackets onto the profile, keys in both slots, and bolt each bracket with its 2 M6 bolts. Two people: one holds. "
          "Tighten firmly with the short end of the hex key only (about 2 N m): more crushes the plastic under the head.",
          "Check: fans and vents free, 10 mm gap behind the supply, output cables (+V, -V) reach the chopper terminals 4 / 5."]),
+    "Carrier board plate": (
+        "Holds the carrier board (Teensy 4.1, DAC and the 4 module plugs) on one face of the tower that carries it, long side "
+        "along the profile, on 10 mm standoffs so the soldered pins underneath touch nothing.",
+        ["Push an M3 nut into each of the 4 hexagon pockets in the back of the plate (a drop of glue or tape keeps them in).",
+         "Slide 2 slot-10 T-nuts into the face, one in each slot, 180 mm apart (the plate's 2 M6 holes sit diagonally).",
+         "Bolt the plate on, keys in both slots, with 2 M6 bolts; tighten with the short end of the hex key.",
+         "Put the board on the 4 standoffs, component side out: they only fit one way round (2 holes at one end, 2 at the other). "
+         "Screw 4 M3 x 16 through the board into the nuts, gently: plastic underneath.",
+         "Teensy USB end up or down as the cables run best: turn the plate 180 degrees before bolting it on. "
+         "Module plugs face one side: route the 4 module cables and the USB cable without strain."]),
 }
 GUIDE["Slot test plates"] = GUIDE["Slot test plate"]

@@ -14,7 +14,7 @@ import test_fit
 import render
 import tower as P
 
-COLORS = {"READY TO PRINT": "#1f8a5b", "READY (geometry)": "#1f8a5b", "READY (datasheet)": "#1f8a5b", "CONCEPT": "#c77d12"}
+COLORS = {"READY TO PRINT": "#1f8a5b", "READY (geometry)": "#1f8a5b", "READY (datasheet)": "#1f8a5b", "READY (KiCad)": "#1f8a5b", "CONCEPT": "#c77d12"}
 TMP = Path(__file__).parent / "out" / "renders"
 
 
