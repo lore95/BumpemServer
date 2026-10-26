@@ -23,8 +23,8 @@ cp MAKERSPACE.txt fab/gerbers/
 "$K" pcb export pdf --layers "B.Cu,Edge.Cuts" --mirror -o fab/bumpem-carrier-milled-bottom.pdf "$PCB" >/dev/null
 "$K" pcb export pdf --layers "F.Fab,Edge.Cuts" -o fab/bumpem-carrier-milled-parts.pdf "$PCB" >/dev/null
 "$KPY" ../dump_board.py "$PCB" fab/board.json 2>&1 | grep -v "Debug\|assert" >/dev/null
-python3 soldering_guide_milled.py || echo "   soldering guide: run soldering_guide_milled.py with a Python that has matplotlib"
+python3 soldering_guide_milled.py && python3 render_milled.py || echo "   PDFs/picture: run soldering_guide_milled.py and render_milled.py with a Python that has matplotlib"
 # one zip: the milling files (gerbers/, for the makerspace) + the PDFs (preview, parts placement, soldering guide)
 (cd fab && rm -f bumpem-carrier-milled.zip && zip -q -r bumpem-carrier-milled.zip gerbers bumpem-carrier-milled-bottom.pdf \
-   bumpem-carrier-milled-parts.pdf bumpem-carrier-milled-soldering.pdf)
+   bumpem-carrier-milled-parts.pdf bumpem-carrier-milled-soldering.pdf bumpem-carrier-milled-sides.png)
 unzip -l fab/bumpem-carrier-milled.zip

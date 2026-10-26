@@ -3,7 +3,7 @@
 For the HS Offenburg makerspace's PCB mill: one copper layer, no plating, no solder mask, no copper fill.
 Same outline, mounting holes and Teensy / DAC / plug positions as v1 (`../`), so the printed carrier plate fits and every cable plug goes in the same place.
 
-**To make it:** send `fab/bumpem-carrier-milled.zip`. Its `gerbers/` folder is what the mill needs (bottom copper, outline, one drill file with all 114 holes, `MAKERSPACE.txt` in German and English: mill the bottom only, remove the unused copper, drill every hole). The PDFs are the 1:1 bottom view, the parts placement and the soldering guide.
+**To make it:** send `fab/bumpem-carrier-milled.zip`. Its `gerbers/` folder is what the mill needs (bottom copper, outline, one drill file with all 114 holes, `MAKERSPACE.txt` in German and English: mill the bottom only, remove the unused copper, drill every hole). The PDFs are the 1:1 bottom view, the parts placement and the soldering guide; `bumpem-carrier-milled-sides.png` shows both sides assembled (`render_milled.py`).
 
 ## Why it is easier to solder
 - **Everything is soldered on the bottom**: 70 joints, nothing on the top, no vias.
