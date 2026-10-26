@@ -1,0 +1,23 @@
+Bump'em carrier board - makerspace version (single-sided)
+=========================================================
+
+DEUTSCH
+- Einseitige Platine, 154 x 96 mm, FR4 1,6 mm.
+- Nur EINE Kupferlage fräsen: bumpem-carrier-milled-B_Cu.gbl (Unterseite / Lötseite).
+  Die Oberseite bleibt ohne Kupfer (oder Kupfer komplett entfernen).
+- Bitte das ungenutzte Kupfer entfernen ("Rub-out" / Restkupfer entfernen), damit Lot nicht
+  zwischen Pads und Restkupfer brücken kann. Falls das nicht geht: Isolationsbreite mindestens 0,6 mm.
+- Bohrungen: EINE Datei, bumpem-carrier-milled.drl, enthält ALLE Löcher (0,8 / 0,9 / 1,0 / 1,4 / 3,2 mm).
+  Keine Durchkontaktierung nötig. Bitte alle Löcher bohren, auch die ohne Kupferring (Sockel-Stifte).
+- Umriss: bumpem-carrier-milled-Edge_Cuts.gm1.
+- Kleinste Leiterbahn 0,45 mm, kleinster Abstand 0,6 mm.
+
+ENGLISH
+- Single-sided board, 154 x 96 mm, FR4 1.6 mm.
+- Mill ONE copper layer only: bumpem-carrier-milled-B_Cu.gbl (bottom / solder side). No top copper.
+- Please remove all unused copper ("rub-out"), so solder cannot bridge to leftover copper.
+  If that is not possible: isolation width at least 0.6 mm.
+- Drilling: ONE file, bumpem-carrier-milled.drl, holds EVERY hole (0.8 / 0.9 / 1.0 / 1.4 / 3.2 mm).
+  No plating needed. Drill all holes, including the ones without a copper ring (socket pins).
+- Outline: bumpem-carrier-milled-Edge_Cuts.gm1.
+- Smallest track 0.45 mm, smallest gap 0.6 mm.

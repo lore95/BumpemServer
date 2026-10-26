@@ -103,3 +103,4 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [x] Printed parts designed from datasheets + fit-check print and PDF (2026-10-07)
 - [x] Multimeter available
 - [x] Earlier: conda env, firmware v1 flashed, breadboard recabled, open-loop tests A/C/D, server board API + perturbation, repo on GitHub, carrier board v1 designed (2026-09-29 … 10-02)
+- [ ] 🟡 **Carrier board v2 (2026-10-26):** choose: order v1 from Aisler / JLCPCB (`hardware/carrier/fab/bumpem-carrier-gerbers.zip`), or mill the single-sided version (`hardware/carrier/milled/fab/bumpem-carrier-milled.zip`, ask for rub-out); then solder with its guide
