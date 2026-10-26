@@ -103,4 +103,3 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [x] Printed parts designed from datasheets + fit-check print and PDF (2026-10-07)
 - [x] Multimeter available
 - [x] Earlier: conda env, firmware v1 flashed, breadboard recabled, open-loop tests A/C/D, server board API + perturbation, repo on GitHub, carrier board v1 designed (2026-09-29 … 10-02)
-- [ ] 🟡 **Carrier board R5–R8 (2026-10-26):** 1 MΩ pull-downs not fitted (ground holes not drilled). Drill 0.8 mm or lap-solder to the bottom fill; until then arm only plugged-in, powered channels
