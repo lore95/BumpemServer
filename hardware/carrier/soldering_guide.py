@@ -220,14 +220,18 @@ def page_unplated(pdf):
         what = {"U1": "Teensy socket, Teensy pin 19", "U2": "DAC socket, its SCL pin"}.get(ref, "diode, band end")
         fig.text(0.09, y, f"{ref} pad {p['num']}  ({what}): {p['net']}", fontsize=9.5); y -= 0.018
     y -= 0.006
-    y = text(fig, 0.07, y, "Diodes: easy, the leads are reachable; solder that lead on the top too. Sockets U1 / U2: the plastic "
-             "covers the top pad. Set the header in, but leave it raised ~1 mm; solder that pin on the top first, then push the "
-             "header down and solder all pins underneath. Or solder a thin wire from the top pad to the pin.", 100)
+    y = text(fig, 0.07, y, "Diodes D1-D4: the band-end lead is reachable next to the body: solder it on the top as well as underneath "
+             "(the top track joins the 4 diodes to 3.3 V). SCL (U1 pad 41 = Teensy pin 19, far row, 8th from the left; U2 pad 3 = "
+             "DAC far row, 3rd from the left): the top track runs only between these two pins and the socket plastic covers it. "
+             "Easiest: ignore that track and solder a short insulated wire on the BOTTOM from the one pin to the other.", 100)
+    y = text(fig, 0.07, y, "Ground needs nothing: every ground pin reaches the bottom copper fill, which is one piece (checked on "
+             "the board file, 2026-10-26).", 100)
     y -= 0.016
     fig.text(0.07, y, f"B. {len(SIG_VIAS)} signal vias: a short wire through each, soldered on both sides", fontsize=11, weight="bold")
     y -= 0.022
-    y = text(fig, 0.07, y, "A via is where a track goes from one side to the other. Push a cut-off resistor lead through it, solder on "
-             "top and bottom, cut both ends short. The grey vias (ground) can be left: ground is joined by the copper fill on both sides.", 100)
+    y = text(fig, 0.07, y, "A via is where a track goes from one side to the other. Do them right after the resistors and diodes (no via sits under "
+             "a part), before the sockets: push a cut-off resistor or diode lead (or thin solid wire, max 0.7 mm) through, solder "
+             "on top and bottom, cut both ends short. The 12 parts give exactly 24 offcuts; keep them. Grey vias (ground): leave them.", 100)
     y -= 0.008
     nets = {}
     for s in SIG_VIAS:
