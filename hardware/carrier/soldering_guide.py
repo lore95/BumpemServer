@@ -112,7 +112,7 @@ def legend(fig, y, side):
              (BOT if side == "top" else TOP, "-", f"{'bottom' if side == 'top' else 'top'} track (other side, seen through)"),
              (COPPER, "o", "pad with hole (one pin each)"),
              ("#222", "o", "via: track changes side here (small grey dots: ground vias, nothing to do)"),
-             (MARK, "O", "circled: needs solder ON TOP too, if the holes are not plated (page 4)")]
+             (MARK, "O", "circled: needs solder ON TOP too, if the holes are not plated (page 5)")]
     if side == "top":
         items.insert(0, (PART, "s", "where the part body sits"))
     for i, (c, m, s) in enumerate(items):
@@ -133,7 +133,7 @@ def page_intro(pdf):
     fig = plt.figure(figsize=A4)
     fig.text(0.07, 0.95, "Carrier board v1: soldering guide", fontsize=18, weight="bold")
     y = text(fig, 0.07, 0.925, "Board 154 x 96 mm, bare copper (no printing). Every part goes on the TOP; every pin is soldered on the "
-             "BOTTOM. Pages 2 and 3 show both sides, page 4 what to do if the holes are not copper-plated.", 100)
+             "BOTTOM. Page 2: what the parts look like. Pages 3 and 4: both sides of the board. Page 5: if the holes are not plated.", 100)
     y -= 0.012
     fig.text(0.07, y, "Which side is which", fontsize=11, weight="bold"); y -= 0.022
     y = steps(fig, 0.07, y, [
@@ -142,24 +142,24 @@ def page_intro(pdf):
         "row of 6 (DAC socket) is right of it, near the far edge. The 2 left mounting holes are lower (32 and 58 mm from the far edge) "
         "than the 2 right ones (10 and 45 mm).",
         "If the Teensy rows are at the right instead, you are looking at the BOTTOM (solder side).",
-        "Check against page 2: the tracks you see on the top must match the red tracks there.",
+        "Check against page 3: the tracks you see on the top must match the red tracks there.",
     ])
     y -= 0.008
     fig.text(0.07, y, "Before you start", fontsize=11, weight="bold"); y -= 0.022
     y = steps(fig, 0.07, y, [
         "Look into a few holes. Copper-lined (shiny ring inside) = plated: solder on the bottom only. Bare fibreglass inside = "
-        "NOT plated: also do page 4.",
+        "NOT plated: also do page 5.",
         "The board takes FEMALE headers (sockets). The Teensy and the DAC keep their male pins and plug in from the top. Never "
         "solder male pins into the board, and never solder the Teensy or DAC to it.",
         "Multimeter in beep mode at hand. No Teensy, no DAC, no modules on the board while soldering.",
     ])
     y -= 0.008
-    fig.text(0.07, y, "Parts and order (lowest first, so each part lies flat on the bench while you solder)", fontsize=11, weight="bold")
+    fig.text(0.07, y, "Parts and order (lowest first; what they look like: next page)", fontsize=11, weight="bold")
     y -= 0.024
     rows = [
-        ("1", "R1-R4", "4 x 1 kOhm (brown-black-red)", "either way round; the long 10 mm ones"),
-        ("2", "R5-R8", "4 x 1 MOhm (brown-black-green)", "either way round; the short 7.6 mm ones"),
-        ("3", "D1-D4", "4 x BAT85 diode (glass)", "BAND towards the far edge (Teensy side): page 2"),
+        ("1", "R1-R4", "4 x 1 kOhm resistor", "either way round; holes 10 mm apart"),
+        ("2", "R5-R8", "4 x 1 MOhm resistor", "either way round; holes 7.6 mm apart"),
+        ("3", "D1-D4", "4 x BAT85 diode (glass)", "BAND towards the far edge (Teensy side): page 3"),
         ("4", "U1", "2 x female header 1x24, 8.5 mm", "Teensy socket, two rows"),
         ("5", "U2", "2 x female header 1x6", "DAC socket, two rows"),
         ("6", "J1-J4", "4 x Phoenix MSTB 2,5/5-GF-5,08", "plug opening towards the board edge"),
@@ -176,14 +176,120 @@ def page_intro(pdf):
     pdf.savefig(fig); plt.close(fig)
 
 
+BAND = {"black": "#111", "brown": "#7b4a1e", "red": "#d62728", "orange": "#ff7f0e", "yellow": "#f2d21b", "green": "#2ca02c",
+        "gold": "#c9a227", "blue": "#1f5fbf"}
+
+
+def draw_resistor(ax, x0, y0, bands, body):
+    """Axial resistor, 6.3 x 2.5 mm body drawn 4:1."""
+    s = 4
+    ax.plot([x0 - 6 * s, x0 + 12.3 * s], [y0, y0], color="#999", lw=2, solid_capstyle="round")
+    ax.add_patch(matplotlib.patches.FancyBboxPatch((x0, y0 - 1.25 * s), 6.3 * s, 2.5 * s, boxstyle="round,pad=0,rounding_size=4",
+                                                   facecolor=body, edgecolor="#555", lw=0.8))
+    for i, c in enumerate(bands):
+        bx = x0 + (0.9 + 0.95 * i) * s if i < len(bands) - 1 else x0 + 5.1 * s
+        ax.add_patch(Rectangle((bx, y0 - 1.25 * s), 0.45 * s, 2.5 * s, color=BAND[c]))
+
+
+def page_parts(pdf):
+    fig = plt.figure(figsize=A4)
+    fig.text(0.07, 0.95, "What the parts look like", fontsize=18, weight="bold")
+    text(fig, 0.07, 0.925, "Drawings, not to the same scale; real sizes in the text. German drawer labels in quotes. Bring this page "
+         "and a multimeter: the resistor colours can be confusing, the meter is sure (1 kOhm reads 0.99-1.01 k, 1 MOhm 0.99-1.01 M).", 100)
+
+    def panel(rect, title, lines):
+        ax = fig.add_axes(rect); ax.set_aspect("equal"); ax.set_axis_off()
+        fig.text(rect[0] + rect[2] + 0.01, rect[1] + rect[3] - 0.012, title, fontsize=10.5, weight="bold")
+        yy = rect[1] + rect[3] - 0.032
+        for l in lines:
+            yy = text(fig, rect[0] + rect[2] + 0.01, yy, l, 52, 8.5, 0.0145) - 0.002
+        return ax
+
+    # 1 kOhm
+    ax = panel([0.04, 0.76, 0.40, 0.12], "R1-R4: resistor 1 kOhm (x4)", [
+        "\"Widerstand 1 k\" (1 kOhm, 1K0). Small cylinder, 6 mm long, 2.5 mm thick, a wire at each end.",
+        "4 bands (beige body): brown-black-RED-gold.", "5 bands (blue body, 1 %): brown-black-black-BROWN-brown.",
+        "0.25 W (any size this small is fine)."])
+    draw_resistor(ax, 10, 12, ["brown", "black", "red", "gold"], "#e8d3a8")
+    draw_resistor(ax, 10, -2, ["brown", "black", "black", "brown", "brown"], "#7fb3e0")
+    ax.text(-26, 12, "4-band", fontsize=7, va="center"); ax.text(-26, -2, "5-band", fontsize=7, va="center")
+    ax.set_xlim(-30, 62); ax.set_ylim(-10, 20)
+    # 1 MOhm
+    ax = panel([0.04, 0.61, 0.40, 0.12], "R5-R8: resistor 1 MOhm (x4)", [
+        "\"Widerstand 1 M\" (1 MOhm, 1M0). Same size as the 1 k: only the colours differ.",
+        "4 bands: brown-black-GREEN-gold.", "5 bands: brown-black-black-YELLOW-brown.",
+        "Do not mix up with 1 k: the 3rd (4-band) or 4th (5-band) colour is the difference."])
+    draw_resistor(ax, 10, 12, ["brown", "black", "green", "gold"], "#e8d3a8")
+    draw_resistor(ax, 10, -2, ["brown", "black", "black", "yellow", "brown"], "#7fb3e0")
+    ax.text(-26, 12, "4-band", fontsize=7, va="center"); ax.text(-26, -2, "5-band", fontsize=7, va="center")
+    ax.set_xlim(-30, 62); ax.set_ylim(-10, 20)
+    # BAT85
+    ax = panel([0.04, 0.47, 0.40, 0.11], "D1-D4: diode BAT85 (x4)", [
+        "\"Schottky-Diode BAT85\". Tiny glass body (3.8 mm long, 1.9 mm thick), orange-red and see-through, with a black "
+        "band at one end = cathode. Printed text very small: use a magnifier.",
+        "Substitutes if there is no BAT85: BAT43, BAT46, BAT42 (same job). NOT a 1N4148 (that is the wrong type)."])
+    s = 4
+    ax.plot([-20, 50], [0, 0], color="#999", lw=2)
+    ax.add_patch(matplotlib.patches.FancyBboxPatch((5, -0.95 * s), 3.8 * s, 1.9 * s, boxstyle="round,pad=0,rounding_size=3.5",
+                                                   facecolor="#e8774a", edgecolor="#a04020", lw=0.8, alpha=0.85))
+    ax.add_patch(Rectangle((5 + 3.0 * s, -0.95 * s), 0.5 * s, 1.9 * s, color="#111"))
+    ax.annotate("band = cathode\n(towards the far edge)", (5 + 3.25 * s, 0.95 * s), (36, 10), fontsize=7,
+                arrowprops=dict(arrowstyle="-", lw=0.6))
+    ax.set_xlim(-24, 62); ax.set_ylim(-8, 16)
+    # female headers
+    ax = panel([0.04, 0.29, 0.40, 0.15], "U1, U2: female headers (sockets)", [
+        "\"Buchsenleiste 2,54 mm, 1-reihig\". Black plastic strip with a row of square holes on top, pins underneath. "
+        "Need 2 x 24-pin (Teensy, 8.5 mm tall) and 2 x 6-pin (DAC).",
+        "Longer strips (1 x 40) are fine: cut them with side cutters THROUGH the next hole (you lose one pin), file flat.",
+        "NOT the \"Stiftleiste\" (male pin header: bare pins sticking up). Spare male strips only help hold the sockets "
+        "straight while soldering."])
+    n = 10
+    ax.add_patch(Rectangle((0, 0), n * 2.54, 8.5, facecolor="#222", edgecolor="#000"))
+    for i in range(n):
+        ax.add_patch(Rectangle((0.7 + 2.54 * i, 7.4), 1.1, 1.0, color="#777"))
+        ax.plot([1.27 + 2.54 * i] * 2, [0, -3.0], color="#c9a227", lw=1.6)
+    ax.text(n * 2.54 + 1.5, 4, "...", fontsize=12, va="center")
+    ax.text(0, 10.5, "side view: holes on top, pins below", fontsize=7)
+    ax.add_patch(Rectangle((0, -9.5), n * 2.54, 2.5, facecolor="#222"))
+    for i in range(n):
+        ax.add_patch(Rectangle((0.8 + 2.54 * i, -8.9), 0.95, 1.2, color="#888"))
+    ax.text(0, -12.5, "seen from the top", fontsize=7)
+    ax.set_xlim(-2, 34); ax.set_ylim(-14, 13)
+    # MSTB
+    ax = panel([0.04, 0.08, 0.40, 0.18], "J1-J4: Phoenix MSTB header (x4) + plug (x4)", [
+        "On the board: \"Leiterplatten-Grundleiste\" Phoenix MSTB 2,5/5-GF-5,08 (no. 1776537): green, 5 pin openings "
+        "5.08 mm apart, a threaded hole in a flange at each end, 5 pins underneath. The opening faces sideways (horizontal).",
+        "On each module cable: the plug MSTB 2,5/5-STF-5,08 (1778014): green, 5 screw terminals on top, wires in the side, "
+        "a screw in each flange. Same family = they fit; other pitches (3.5 / 3.81 mm) do not.",
+        "No Phoenix in the makerspace? Order them (README): no substitute keeps the locking flanges."])
+    ax.add_patch(Rectangle((0, 0), 35.7, 9, facecolor="#3a8f3a", edgecolor="#1d5c1d"))
+    for i in range(5):
+        cx = 7.7 + 5.08 * i
+        ax.add_patch(Rectangle((cx - 1.8, 2.0), 3.6, 5.0, facecolor="#1d4f1d"))
+        ax.plot([cx, cx], [0, -3.5], color="#c9a227", lw=1.6)
+    for fx in (2.3, 33.4):
+        ax.add_patch(Circle((fx, 4.5), 1.3, facecolor="#c0c0c0", edgecolor="#555"))
+    ax.text(0, 10.5, "board header, seen from the plug side", fontsize=7)
+    ax.add_patch(Rectangle((0, -16), 35.7, 8, facecolor="#4aa04a", edgecolor="#1d5c1d"))
+    for i in range(5):
+        cx = 7.7 + 5.08 * i
+        ax.add_patch(Circle((cx, -12), 1.6, facecolor="#c0c0c0", edgecolor="#555"))
+        ax.plot([cx - 1.1, cx + 1.1], [-12, -12], color="#555", lw=0.8)
+    for fx in (2.3, 33.4):
+        ax.add_patch(Circle((fx, -12), 1.1, facecolor="#999", edgecolor="#555"))
+    ax.text(0, -19, "cable plug, seen from above (5 wire screws)", fontsize=7)
+    ax.set_xlim(-2, 38); ax.set_ylim(-21, 12)
+    pdf.savefig(fig); plt.close(fig)
+
+
 def page_side(pdf, side):
     fig = plt.figure(figsize=A4)
     if side == "top":
-        fig.text(0.07, 0.95, "2. TOP side: where every part goes", fontsize=18, weight="bold")
+        fig.text(0.07, 0.95, "3. TOP side: where every part goes", fontsize=18, weight="bold")
         y = text(fig, 0.07, 0.925, "Seen from above, parts side up, module plugs at the bottom of the picture. Push each part in "
                  "from this side; its pins come out on the bottom.", 100)
     else:
-        fig.text(0.07, 0.95, "3. BOTTOM side: where you solder", fontsize=18, weight="bold")
+        fig.text(0.07, 0.95, "4. BOTTOM side: where you solder", fontsize=18, weight="bold")
         y = text(fig, 0.07, 0.925, "The board turned over (left and right swap: the Teensy is now on the RIGHT). Every pad here gets "
                  "one solder joint: heat pad and pin together 2-3 s, feed solder until it forms a small cone, cut the leads ~1 mm.", 100)
     ax = fig.add_axes([0.03, 0.47, 0.94, 0.42])
@@ -203,16 +309,16 @@ def page_side(pdf, side):
         steps(fig, 0.07, y, [
             "Small joints, no bridges: socket pins are only 2.54 mm apart. After each row, look at it against light.",
             "Ground pads sit in the copper fill and take longer to heat: hold the iron 1-2 s more.",
-            "Circled pads and vias: if the holes are not plated, they also need the top-side work on page 4.",
+            "Circled pads and vias: if the holes are not plated, they also need the top-side work on page 5.",
         ])
     pdf.savefig(fig); plt.close(fig)
 
 
 def page_unplated(pdf):
     fig = plt.figure(figsize=A4)
-    fig.text(0.07, 0.95, "4. Only if the holes are NOT plated", fontsize=18, weight="bold")
+    fig.text(0.07, 0.95, "5. Only if the holes are NOT plated", fontsize=18, weight="bold")
     y = text(fig, 0.07, 0.925, "In a plated board the copper inside each hole joins the top and bottom. Without it, a joint on the "
-             "bottom does not reach a top track. Two places need extra work (circled in pink on pages 2 and 3):", 100)
+             "bottom does not reach a top track. Two places need extra work (circled in pink on pages 3 and 4):", 100)
     y -= 0.012
     fig.text(0.07, y, f"A. {len(TOP_PADS)} pads with a track only on the TOP: solder them on the top as well", fontsize=11, weight="bold")
     y -= 0.024
@@ -246,14 +352,14 @@ def page_unplated(pdf):
 
 def page_check(pdf):
     fig = plt.figure(figsize=A4)
-    fig.text(0.07, 0.95, "5. Check before plugging anything in", fontsize=18, weight="bold")
+    fig.text(0.07, 0.95, "6. Check before plugging anything in", fontsize=18, weight="bold")
     y = text(fig, 0.07, 0.925, "Multimeter on beep. No Teensy, no DAC, no modules (README 'Assembly and first power-up').", 100)
     y -= 0.01
     steps(fig, 0.07, y, [
         "3V3 to GND must NOT beep: Teensy socket 3V3 pin to any J pin 3 or 4.",
         "Each plug J1-J4: pins 3 and 4 to a Teensy socket GND pin must beep.",
         "J1 pin 1 to Teensy socket pin 27 must beep; J2 pin 1 to 28, J3 to 29, J4 to 30 (module enable).",
-        "DAC socket SCL to Teensy pin 19 and SDA to pin 18 must beep (these use the top track and a via: page 4).",
+        "DAC socket SCL to Teensy pin 19 and SDA to pin 18 must beep (these use the top track and a via: page 5).",
         "Each J pin 2 (setpoint) to its DAC output pin must beep (A-D: through vias).",
         "Then plug in the DAC and the Teensy (USB at the board edge), USB only: bumpem info --port <PORT> must answer.",
         "One module at a time, 48 V off: plug in, then scripts/open_loop_test.sh for that module.",
@@ -265,6 +371,7 @@ if __name__ == "__main__":
     out = HERE / "fab/bumpem-carrier-soldering.pdf"
     with PdfPages(out) as pdf:
         page_intro(pdf)
+        page_parts(pdf)
         page_side(pdf, "top")
         page_side(pdf, "bottom")
         page_unplated(pdf)

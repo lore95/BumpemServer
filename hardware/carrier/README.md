@@ -38,7 +38,7 @@ The force tracks run under the Teensy and out past its right end, never between 
 | 4 | M3 spacer + screw | |
 
 Full list: `fab/bumpem-carrier-bom.csv`. Schematic: `fab/bumpem-carrier-schematic.pdf`. Layout: `fab/bumpem-carrier-top.pdf`, `fab/bumpem-carrier-bottom.pdf` (seen from below), both layers together `fab/bumpem-carrier-layout.pdf`. Whole KiCad project: `fab/bumpem-carrier-kicad.zip`.
-**Soldering guide:** `fab/bumpem-carrier-soldering.pdf` (top and solder side drawn from the board, part order, diode band, extra top-side joints if the holes are not plated, checks). Rebuild: `$KPY dump_board.py bumpem-carrier.kicad_pcb fab/board.json`, then `python soldering_guide.py`.
+**Soldering guide:** `fab/bumpem-carrier-soldering.pdf` (what each part looks like + German drawer names, top and solder side drawn from the board, part order, diode band, extra top-side joints if the holes are not plated, checks). Rebuild: `$KPY dump_board.py bumpem-carrier.kicad_pcb fab/board.json`, then `python soldering_guide.py`.
 
 **Makerspace HS Offenburg (reply 2026-10-05):** can make the board, but **without solder mask and silkscreen** (bare copper): fine for a prototype. Open with them: plated through-holes / vias? (the top-layer tracks end on socket pads, which cannot be soldered from the top under a socket); how to label pins without silkscreen (copper text or a printed label sheet).
 
