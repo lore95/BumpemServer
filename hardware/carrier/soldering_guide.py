@@ -1,0 +1,268 @@
+"""Soldering guide for the carrier board: top (parts) and bottom (solder) views drawn from the board data, plus steps.
+Run:  $KPY dump_board.py bumpem-carrier.kicad_pcb fab/board.json  then  python soldering_guide.py  ->  fab/bumpem-carrier-soldering.pdf"""
+import json
+import math
+import textwrap
+from pathlib import Path
+
+import matplotlib
+matplotlib.use("Agg")
+import matplotlib.pyplot as plt
+from matplotlib.backends.backend_pdf import PdfPages
+from matplotlib.patches import Circle, FancyArrowPatch, Rectangle
+
+HERE = Path(__file__).parent
+D = json.loads((HERE / "fab/board.json").read_text())
+W, H = 154.0, 96.0
+A4 = (8.27, 11.69)
+TOP, BOT, PART, MARK, COPPER = "#d9534f", "#3a6fb0", "#f2c14e", "#c2185b", "#b87333"
+FP = {f["ref"]: f for f in D["fps"]}
+KIND = {"U": "socket", "R": "resistor", "D": "diode", "J": "plug", "H": "hole"}
+
+
+def seg_dist(p, a, b):
+    dx, dy = b[0] - a[0], b[1] - a[1]
+    L = dx * dx + dy * dy
+    t = 0 if L == 0 else max(0, min(1, ((p[0] - a[0]) * dx + (p[1] - a[1]) * dy) / L))
+    return math.hypot(p[0] - a[0] - t * dx, p[1] - a[1] - t * dy)
+
+
+def on_layer(x, y, net, layer):
+    return any(s["layer"] == layer and s["net"] == net and seg_dist((x, y), s["a"], s["b"]) < 0.3 for s in D["segs"])
+
+
+# pads reached only by a top-layer track, and signal vias: both need solder on the top if the holes are not plated
+TOP_PADS = [(f["ref"], p) for f in D["fps"] for p in f["pads"]
+            if p["net"] and p["net"] != "GND" and on_layer(p["x"], p["y"], p["net"], "F.Cu") and not on_layer(p["x"], p["y"], p["net"], "B.Cu")]
+SIG_VIAS = [s for s in D["segs"] if s["layer"] == "via" and s["net"] != "GND"]
+
+
+def text(fig, x, y, s, width=100, size=9.5, gap=0.016, **kw):
+    for line in textwrap.wrap(s, width):
+        fig.text(x, y, line, fontsize=size, **kw)
+        y -= gap
+    return y
+
+
+def steps(fig, x, y, items, width=92, size=9.5):
+    for n, s in enumerate(items, 1):
+        fig.text(x, y, f"{n}.", fontsize=size, weight="bold")
+        y = text(fig, x + 0.03, y, s, width, size) - 0.006
+    return y
+
+
+def board(ax, side):
+    """side 'top': seen from the parts side. 'bottom': seen from the solder side (mirrored left-right)."""
+    X = (lambda x: x) if side == "top" else (lambda x: W - x)
+    ax.set_aspect("equal"); ax.set_axis_off()
+    ax.add_patch(Rectangle((0, 0), W, H, facecolor="#f4efe6", edgecolor="#333", lw=1.2))
+    for s in D["segs"]:
+        if s["layer"] in ("F.Cu", "B.Cu"):
+            mine = (s["layer"] == "F.Cu") == (side == "top")
+            ax.plot([X(s["a"][0]), X(s["b"][0])], [s["a"][1], s["b"][1]], color=TOP if s["layer"] == "F.Cu" else BOT,
+                    lw=1.6 if mine else 0.8, alpha=0.9 if mine else 0.25, solid_capstyle="round", zorder=2)
+    for s in D["segs"]:
+        if s["layer"] == "via":
+            gnd = s["net"] == "GND"                            # ground stitching: small and light, nothing to do there
+            ax.add_patch(Circle((X(s["a"][0]), s["a"][1]), 0.45 if gnd else 0.7, color="#bbb" if gnd else "#222", zorder=3))
+    for f in D["fps"]:
+        bx, by, bw, bh = f["bbox"]
+        if f["ref"].startswith("H"):
+            ax.add_patch(Circle((X(f["x"]), f["y"]), 1.6, facecolor="white", edgecolor="#333", lw=1, zorder=4))
+            ax.text(X(f["x"]), f["y"] + 3.6, "M3", ha="center", va="top", fontsize=5.5, color="#333")
+            continue
+        if side == "top":
+            ax.add_patch(Rectangle((X(bx) if side == "top" else X(bx + bw), by), bw, bh, facecolor=PART, alpha=0.35,
+                                   edgecolor="#8a6d00", lw=0.6, zorder=1))
+        for p in f["pads"]:
+            ax.add_patch(Circle((X(p["x"]), p["y"]), 0.85 if p["drill"] < 1.2 else 1.2, facecolor=COPPER, edgecolor="#5a3a12", lw=0.3, zorder=5))
+            ax.add_patch(Circle((X(p["x"]), p["y"]), p["drill"] / 2 * 0.8, color="white", zorder=6))
+    for ref, p in TOP_PADS:
+        ax.add_patch(Circle((X(p["x"]), p["y"]), 2.1, fill=False, edgecolor=MARK, lw=1.4, zorder=7))
+    for s in SIG_VIAS:
+        ax.add_patch(Circle((X(s["a"][0]), s["a"][1]), 1.8, fill=False, edgecolor=MARK, lw=1.0, ls=(0, (2, 1)), zorder=7))
+    # labels
+    for f in D["fps"]:
+        if f["ref"].startswith("H"):
+            continue
+        bx, by, bw, bh = f["bbox"]
+        cx = X(bx + bw / 2)
+        if f["ref"] == "U1":
+            ax.text(cx, by + bh / 2, "U1  Teensy 4.1 socket\n2 x 24 female", ha="center", va="center", fontsize=7, weight="bold", zorder=8)
+        elif f["ref"] == "U2":
+            ax.text(cx, by + bh / 2, "U2  DAC socket\n2 x 6 female", ha="center", va="center", fontsize=6.5, weight="bold", zorder=8)
+        elif f["ref"].startswith("J"):
+            ax.text(cx, f["y"] + 3.2, f"{f['ref']}  {f['value']}", ha="center", va="top", fontsize=6.5, weight="bold", zorder=8)
+        else:
+            ax.text(X(f["x"]) + (1.9 if side == "top" else -1.9), f["y"] + 5, f["ref"], ha="left" if side == "top" else "right",
+                    va="center", fontsize=5.5, weight="bold", rotation=90, zorder=8)
+    for ref in ("D1", "D2", "D3", "D4"):                     # band = cathode = pad 1 (+3V3), towards the Teensy edge
+        p1 = next(p for p in FP[ref]["pads"] if p["num"] == "1")
+        if side == "top":
+            ax.add_patch(Rectangle((X(p1["x"]) - 1.3, p1["y"] + 1.6), 2.6, 1.0, color="#222", zorder=8))
+    usb_x = X(0.0)
+    ax.annotate("USB", (usb_x, 14), (usb_x + (-9 if side == "top" else 9), 14), fontsize=7, ha="center", va="center",
+                arrowprops=dict(arrowstyle="->", lw=0.8))
+    ax.text(W / 2, H + 3.5, "module plugs: this edge (cables plug in here)", ha="center", va="top", fontsize=7, color="#555")
+    ax.set_xlim(-14, W + 14); ax.set_ylim(H + 8, -6)
+
+
+def legend(fig, y, side):
+    items = [(TOP if side == "top" else BOT, "-", f"{'top' if side == 'top' else 'bottom'} copper track (on this side)"),
+             (BOT if side == "top" else TOP, "-", f"{'bottom' if side == 'top' else 'top'} track (other side, seen through)"),
+             (COPPER, "o", "pad with hole (one pin each)"),
+             ("#222", "o", "via: track changes side here (small grey dots: ground vias, nothing to do)"),
+             (MARK, "O", "circled: needs solder ON TOP too, if the holes are not plated (page 4)")]
+    if side == "top":
+        items.insert(0, (PART, "s", "where the part body sits"))
+    for i, (c, m, s) in enumerate(items):
+        yy = y - 0.018 * i
+        if m == "-":
+            fig.add_artist(plt.Line2D([0.08, 0.11], [yy + 0.004] * 2, color=c, lw=2, transform=fig.transFigure))
+        elif m == "s":
+            fig.add_artist(Rectangle((0.08, yy - 0.002), 0.03, 0.011, color=c, alpha=0.5, transform=fig.transFigure))
+        elif m == "o":
+            fig.add_artist(Circle((0.095, yy + 0.004), 0.005, color=c, transform=fig.transFigure))
+        else:
+            fig.add_artist(Circle((0.095, yy + 0.004), 0.007, fill=False, edgecolor=c, lw=1.4, transform=fig.transFigure))
+        fig.text(0.125, yy, s, fontsize=8.5)
+    return y - 0.018 * len(items)
+
+
+def page_intro(pdf):
+    fig = plt.figure(figsize=A4)
+    fig.text(0.07, 0.95, "Carrier board v1: soldering guide", fontsize=18, weight="bold")
+    y = text(fig, 0.07, 0.925, "Board 154 x 96 mm, bare copper (no printing). Every part goes on the TOP; every pin is soldered on the "
+             "BOTTOM. Pages 2 and 3 show both sides, page 4 what to do if the holes are not copper-plated.", 100)
+    y -= 0.012
+    fig.text(0.07, y, "Which side is which", fontsize=11, weight="bold"); y -= 0.022
+    y = steps(fig, 0.07, y, [
+        "Lay the board so the row of 4 large 5-pin footprints (module plugs J1-J4) is along the edge nearest you.",
+        "TOP (parts side): the long double row of 24 pads (Teensy socket) is at the LEFT, starting at the left edge; the short double "
+        "row of 6 (DAC socket) is right of it, near the far edge. The 2 left mounting holes are lower (32 and 58 mm from the far edge) "
+        "than the 2 right ones (10 and 45 mm).",
+        "If the Teensy rows are at the right instead, you are looking at the BOTTOM (solder side).",
+        "Check against page 2: the tracks you see on the top must match the red tracks there.",
+    ])
+    y -= 0.008
+    fig.text(0.07, y, "Before you start", fontsize=11, weight="bold"); y -= 0.022
+    y = steps(fig, 0.07, y, [
+        "Look into a few holes. Copper-lined (shiny ring inside) = plated: solder on the bottom only. Bare fibreglass inside = "
+        "NOT plated: also do page 4.",
+        "The board takes FEMALE headers (sockets). The Teensy and the DAC keep their male pins and plug in from the top. Never "
+        "solder male pins into the board, and never solder the Teensy or DAC to it.",
+        "Multimeter in beep mode at hand. No Teensy, no DAC, no modules on the board while soldering.",
+    ])
+    y -= 0.008
+    fig.text(0.07, y, "Parts and order (lowest first, so each part lies flat on the bench while you solder)", fontsize=11, weight="bold")
+    y -= 0.024
+    rows = [
+        ("1", "R1-R4", "4 x 1 kOhm (brown-black-red)", "either way round; the long 10 mm ones"),
+        ("2", "R5-R8", "4 x 1 MOhm (brown-black-green)", "either way round; the short 7.6 mm ones"),
+        ("3", "D1-D4", "4 x BAT85 diode (glass)", "BAND towards the far edge (Teensy side): page 2"),
+        ("4", "U1", "2 x female header 1x24, 8.5 mm", "Teensy socket, two rows"),
+        ("5", "U2", "2 x female header 1x6", "DAC socket, two rows"),
+        ("6", "J1-J4", "4 x Phoenix MSTB 2,5/5-GF-5,08", "plug opening towards the board edge"),
+    ]
+    xs = [0.07, 0.11, 0.21, 0.52]
+    for x, h in zip(xs, ["#", "Where", "Part", "How"]):
+        fig.text(x, y, h, fontsize=9, weight="bold")
+    y -= 0.006
+    fig.add_artist(plt.Line2D([0.07, 0.93], [y, y], color="#999", lw=0.6, transform=fig.transFigure)); y -= 0.018
+    for r in rows:
+        for x, c in zip(xs, r):
+            fig.text(x, y, c, fontsize=9)
+        y -= 0.02
+    pdf.savefig(fig); plt.close(fig)
+
+
+def page_side(pdf, side):
+    fig = plt.figure(figsize=A4)
+    if side == "top":
+        fig.text(0.07, 0.95, "2. TOP side: where every part goes", fontsize=18, weight="bold")
+        y = text(fig, 0.07, 0.925, "Seen from above, parts side up, module plugs at the bottom of the picture. Push each part in "
+                 "from this side; its pins come out on the bottom.", 100)
+    else:
+        fig.text(0.07, 0.95, "3. BOTTOM side: where you solder", fontsize=18, weight="bold")
+        y = text(fig, 0.07, 0.925, "The board turned over (left and right swap: the Teensy is now on the RIGHT). Every pad here gets "
+                 "one solder joint: heat pad and pin together 2-3 s, feed solder until it forms a small cone, cut the leads ~1 mm.", 100)
+    ax = fig.add_axes([0.03, 0.47, 0.94, 0.42])
+    board(ax, side)
+    y = legend(fig, 0.45, side) - 0.012
+    if side == "top":
+        steps(fig, 0.07, y, [
+            "Resistors and diodes: bend the leads to the hole spacing, push them in until the body lies on the board, bend the "
+            "leads out a little underneath so they stay, solder, cut.",
+            "Diodes D1-D4: the black band (black bar in the picture) goes to the hole nearer the far edge (the 3.3 V line). Wrong "
+            "way round, it shorts the force signal to 3.3 V.",
+            "Sockets: plug the female headers onto the Teensy (and the DAC) or onto spare male pin strips, set them in, solder one "
+            "pin at each end, check they sit flat and straight, then solder the rest.",
+            "MSTB plugs J1-J4: the opening where the cable plug goes in faces the near board edge; the flange screws are at its ends.",
+        ])
+    else:
+        steps(fig, 0.07, y, [
+            "Small joints, no bridges: socket pins are only 2.54 mm apart. After each row, look at it against light.",
+            "Ground pads sit in the copper fill and take longer to heat: hold the iron 1-2 s more.",
+            "Circled pads and vias: if the holes are not plated, they also need the top-side work on page 4.",
+        ])
+    pdf.savefig(fig); plt.close(fig)
+
+
+def page_unplated(pdf):
+    fig = plt.figure(figsize=A4)
+    fig.text(0.07, 0.95, "4. Only if the holes are NOT plated", fontsize=18, weight="bold")
+    y = text(fig, 0.07, 0.925, "In a plated board the copper inside each hole joins the top and bottom. Without it, a joint on the "
+             "bottom does not reach a top track. Two places need extra work (circled in pink on pages 2 and 3):", 100)
+    y -= 0.012
+    fig.text(0.07, y, f"A. {len(TOP_PADS)} pads with a track only on the TOP: solder them on the top as well", fontsize=11, weight="bold")
+    y -= 0.024
+    for ref, p in TOP_PADS:
+        what = {"U1": "Teensy socket, Teensy pin 19", "U2": "DAC socket, its SCL pin"}.get(ref, "diode, band end")
+        fig.text(0.09, y, f"{ref} pad {p['num']}  ({what}): {p['net']}", fontsize=9.5); y -= 0.018
+    y -= 0.006
+    y = text(fig, 0.07, y, "Diodes: easy, the leads are reachable; solder that lead on the top too. Sockets U1 / U2: the plastic "
+             "covers the top pad. Set the header in, but leave it raised ~1 mm; solder that pin on the top first, then push the "
+             "header down and solder all pins underneath. Or solder a thin wire from the top pad to the pin.", 100)
+    y -= 0.016
+    fig.text(0.07, y, f"B. {len(SIG_VIAS)} signal vias: a short wire through each, soldered on both sides", fontsize=11, weight="bold")
+    y -= 0.022
+    y = text(fig, 0.07, y, "A via is where a track goes from one side to the other. Push a cut-off resistor lead through it, solder on "
+             "top and bottom, cut both ends short. The grey vias (ground) can be left: ground is joined by the copper fill on both sides.", 100)
+    y -= 0.008
+    nets = {}
+    for s in SIG_VIAS:
+        nets.setdefault(s["net"], []).append(s["a"])
+    for n, pts in sorted(nets.items()):
+        fig.text(0.09, y, f"{n}: " + ",  ".join(f"({p[0]:.0f}, {p[1]:.0f}) mm" for p in pts), fontsize=9); y -= 0.017
+    y -= 0.006
+    text(fig, 0.07, y, "Positions in mm from the top-left corner seen from the top (USB edge left, plug edge at the bottom). "
+         "Check each with the multimeter afterwards: beep from the pad on one side to the track it should reach on the other.", 100, 8.5)
+    pdf.savefig(fig); plt.close(fig)
+
+
+def page_check(pdf):
+    fig = plt.figure(figsize=A4)
+    fig.text(0.07, 0.95, "5. Check before plugging anything in", fontsize=18, weight="bold")
+    y = text(fig, 0.07, 0.925, "Multimeter on beep. No Teensy, no DAC, no modules (README 'Assembly and first power-up').", 100)
+    y -= 0.01
+    steps(fig, 0.07, y, [
+        "3V3 to GND must NOT beep: Teensy socket 3V3 pin to any J pin 3 or 4.",
+        "Each plug J1-J4: pins 3 and 4 to a Teensy socket GND pin must beep.",
+        "J1 pin 1 to Teensy socket pin 27 must beep; J2 pin 1 to 28, J3 to 29, J4 to 30 (module enable).",
+        "DAC socket SCL to Teensy pin 19 and SDA to pin 18 must beep (these use the top track and a via: page 4).",
+        "Each J pin 2 (setpoint) to its DAC output pin must beep (A-D: through vias).",
+        "Then plug in the DAC and the Teensy (USB at the board edge), USB only: bumpem info --port <PORT> must answer.",
+        "One module at a time, 48 V off: plug in, then scripts/open_loop_test.sh for that module.",
+    ])
+    pdf.savefig(fig); plt.close(fig)
+
+
+if __name__ == "__main__":
+    out = HERE / "fab/bumpem-carrier-soldering.pdf"
+    with PdfPages(out) as pdf:
+        page_intro(pdf)
+        page_side(pdf, "top")
+        page_side(pdf, "bottom")
+        page_unplated(pdf)
+        page_check(pdf)
+    print("written", out, f"({len(TOP_PADS)} top-only pads, {len(SIG_VIAS)} signal vias)")
