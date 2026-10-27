@@ -98,7 +98,7 @@ POST /api/v1/test/pull
 {"module": "C", "force_n": 5, "dur_ms": 400}
 → {"pulse_id": 3, "module": "C", "force_n": 5, "dur_ms": 400}
 ```
-The server, in one call: saves the parameters → open loop (gains 0, `kff` 2), `baseline_n` 0, `fmax_n` = `force_n`, `arm_ms` 0, only `module` enabled → `ARM` (target 0 N, rope stays slack) → one `PULSE` (50 ms ramps, `dur_ms` 100–1000 incl. ramps) → `RELEASE 0` → restores the parameters. Starts only from DISARMED or ESTOP (else 409 `board_rejected`); one test pull at a time. Force is calculated from the motor current (open loop), not measured. `estop` works throughout.
+The server, in one call: saves the parameters → open loop (gains 0, `kff` 2), `baseline_n` 0, `fmax_n` = `force_n`, `arm_ms` 0, only `module` enabled → `ARM` (target 0 N, rope stays slack) → one `PULSE` (50 ms ramps, `force_n` ≤ 150, `dur_ms` 100–1000 incl. ramps) → `RELEASE 0` → restores the parameters. Starts only from DISARMED or ESTOP (else 409 `board_rejected`); one test pull at a time. Force is calculated from the motor current (open loop), not measured. `estop` works throughout.
 
 ### Actions
 | Method | Path | Body | Status |

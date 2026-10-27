@@ -133,3 +133,8 @@ Alternatives: order v1 from a professional maker (best, ~€25–45, 5–10 days
 Decision: `gain_A`..`gain_D` accept 0.5–3 (was 0.5–2), in firmware, PROTOCOL.md and the simulator. Firmware version 1.0.1.
 Reason: module B now has a 200 kg load cell on an IAA100 set up for the 100 kg cells. 12 kg check (B zeroed, 0.4 N empty): 56.0 N for 117.7 N → `gain_B` 2.12 needed; the IAA100 SPAN trim is at its end stop (≈ 112 N with `gain_B` 2).
 Alternatives: `gain_B` 2 (B reads ≈ 5 % low; with force feedback B pulls ≈ 5 % above the command); change the IAA100 coarse gain switches (switch table not in the repo).
+
+## D26 — 2026-10-27 — Test pull limit 150 N (was 30 N)
+Decision: `POST /test/pull` accepts `force_n` up to 150 N; testing page input up to 150.
+Reason: 2026-10-27 the modules gave weak or no pulls on the dummy and the user needs larger open-loop pulls to compare (30 vs 50+ N) while finding the cause. Open loop (`kff` 2, `i_full` 30): DAC full scale at ≈ 120 N, so 150 N is a full-current pull; `fmax_n` = `force_n`, the fault cut-out stays as set.
+Alternatives: keep 30 N and test larger pulls in production mode (open-loop settings by hand).

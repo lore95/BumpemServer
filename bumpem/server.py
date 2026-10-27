@@ -65,7 +65,7 @@ class PulseBody(BaseModel):
 
 class TestPullBody(BaseModel):
     module: str = Field(pattern="^[ABCDabcd]$", description="A left, B front, C right, D back", examples=["C"])
-    force_n: float = Field(gt=0, le=30, description="Pull force (open loop: calculated from the motor current)", examples=[5])
+    force_n: float = Field(gt=0, le=150, description="Pull force (open loop: calculated from the motor current)", examples=[5])
     dur_ms: float = Field(ge=100, le=1000, description="Start to end, 50 ms ramps included", examples=[400])
 
 
