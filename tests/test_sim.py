@@ -62,6 +62,7 @@ def test_rejections():
         ("PULSE 1 0 50 2000 0 50 0 0 0", "dur > pulse_max_ms"),
         ("SET loop_ms 5", "disarm first"),
         ("SET fmax_n 250", "out of range"),
+        ("SET gain_B 3.5", "out of range"),
         ("BOGUS", "unknown command"),
     ]:
         ack, _ = send(link, line)

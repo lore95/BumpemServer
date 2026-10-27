@@ -128,3 +128,8 @@ Alternatives: design as drawn (pull-down + BAT85 clamp: over-voltage protection 
 Decision: second carrier layout `hardware/carrier/milled/` for the HS Offenburg PCB mill (no plating, no solder mask): all copper on the bottom, no ground fill, unused socket pins as bare holes, 7 wire links (W1–W7) instead of vias, 1 kΩ resistors used as bridges. Force input: 1 kΩ series, 1 MΩ from the plug-side force pin to the same module's enable line. v1 (`hardware/carrier/`) stays the design for a professional maker (Aisler / JLCPCB).
 Reason: the v1 board milled there needed top-side joints under the sockets, hand-made vias and an SCL wire, and its 0.5 mm ground-fill gaps let solder short VIN to ground. A 1 MΩ to 3.3 V on each input (D23) would need a 3.3 V rail across the single layer (more links); tied to the enable line it keeps D23's behaviour where it matters (armed: loose cable → ≈ 200 N → FAULT) and reads 0 N when disarmed.
 Alternatives: order v1 from a professional maker (best, ~€25–45, 5–10 days); greedy auto-routing of the single layer (7–17 links, nets boxed in); keep D23's 3.3 V pull-up (≈ 3 more links).
+
+## D25 — 2026-10-27 — Sensor gain range 0.5–3 (firmware 1.0.1)
+Decision: `gain_A`..`gain_D` accept 0.5–3 (was 0.5–2), in firmware, PROTOCOL.md and the simulator. Firmware version 1.0.1.
+Reason: module B now has a 200 kg load cell on an IAA100 set up for the 100 kg cells. 12 kg check (B zeroed, 0.4 N empty): 56.0 N for 117.7 N → `gain_B` 2.12 needed; the IAA100 SPAN trim is at its end stop (≈ 112 N with `gain_B` 2).
+Alternatives: `gain_B` 2 (B reads ≈ 5 % low; with force feedback B pulls ≈ 5 % above the command); change the IAA100 coarse gain switches (switch table not in the repo).

@@ -104,7 +104,7 @@ Defaults = v0 firmware. † only settable when DISARMED.
 | `tel_div` | 1 | 0–1000 | Telemetry every n loops (0 = off) |
 | `wd_ms` | 0 | 0–60000 | No line for this long → abort pulse, `E,WD` (0 = off) |
 | `ch_A`..`ch_D`† | 1,1,1,0 | 0/1 | Channel enabled (default D off: it was out of service; `set ch_D 1` to use it) |
-| `gain_A`..`gain_D`, `offset_A`..`offset_D` | 1, 0 | 0.5–2, −20–20 | Per-sensor calibration: `f = raw/1023*f_full*gain + offset` |
+| `gain_A`..`gain_D`, `offset_A`..`offset_D` | 1, 0 | 0.5–3, −20–20 | Per-sensor calibration: `f = raw/1023*f_full*gain + offset` |
 
 Control law (per enabled channel, every loop), unchanged from v0 with defaults:
 ```

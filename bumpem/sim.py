@@ -27,7 +27,7 @@ RANGES: dict[str, tuple[float, float]] = {
     "fault_ms": (1, 1000), "filter_hz": (0, 500), "d_window": (1, 8), "arm_ms": (0, 10000),
     "pulse_max_ms": (1, 5000), "tel_div": (0, 1000), "wd_ms": (0, 60000),
     **{k: (0, 100) for k in ("kp_track", "kd_track", "kp_pulse", "kd_pulse")},
-    **{f"ch_{c}": (0, 1) for c in CHANNELS}, **{f"gain_{c}": (0.5, 2) for c in CHANNELS},
+    **{f"ch_{c}": (0, 1) for c in CHANNELS}, **{f"gain_{c}": (0.5, 3) for c in CHANNELS},
     **{f"offset_{c}": (-20, 20) for c in CHANNELS},
 }
 DISARMED_ONLY = {"loop_ms", *(f"ch_{c}" for c in CHANNELS)}

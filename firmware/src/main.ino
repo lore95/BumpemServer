@@ -11,7 +11,7 @@
 #include <Wire.h>
 #include <Adafruit_MCP4728.h>
 
-#define FW_VERSION  "1.0.0"
+#define FW_VERSION  "1.0.1"
 #define N_CH        4
 #define F_HARD_MAX  200.0f    // N, ceiling for fmax_n (thesis §2.10)
 #define ADC_MAX     1023.0f   // 10-bit (v0 .ino:39)
@@ -56,8 +56,8 @@ const Param PARAMS[] = {
   {"tel_div", &tel_div, 0, 1000, false}, {"wd_ms", &wd_ms, 0, 60000, false},
   {"ch_A", &ch_en[0], 0, 1, true}, {"ch_B", &ch_en[1], 0, 1, true},
   {"ch_C", &ch_en[2], 0, 1, true}, {"ch_D", &ch_en[3], 0, 1, true},
-  {"gain_A", &cal_gain[0], 0.5, 2, false}, {"gain_B", &cal_gain[1], 0.5, 2, false},
-  {"gain_C", &cal_gain[2], 0.5, 2, false}, {"gain_D", &cal_gain[3], 0.5, 2, false},
+  {"gain_A", &cal_gain[0], 0.5, 3, false}, {"gain_B", &cal_gain[1], 0.5, 3, false},
+  {"gain_C", &cal_gain[2], 0.5, 3, false}, {"gain_D", &cal_gain[3], 0.5, 3, false},
   {"offset_A", &cal_off[0], -20, 20, false}, {"offset_B", &cal_off[1], -20, 20, false},
   {"offset_C", &cal_off[2], -20, 20, false}, {"offset_D", &cal_off[3], -20, 20, false},
 };
