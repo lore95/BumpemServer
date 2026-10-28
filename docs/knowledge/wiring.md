@@ -122,3 +122,5 @@ The jumper extensions are replaced so each wire keeps its ESCON-side colour. Per
 ⚠️ SDA (T 18 → D SDA) is also white: label it or change it to grey. Drawing: `docs/diagrams/cabling-4-modules.png`.
 
 **Module A J3 (2026-10-02): green and grey were swapped** (Hall supply ↔ Hall 3) → strong uncontrolled pull. Correct for every module: J3 1 yellow, 2 pink, 3 grey, 4 green, 5 blue; J2 1 red, 2 brown, 3 white, 4 empty. Check J2/J3 on every module against this before first drive.
+
+**J6 check (2026-10-28):** all four modules had blue on J6 pin 2 and green on pin 3 (one pin too low) → no setpoint. Correct: **blue J6 pin 3 (AnIN2+), green J6 pin 4 (AnIN2−)**; pins 1–2 (AnIN1) empty, never anything on 5–6 (AnOUT). Count pin 1 from the number printed on the ESCON housing.
