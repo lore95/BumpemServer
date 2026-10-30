@@ -138,3 +138,8 @@ Alternatives: `gain_B` 2 (B reads ≈ 5 % low; with force feedback B pulls ≈ 5
 Decision: `POST /test/pull` accepts `force_n` up to 150 N; testing page input up to 150.
 Reason: 2026-10-27 the modules gave weak or no pulls on the dummy and the user needs larger open-loop pulls to compare (30 vs 50+ N) while finding the cause. Open loop (`kff` 2, `i_full` 30): DAC full scale at ≈ 120 N, so 150 N is a full-current pull; `fmax_n` = `force_n`, the fault cut-out stays as set.
 Alternatives: keep 30 N and test larger pulls in production mode (open-loop settings by hand).
+
+## D27 — 2026-10-30 — Recording downloadable through the API
+Decision: `GET /api/v1/log/file?kind=force|events` returns the last finished recording's CSV as a download; new error code `not_found` (404). The production page becomes the lab's test UI (BumpemUI U6): Record → Stop downloads the force CSV.
+Reason: after the 2026-10-29 lab meeting the user wants pulls by force + angle with the force recording exported as CSV at Stop; the browser can only get the file through the API (and the server PC may not be the one with the browser).
+Alternatives: build the CSV in the browser from the stream (30 Hz, not the full board rate); open the Logs folder by hand.

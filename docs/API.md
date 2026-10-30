@@ -32,6 +32,7 @@ HTTP 4xx/5xx with:
 | `board_timeout` | 504 | no reply from the board |
 | `board_lost` | 503 | serial link gone (USB unplugged or Teensy reset): replug, then `POST /disconnect` + `POST /connect` |
 | `wrong_mode` | 409 | endpoint belongs to the other server mode (testing / production) |
+| `not_found` | 404 | nothing to return (e.g. no finished recording) |
 
 ## Endpoints
 
@@ -77,6 +78,7 @@ Writes the board's telemetry at the **full board rate** (not thinned like the st
 | GET | `/api/v1/log` | | `{"recording": false, "file": null, "events_file": null, "rows": 0, "duration_s": 0}` | host |
 | POST | `/api/v1/log/start` | `{"label": "closedloop_A"}` (optional; letters, digits, `_`, `-`, max 40) | same object, `recording: true` | host |
 | POST | `/api/v1/log/stop` | | same object with the final `rows` and `duration_s`; `recording: false` | host |
+| GET | `/api/v1/log/file?kind=force\|events` | | the last **finished** recording's CSV as a download (`text/csv`, attachment, same file name). 404 `not_found` if none since the server started; 409 `board_rejected` while recording | host |
 
 - `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D` (one row per telemetry line; `time_ms` = board clock).
 - `events_<same>.csv`: `time_ms,kind,args`: board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.

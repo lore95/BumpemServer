@@ -17,7 +17,7 @@ from typing import Any
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
@@ -98,6 +98,7 @@ class Hub:
         self.settings_applied, self.settings_pending, self.settings_message = False, False, None
         self.log_dir = log_dir
         self.log: ForceLog | None = None
+        self.last_log: dict[str, Path] = {}   # files of the last finished recording, for GET /log/file
         self.modules = modules        # e.g. "ACD": channels switched on at connect, the others off
         self.modules_pending = False  # True while the board was not DISARMED when the channels had to be set
         self.board: Board | None = None
@@ -221,8 +222,17 @@ class Hub:
         if lg is None:
             return self.log_info()
         lg.close()
+        self.last_log = {"force": lg.force_path, "events": lg.events_path}
         return {"recording": False, "file": str(lg.force_path), "events_file": str(lg.events_path),
                 "rows": lg.rows, "duration_s": lg.duration_s}
+
+    def log_file(self, kind: str) -> Path:
+        if self.log is not None:
+            raise ApiError("board_rejected", 409, "still recording (POST /api/v1/log/stop first)")
+        path = self.last_log.get(kind)
+        if path is None or not path.is_file():
+            raise ApiError("not_found", 404, "no finished recording since the server started")
+        return path
 
     def log_command(self, kind: str, data: dict) -> None:
         """A command the server sent, stamped with the latest board time, into the events file."""
@@ -449,6 +459,11 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     @app.post("/api/v1/log/stop")
     def log_stop():
         return hub.log_stop()
+
+    @app.get("/api/v1/log/file")
+    def log_file(kind: str = Query("force", pattern="^(force|events)$")):
+        path = hub.log_file(kind)
+        return FileResponse(path, media_type="text/csv", filename=path.name)
 
     def only(m: str) -> None:
         if mode != m:

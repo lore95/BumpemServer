@@ -1,5 +1,6 @@
 """Server API against the real-time simulator (docs/API.md, board endpoints)."""
 import time
+from pathlib import Path
 
 import pytest
 
@@ -304,10 +305,12 @@ def test_recording(kept):
     assert kept.post("/api/v1/log/start").status_code == 409            # not connected
     _connect(kept)
     assert kept.get("/api/v1/log").json() == {"recording": False, "file": None, "events_file": None, "rows": 0, "duration_s": 0}
+    assert kept.get("/api/v1/log/file").status_code == 404              # nothing recorded yet
     kept.patch("/api/v1/params", json={"arm_ms": 0})
     r = kept.post("/api/v1/log/start", json={"label": "closedloop_A"}).json()
     assert r["recording"] and r["file"].endswith("_closedloop_A.csv")
     assert kept.post("/api/v1/log/start").status_code == 409            # already recording
+    assert kept.get("/api/v1/log/file").status_code == 409              # still recording
     kept.post("/api/v1/arm"); _wait_state(kept, "ARMED")
     pid = kept.post("/api/v1/perturbation", json={"angle_deg": 90, "amplitude_n": 10, "phase1_ms": 20, "dur_ms": 120, "phase2_ms": 20}).json()["pulse_id"]
     time.sleep(0.4)
@@ -322,6 +325,11 @@ def test_recording(kept):
     assert cmd["pulse_id"] == pid and cmd["angle_deg"] == 90 and cmd["amps"] == {"A": 10.0}
     assert {"PSTART", "PEND"} <= {r["kind"] for r in rows}
     assert kept.post("/api/v1/log/stop").json()["recording"] is False   # idle stop is fine
+    dl = kept.get("/api/v1/log/file")
+    assert dl.status_code == 200 and dl.content == Path(done["file"]).read_bytes()
+    assert dl.headers["content-type"].startswith("text/csv") and Path(done["file"]).name in dl.headers["content-disposition"]
+    assert kept.get("/api/v1/log/file?kind=events").content == Path(done["events_file"]).read_bytes()
+    assert kept.get("/api/v1/log/file?kind=other").status_code == 422
     assert kept.post("/api/v1/log/start", json={"label": "bad label!"}).status_code == 422
 
 
