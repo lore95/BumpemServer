@@ -1,4 +1,4 @@
-"""Tower B load cell only, in a small window: live force, Start / Stop recording, Save as CSV.
+"""Tower B load cell only, in a small window: live force + plot, Start / Stop recording, Save as CSV.
 For using the 200 kg sensor on its own (e.g. on the harness straps). The board stays DISARMED: no motor current.
 
   ~/miniconda3/bin/python scripts/b_force_logger.py
@@ -19,6 +19,7 @@ import json
 import sys
 import threading
 import time
+from collections import deque
 import tkinter as tk
 from datetime import datetime
 from pathlib import Path
@@ -32,6 +33,8 @@ from bumpem.device import Board  # noqa: E402
 CAL = ("gain_B", "offset_B")
 SHOW_S = 0.2        # displayed value = average of the last 0.2 s (~20 samples), so it doesn't flicker
 STALE_S = 1.0       # no data for this long -> "no data" (USB dropped / Teensy reset)
+PLOT_S = 10.0       # live plot window
+PLOT_W, PLOT_H, PAD = 900, 340, 48
 
 
 def main() -> None:
@@ -57,6 +60,7 @@ def main() -> None:
 
     lock = threading.Lock()
     recent: list[tuple[float, float]] = []        # (host time, N) for the live display
+    hist: deque[tuple[float, float]] = deque()     # (host time, N), last PLOT_S, for the plot
     rows: list[tuple[float, int, float]] = []     # recording
     rec = {"on": False, "t0": 0.0}
 
@@ -68,6 +72,9 @@ def main() -> None:
             recent.append((now, f))
             while recent and recent[0][0] < now - SHOW_S:
                 recent.pop(0)
+            hist.append((now, f))
+            while hist and hist[0][0] < now - PLOT_S:
+                hist.popleft()
             if rec["on"]:
                 rows.append((now - rec["t0"], msg.t_ms, f))
 
@@ -81,8 +88,10 @@ def main() -> None:
     kg.pack()
     status = tk.Label(win, text="not recording", font=("Helvetica", 14))
     status.pack(pady=10)
+    plot = tk.Canvas(win, width=PLOT_W, height=PLOT_H, bg="white", highlightthickness=0)
+    plot.pack(padx=20)
     bar = tk.Frame(win)
-    bar.pack(pady=(0, 20))
+    bar.pack(pady=20)
 
     def start() -> None:
         if rows and not messagebox.askyesno("Start", f"Discard the unsaved {len(rows)} samples?"):
@@ -119,8 +128,26 @@ def main() -> None:
     for b in (b_start, b_stop, b_save):
         b.pack(side="left", padx=5)
 
+    def draw(pts: list[tuple[float, float]]) -> None:
+        plot.delete("all")
+        now = time.monotonic()
+        top = max(20.0, max((f for _, f in pts), default=0) * 1.15)
+        bot = min(0.0, min((f for _, f in pts), default=0) * 1.15)
+        x = lambda t: PAD + (PLOT_W - PAD - 10) * (1 - (now - t) / PLOT_S)
+        y = lambda f: PLOT_H - 24 - (PLOT_H - 34) * (f - bot) / (top - bot)
+        for i in range(6):
+            f = bot + (top - bot) * i / 5
+            plot.create_line(PAD, y(f), PLOT_W - 10, y(f), fill="#e4e4e4")
+            plot.create_text(PAD - 6, y(f), text=f"{f:.0f}", anchor="e", font=("Helvetica", 11))
+        for s in range(0, int(PLOT_S) + 1, 2):
+            plot.create_text(x(now - s), PLOT_H - 10, text="now" if s == 0 else f"-{s} s", font=("Helvetica", 11))
+        plot.create_text(6, 8, text="N", anchor="w", font=("Helvetica", 11))
+        if len(pts) > 1:
+            plot.create_line(*[c for t, f in pts for c in (x(t), y(f))], fill="#1f6fd1", width=2)
+
     def refresh() -> None:
         with lock:
+            pts = list(hist)
             vals = [f for _, f in recent]
             fresh = bool(recent) and time.monotonic() - recent[-1][0] < STALE_S
             n, on, t0 = len(rows), rec["on"], rec["t0"]
@@ -131,6 +158,7 @@ def main() -> None:
         else:
             value.config(text="no data", fg="red")
             kg.config(text="USB dropped or Teensy reset? Close, replug, restart")
+        draw(pts)
         if on:
             status.config(text=f"RECORDING  {time.monotonic() - t0:6.1f} s   {n} samples")
         win.after(100, refresh)
