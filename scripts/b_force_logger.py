@@ -90,6 +90,12 @@ def main() -> None:
     status.pack(pady=10)
     plot = tk.Canvas(win, width=PLOT_W, height=PLOT_H, bg="white", highlightthickness=0)
     plot.pack(padx=20)
+    thr_row = tk.Frame(win)
+    thr_row.pack(pady=(10, 0))
+    tk.Label(thr_row, text="Threshold line (N, empty = none):").pack(side="left")
+    thr_var = tk.StringVar()
+    thr_entry = tk.Entry(thr_row, textvariable=thr_var, width=8)
+    thr_entry.pack(side="left", padx=5)
     bar = tk.Frame(win)
     bar.pack(pady=20)
 
@@ -128,11 +134,20 @@ def main() -> None:
     for b in (b_start, b_stop, b_save):
         b.pack(side="left", padx=5)
 
+    def threshold() -> float | None:
+        try:
+            v = float(thr_var.get().replace(",", "."))
+        except ValueError:
+            v = None
+        thr_entry.config(bg="white" if v is not None or not thr_var.get().strip() else "#ffd0d0")
+        return v
+
     def draw(pts: list[tuple[float, float]]) -> None:
         plot.delete("all")
         now = time.monotonic()
-        top = max(20.0, max((f for _, f in pts), default=0) * 1.15)
-        bot = min(0.0, min((f for _, f in pts), default=0) * 1.15)
+        thr = threshold()
+        top = max(20.0, max((f for _, f in pts), default=0) * 1.15, (thr or 0) * 1.15)
+        bot = min(0.0, min((f for _, f in pts), default=0) * 1.15, (thr or 0) * 1.15)
         x = lambda t: PAD + (PLOT_W - PAD - 10) * (1 - (now - t) / PLOT_S)
         y = lambda f: PLOT_H - 24 - (PLOT_H - 34) * (f - bot) / (top - bot)
         for i in range(6):
@@ -142,6 +157,9 @@ def main() -> None:
         for s in range(0, int(PLOT_S) + 1, 2):
             plot.create_text(x(now - s), PLOT_H - 10, text="now" if s == 0 else f"-{s} s", font=("Helvetica", 11))
         plot.create_text(6, 8, text="N", anchor="w", font=("Helvetica", 11))
+        if thr is not None:
+            plot.create_line(PAD, y(thr), PLOT_W - 10, y(thr), fill="#d62728", width=2, dash=(6, 4))
+            plot.create_text(PLOT_W - 12, y(thr) - 9, text=f"{thr:g} N", anchor="e", fill="#d62728", font=("Helvetica", 11))
         if len(pts) > 1:
             plot.create_line(*[c for t, f in pts for c in (x(t), y(f))], fill="#1f6fd1", width=2)
 
