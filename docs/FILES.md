@@ -53,7 +53,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `tests/` | pytest, no hardware needed (`test_server.py`: API on the simulator) |
 | `scripts/open_loop_test.sh` | Guided open-loop test: `A`, `C`, or `AC` (both, same pulse started in the same control cycle): settings, dry run, 48 V prompts, pulses 5/10/20 N; Ctrl+C = ESTOP |
 | `scripts/flash.sh` | Build + upload firmware |
-| `scripts/b_force_logger.py` | Tower B load cell only, Tk window: live N / kg + 10 s plot with optional threshold line, Start / Stop recording, Save CSV (`t_s, board_ms, force_N`). Writes `gain_B`/`offset_B` from settings.json at start; never arms. Server must be stopped |
+| `scripts/force_logger.py` | One load cell only (`--tower`, default D; `--gain`/`--offset` override the saved calibration), Tk window: live N / kg + 10 s plot with optional threshold line, Start / Stop recording, Save CSV (`t_s, board_ms, force_N`). Writes that tower's gain/offset from settings.json at start; never arms. Server must be stopped |
 | `hardware/enclosures/out/bumpem-druckauftrag-2026-10-22.zip` | Print job 2 for the makerspace: handoff PDF (German, `druckauftrag-2026-10-22.tex`, built by `druckauftrag.sh`) + assembly guide + `tower_set.stl` (one tower's 4 parts, print 4 times, `make_stl.py`) + `second_print.stl` (carrier plate + 4 ground bar plates, once) |
 | `hardware/enclosures/out/assembly-guide.pdf` | Printed holders: which device, which tower face (recommended layout), screws per tower, mounting steps (`assembly_guide.py`) |
 | `docs/electrician/power-requirements-de.tex` / `.pdf` | German 1-page version, sections 1–3 only (system, mains data per tower, expected load) |

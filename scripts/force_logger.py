@@ -1,14 +1,15 @@
-"""Tower B load cell only, in a small window: live force + plot, Start / Stop recording, Save as CSV.
-For using the 200 kg sensor on its own (e.g. on the harness straps). The board stays DISARMED: no motor current.
+"""One load cell only, in a small window: live force + plot, Start / Stop recording, Save as CSV.
+For using a sensor on its own (e.g. on the harness straps). The board stays DISARMED: no motor current.
 
-  ~/miniconda3/bin/python scripts/b_force_logger.py
-  ~/miniconda3/bin/python scripts/b_force_logger.py --port /dev/cu.usbmodemXXXX
-  ~/miniconda3/bin/python scripts/b_force_logger.py --sim       # try it without hardware
+  ~/miniconda3/bin/python scripts/force_logger.py                     # tower D (default)
+  ~/miniconda3/bin/python scripts/force_logger.py --tower B
+  ~/miniconda3/bin/python scripts/force_logger.py --gain 2.12         # 200 kg cell + its amplifier moved onto D's input
+  ~/miniconda3/bin/python scripts/force_logger.py --sim               # try it without hardware
 
-Needs: Teensy on USB, tower B's 24 V (IAA100) on, brown wire in Teensy pin 15. 48 V can stay off.
-The server must be stopped (only one program can open the port).
-Calibration gain_B / offset_B is read from settings.json and written to the board at start
-(the board forgets it on every restart). Range: 0-3.3 V = 0 to 200 * gain_B N (about 424 N with gain 2.12).
+Needs: Teensy on USB, that tower's 24 V (IAA100) on, its brown wire in the Teensy (A 14, B 15, C 16, D 17).
+48 V can stay off. The server must be stopped (only one program can open the port).
+Calibration gain_<T> / offset_<T> is read from settings.json and written to the board at start (the board forgets
+it on every restart); --gain / --offset override it. Range: 0-3.3 V = 0 to 200 * gain N.
 CSV columns: t_s (seconds since Start), board_ms (Teensy clock), force_N.
 """
 from __future__ import annotations
@@ -30,7 +31,6 @@ sys.path.insert(0, str(ROOT))
 from bumpem import protocol as P  # noqa: E402
 from bumpem.device import Board  # noqa: E402
 
-CAL = ("gain_B", "offset_B")
 SHOW_S = 0.2        # displayed value = average of the last 0.2 s (~20 samples), so it doesn't flicker
 STALE_S = 1.0       # no data for this long -> "no data" (USB dropped / Teensy reset)
 PLOT_S = 10.0       # live plot window
@@ -42,7 +42,11 @@ def main() -> None:
     ap.add_argument("--port", default="/dev/cu.usbmodem169222501")
     ap.add_argument("--sim", action="store_true")
     ap.add_argument("--settings", default=str(ROOT / "settings.json"))
+    ap.add_argument("--tower", default="D", choices=list("ABCD"))
+    ap.add_argument("--gain", type=float, help="sensor gain (0.5-3), instead of the saved one")
+    ap.add_argument("--offset", type=float, help="sensor offset in N (-20..20), instead of the saved one")
     a = ap.parse_args()
+    T = a.tower
 
     if a.sim:
         from bumpem.sim import SimLink
@@ -52,11 +56,12 @@ def main() -> None:
         board = Board(SerialLink(a.port))
 
     saved = json.loads(Path(a.settings).read_text())["params"] if Path(a.settings).is_file() else {}
-    for k in CAL:
-        if k in saved:
-            board.set(k, saved[k])
+    for k, override in ((f"gain_{T}", a.gain), (f"offset_{T}", a.offset)):
+        v = override if override is not None else saved.get(k)
+        if v is not None:
+            board.set(k, v)
     cal = board.get()
-    print(f"board: {board.info()}  |  gain_B {cal.get('gain_B')}  offset_B {cal.get('offset_B')}")
+    print(f"board: {board.info()}  |  tower {T}: gain {cal.get(f'gain_{T}')}  offset {cal.get(f'offset_{T}')} N")
 
     lock = threading.Lock()
     recent: list[tuple[float, float]] = []        # (host time, N) for the live display
@@ -65,9 +70,9 @@ def main() -> None:
     rec = {"on": False, "t0": 0.0}
 
     def on_msg(msg: P.Message) -> None:
-        if not isinstance(msg, P.Telemetry) or "B" not in msg.measured:
+        if not isinstance(msg, P.Telemetry) or T not in msg.measured:
             return
-        now, f = time.monotonic(), msg.measured["B"]
+        now, f = time.monotonic(), msg.measured[T]
         with lock:
             recent.append((now, f))
             while recent and recent[0][0] < now - SHOW_S:
@@ -81,7 +86,7 @@ def main() -> None:
     board.add_listener(on_msg)
 
     win = tk.Tk()
-    win.title("Tower B force")
+    win.title(f"Tower {T} force")
     value = tk.Label(win, text="--", font=("Helvetica", 56), width=9)
     value.pack(padx=20, pady=(20, 0))
     kg = tk.Label(win, text="", font=("Helvetica", 18))
@@ -113,7 +118,7 @@ def main() -> None:
         b_start.config(state="normal"); b_stop.config(state="disabled"); b_save.config(state="normal")
 
     def save() -> None:
-        name = f"towerB_force_{datetime.now():%Y-%m-%d_%H%M%S}.csv"
+        name = f"tower{T}_force_{datetime.now():%Y-%m-%d_%H%M%S}.csv"
         path = filedialog.asksaveasfilename(initialfile=name, defaultextension=".csv",
                                             filetypes=[("CSV", "*.csv")])
         if not path:
