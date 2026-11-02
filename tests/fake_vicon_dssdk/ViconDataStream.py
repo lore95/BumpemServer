@@ -1,4 +1,5 @@
-"""Stand-in for `vicon_dssdk` following SDK 1.13's ViconDataStream.py, importable by the reader process.
+"""Stand-in for `vicon_dssdk/ViconDataStream.py` (SDK 1.13), same layout as the real package: an empty package
+`__init__.py` and this submodule with `Client` and `DataStreamException` at module level. Importable by the reader process.
 The host name picks the behaviour: "bad…" refuses, "drop…" loses the link after 20 frames, "noplates…", "noframe…",
 "nonames…" (no device names), "gil…" (GetFrame waits 10 ms holding the GIL, like the real _CoreClient3.pyd)."""
 import ctypes
@@ -79,7 +80,3 @@ class Client:
     def GetGlobalForceVector(self, plate_id):
         return [(1.0, 2.0, -700.0 if plate_id == 1 else 0.0)] * 10
 
-
-class ViconDataStream:
-    DataStreamException = DataStreamException
-    Client = Client

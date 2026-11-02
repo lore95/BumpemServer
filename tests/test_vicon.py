@@ -1,4 +1,4 @@
-"""ViconReader (SDK in its own process) against tests/fake_vicon_sdk.py, which follows SDK 1.13's ViconDataStream.py."""
+"""ViconReader (SDK in its own process) against tests/fake_vicon_dssdk/ (same layout as the real vicon_dssdk package, SDK 1.13)."""
 import threading
 import time
 
@@ -6,7 +6,7 @@ import pytest
 
 from bumpem.vicon import ViconReader
 
-FAKE = "fake_vicon_sdk"
+FAKE = "fake_vicon_dssdk"                     # package laid out like vicon_dssdk
 
 
 def wait(cond, s=5.0):

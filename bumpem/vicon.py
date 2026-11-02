@@ -27,11 +27,11 @@ class ViconLost(Exception):
 
 
 class _SdkSession:
-    """The SDK connection itself, used inside the reader process (`_worker`). `sdk`: module holding ViconDataStream."""
+    """The SDK connection itself, used inside the reader process (`_worker`). `sdk`: package with a ViconDataStream submodule."""
 
     def __init__(self, host: str, timeout_s: float, sdk: str = "vicon_dssdk"):
         try:
-            V = importlib.import_module(sdk).ViconDataStream
+            V = importlib.import_module(f"{sdk}.ViconDataStream")   # submodule: the package __init__ is empty
         except ImportError as e:   # not installed, or its DLLs do not load (Visual C++ runtime missing)
             raise ValueError(f"Vicon SDK not usable ({e}): run update.bat from a bundle that carries vicon_dssdk") from None
         self._V, self.host = V, host
