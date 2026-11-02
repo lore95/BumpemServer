@@ -3,6 +3,7 @@ import sys
 import threading
 import time
 import types
+from enum import Enum
 
 import pytest
 
@@ -55,17 +56,22 @@ class FakeClient:
     def GetFrameRate(self):
         return 100.0
 
+    class DeviceType(Enum):
+        EUnknownDevice = 0
+        EForceplate = 1
+
     def GetDeviceNames(self):
-        return [("Left Plate", "ForcePlate"), ("Right Plate", "ForcePlate"), ("EMG", "Other")]
+        if self.frame < 3:                    # device data arrive a few frames after EnableDeviceData
+            return []
+        F = FakeClient.DeviceType.EForceplate
+        return [("Left Plate", F), ("EMG", FakeClient.DeviceType.EUnknownDevice), ("Right Plate", F)]
 
-    def GetDeviceOutputDetails(self, name):
-        if name == "EMG":
-            return [("Voltage", "1", "V")]
-        return [("Force", c, "N") for c in ("Fx", "Fy", "Fz")] + [("Moment", c, "Nm") for c in ("Mx", "My", "Mz")]
+    def GetForcePlates(self):
+        return [] if self.frame < 3 else [1, 2]
 
-    def GetDeviceOutputValues(self, name, output, component):
-        assert output == "Force" and component == "Fz"
-        return list(self.plates[name]), False
+    def GetGlobalForceVector(self, plate_id):
+        name = ["Left Plate", "Right Plate"][plate_id - 1]
+        return [(1.0, 2.0, fz) for fz in self.plates[name]]
 
 
 @pytest.fixture
@@ -82,7 +88,9 @@ def test_reader_streams_fz_per_subsample(sdk):
     r = ViconReader("127.0.0.1:801", lambda f, s: frames.append((f, s)), lambda m: ended.set())
     assert r.plates == ["Left Plate", "Right Plate"] and r.rate_hz == 100 and r._client.mode == 2
     r.start()
-    time.sleep(0.1)
+    end = time.monotonic() + 2
+    while len(frames) < 6 and time.monotonic() < end:
+        time.sleep(0.01)
     r.close()
     assert len(frames) > 5 and len({f for f, _ in frames}) == len(frames)      # every frame once
     f, subs = frames[0]
@@ -96,19 +104,27 @@ def test_reader_reports_lost_link(sdk):
     r.start()
     time.sleep(0.02)
     r._client.connected = False
-    time.sleep(0.05)
+    end = time.monotonic() + 2
+    while not msg and time.monotonic() < end:
+        time.sleep(0.01)
     assert msg and "lost" in msg[0]
 
 
 def test_reader_errors(sdk, monkeypatch):
     with pytest.raises(ValueError, match="cannot connect"):
         ViconReader("bad:801", lambda f, s: None, lambda m: None)
-    monkeypatch.setattr(FakeClient, "GetDeviceNames", lambda self: [("EMG", "Other")])
-    with pytest.raises(ValueError, match="no device with an Fz"):
-        ViconReader("127.0.0.1:801", lambda f, s: None, lambda m: None)
+    monkeypatch.setattr(FakeClient, "GetForcePlates", lambda self: [])
+    with pytest.raises(ValueError, match="no force plate"):
+        ViconReader("127.0.0.1:801", lambda f, s: None, lambda m: None, timeout_s=0.2)
     monkeypatch.setattr(FakeClient, "GetFrame", lambda self: False)
     with pytest.raises(TimeoutError):
         ViconReader("127.0.0.1:801", lambda f, s: None, lambda m: None, timeout_s=0.1)
+
+
+def test_plate_names_fall_back_to_ids(sdk, monkeypatch):
+    monkeypatch.setattr(FakeClient, "GetDeviceNames", lambda self: [])
+    r = ViconReader("127.0.0.1:801", lambda f, s: None, lambda m: None)
+    assert r.plates == ["Plate 1", "Plate 2"]
 
 
 def test_reader_without_sdk(monkeypatch):

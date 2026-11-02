@@ -86,19 +86,28 @@ def sdk(r: Report, host: str) -> None:
             r("no frame within 5 s (Nexus in Live mode?)")
             return
         r("frame", client.GetFrameNumber(), "rate", client.GetFrameRate(), "Hz")
-        plates = []
+        ids, end, n = [], time.monotonic() + 5, 0      # device data join the stream some frames after enabling
+        while time.monotonic() < end and not ids:
+            if client.GetFrame():
+                n += 1
+                ids = list(client.GetForcePlates())
+            else:
+                time.sleep(0.01)
+        r(f"force plates after {n} frames: IDs {ids}")
         for name, kind in client.GetDeviceNames():
             outs = client.GetDeviceOutputDetails(name)
             r(f"device {name!r} ({kind}):", ", ".join(f"{o}/{c}" for o, c, _u in outs))
-            plates += [(name, o) for o, c, _u in outs if c == "Fz"]
-        r("Fz per plate, 3 s (stand on one belt):")
-        end = time.monotonic() + 3
+        if not ids:
+            r("no force plate in the stream: in Nexus, are the force plates part of the system and enabled?")
+            return
+        r("global force vector Fz per plate (lab axes), 8 s: stand on one belt, then step to the other:")
+        end = time.monotonic() + 8
         while time.monotonic() < end:
             if client.GetFrame():
                 vals = []
-                for name, o in plates:
-                    v, _ = client.GetDeviceOutputValues(name, o, "Fz")
-                    vals.append(f"{name}: {sum(v) / max(len(v), 1):8.1f} N ({len(v)} sub)")
+                for i in ids:
+                    v = client.GetGlobalForceVector(i)
+                    vals.append(f"plate {i}: {sum(s[2] for s in v) / max(len(v), 1):8.1f} N ({len(v)} sub)")
                 r("   " + "   ".join(vals))
             time.sleep(0.25)
     except Exception as e:

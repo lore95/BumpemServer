@@ -3,8 +3,9 @@
 Device data only (no markers). `start()` runs one reader thread; `on_frame(frame, subs)` gets each new frame with
 `subs` = one {plate: Fz} dict per force-plate subsample, `on_end(message)` when the link is lost.
 SDK: Vicon DataStream SDK 1.13 for Python (`vicon_dssdk`, shipped as a wheel, D36); calls checked against its
-ViconDataStream.py. Force plate outputs are plate-local, Z up, forces on the plate (not reactions): standing reads
-negative Fz. Untested against the lab system (Nexus 2.8.1).
+ViconDataStream.py. Force plate API as the legacy MATLAB script (GetForcePlates, GetGlobalForceVector): global
+(lab) axes, force exerted on the plate (not the reaction), so standing reads negative Fz. Device data appear only
+some frames after EnableDeviceData: wait for the plates. Connects to Nexus 2.8.1 (lab, 2026-11-02).
 """
 from __future__ import annotations
 
@@ -37,22 +38,22 @@ class ViconReader:
             c.SetStreamMode(ViconDataStream.Client.StreamMode.EServerPush)
         except Exception:
             pass
-        end = time.monotonic() + timeout_s
-        while not self._get_frame():
+        end, frames, ids = time.monotonic() + timeout_s, 0, []
+        while not ids:                                  # device data join the stream a few frames after enabling
             if time.monotonic() > end:
                 c.Disconnect()
-                raise TimeoutError(f"Vicon at {host}: connected but no frame within {timeout_s:.0f} s (Nexus in Live mode?)")
-            time.sleep(0.01)
+                if not frames:
+                    raise TimeoutError(f"Vicon at {host}: connected but no frame within {timeout_s:.0f} s (Nexus in Live mode?)")
+                raise ValueError(f"Vicon: {frames} frames but no force plate in the stream (force plates enabled in Nexus?)")
+            if self._get_frame():
+                frames += 1
+                ids = list(c.GetForcePlates())
+            else:
+                time.sleep(0.01)
         self.rate_hz = float(c.GetFrameRate())
-        self._outputs = {}                              # plate name -> output holding its Fz
-        for name, _kind in c.GetDeviceNames():
-            for output, component, _unit in c.GetDeviceOutputDetails(name):
-                if component == "Fz" and name not in self._outputs:
-                    self._outputs[name] = output
-        if not self._outputs:
-            c.Disconnect()
-            raise ValueError("Vicon: no device with an Fz output (force plates enabled in Nexus?)")
-        self.plates = list(self._outputs)
+        self._ids = ids                                 # SDK plate IDs; names from the device list when they match
+        names = [n for n, kind in c.GetDeviceNames() if getattr(kind, "name", str(kind)) == "EForceplate"]
+        self.plates = names if len(names) == len(ids) and len(set(names)) == len(names) else [f"Plate {i}" for i in ids]
         self._stop = threading.Event()
 
     def start(self) -> None:
@@ -79,9 +80,9 @@ class ViconReader:
                     time.sleep(0.0005)
                     continue
                 last = frame
-                cols = {p: self._client.GetDeviceOutputValues(p, out, "Fz")[0] for p, out in self._outputs.items()}
+                cols = {p: self._client.GetGlobalForceVector(i) for p, i in zip(self.plates, self._ids)}
                 n = min(len(v) for v in cols.values())
-                self._on_frame(frame, [{p: float(v[i]) for p, v in cols.items()} for i in range(n)])
+                self._on_frame(frame, [{p: float(v[k][2]) for p, v in cols.items()} for k in range(n)])
         except Exception as e:
             if not self._stop.is_set():
                 self._on_end(str(e))

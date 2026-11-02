@@ -45,6 +45,9 @@ def main() -> None:
     next_frame(client)
     print(f"frame {client.GetFrameNumber()}, {client.GetFrameRate():.0f} Hz")
 
+    end = time.time() + 5                     # device data join the stream some frames after enabling
+    while not client.GetDeviceNames() and time.time() < end:
+        next_frame(client)
     plates = []
     for name, kind in client.GetDeviceNames():
         print(f"device {name!r} ({kind})")
