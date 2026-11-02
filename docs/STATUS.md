@@ -1,5 +1,10 @@
 # Status
 
+## Next session (from 2026-11-02 evening)
+- User brings the **perturbation-strength test** (force + events CSV, settings): pulls still look off. Check per pull: target vs measured per tower, kff in the PARAMS row (should be 2, D34), opposite rope tension before/during the pull, D vs others.
+- Lab PC state: D-Flow PC (192.168.1.50), `C:\Users\operator\BumpemLab`; Vicon via 192.168.1.60:801 works (plates showing). Update to install there: `../bumpemInstallation/BumpemUpdate_2026-11-02_1834.zip` (Vicon in own process D38, median plot D39) — confirm it was installed.
+- Open: rope-force noise (want a rest + one-pull recording; firmware oversampling proposal, D39); which Vicon plate is the left belt; push both repos (user).
+
 ## Done
 - **Calmer rope-force plot (2026-11-02, D39 / U9):** stream sends the median of the samples between messages; page at 20 Hz = median of 5 (50 ms). Recordings raw. Open: the noise itself (single ADC read per loop; also reaches the controller's D term). Next: a recording at rest + during a pull → look at spike size/frequency, then decide firmware oversampling or `filter_hz` on the bench.
 - **Vicon force data live on the D-Flow PC (2026-11-02):** plates show in the page (user). With the board connected too, the board timed out → **D38: Vicon SDK in its own process** (its module holds Python's GIL while waiting for frames). Fake-SDK measurement: server thread pauses 15 ms → 1.8 ms. `tests/test_vicon.py` runs the reader process against `tests/fake_vicon_sdk.py`. Not yet run on the lab PC. Next: update → connect board + Vicon → Arm, test pull, Record.
