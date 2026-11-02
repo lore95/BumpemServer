@@ -20,6 +20,8 @@ Built: @BUILT@   BumpemServer @SERVER@   BumpemUI @UI@
 
 Other tools
 - force_logger.bat            one load cell, live plot + CSV (tower D; force_logger.bat --tower B). Server must be stopped.
+- vicon_check.bat             Vicon connection report (read-only): network, port 801, SDK connect, Vicon DLL versions,
+                              D-Flow's Vicon settings. Writes vicon_check_<date_time>.txt here: bring it to Claude.
 - vicon_probe.bat             Vicon DataStream check (Nexus in Live mode). On the Nexus PC: no argument.
                               From another PC: vicon_probe.bat 192.168.1.60:801
 - Vicon SDK (vicon_dssdk 1.13, MIT): included in wheels\ and installed by 1_install / update.bat ("Vicon SDK OK").
