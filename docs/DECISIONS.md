@@ -143,3 +143,8 @@ Alternatives: keep 30 N and test larger pulls in production mode (open-loop sett
 Decision: `GET /api/v1/log/file?kind=force|events` returns the last finished recording's CSV as a download; new error code `not_found` (404). The production page becomes the lab's test UI (BumpemUI U6): Record → Stop downloads the force CSV.
 Reason: after the 2026-10-29 lab meeting the user wants pulls by force + angle with the force recording exported as CSV at Stop; the browser can only get the file through the API (and the server PC may not be the one with the browser).
 Alternatives: build the CSV in the browser from the stream (30 Hz, not the full board rate); open the Logs folder by hand.
+
+## D28 — 2026-11-02 — Offline Windows bundle: per-user Python 3.12 + venv, repos as source
+Decision: `scripts/build_bundle.sh` makes a folder/zip for the Vicon PC: python.org 3.12.10 installer run per-user (no admin), a venv inside the bundle, packages from win_amd64 wheels pinned to the versions tested on the Mac, both repos as plain source (`git archive HEAD`); the server runs as `python -m bumpem.cli serve` from `BumpemServer/` (no install of `bumpem`, so the defaults for `settings.json`, `Logs/` and `../BumpemUI/web` resolve as on the Mac). Teensy is never flashed from that PC.
+Reason: the Vicon network has no internet and the PCs are locked down (TODO "Offline install"); the project lead approved starting tests there (user, 2026-11-02).
+Alternatives: PyInstaller exe (larger, AV false positives under ESET); conda (bigger, needs its own installer); installing `bumpem` as a wheel (paths would point into site-packages).

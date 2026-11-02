@@ -47,9 +47,16 @@ def load_cal() -> dict:
     return json.loads(CAL_FILE.read_text()) if CAL_FILE.is_file() else {}
 
 
+def teensy_port() -> str | None:
+    from serial.tools import list_ports
+    ports = list_ports.comports()
+    teensy = [p.device for p in ports if p.vid == 0x16C0]      # PJRC (Teensy) USB vendor id
+    return (teensy or [None])[0]
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
-    ap.add_argument("--port", default="/dev/cu.usbmodem169222501")
+    ap.add_argument("--port", help="serial port (default: the first Teensy found, e.g. COM3 or /dev/cu.usbmodem...)")
     ap.add_argument("--sim", action="store_true")
     ap.add_argument("--tower", default="D", choices=list("ABCD"))
     a = ap.parse_args()
@@ -60,7 +67,10 @@ def main() -> None:
         board = Board(SimLink())
     else:
         from bumpem.device import SerialLink
-        board = Board(SerialLink(a.port))
+        port = a.port or teensy_port()
+        if not port:
+            sys.exit("no Teensy found: plug in its USB (or give --port)")
+        board = Board(SerialLink(port))
     board.set(f"gain_{T}", 1)
     board.set(f"offset_{T}", 0)
     print(f"board: {board.info()}  |  tower {T}: firmware gain 1, offset 0 (calibration applied here)")
