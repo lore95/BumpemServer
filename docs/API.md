@@ -96,7 +96,7 @@ The GRAIL belts' force plates, read from Vicon Nexus over Ethernet (DataStream S
 | POST | `/api/v1/vicon/disconnect` | | same object (a running recording's Vicon file ends there) | host |
 
 - `plates`: Vicon device names that have an `Fz` output (Nexus names them). `message`: why the reader stopped (link lost), else null.
-- Recorded with the board (see Recording): `vicon_<same stem>.csv`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N from Vicon's force-plate API (`GetGlobalForceVector`, as the legacy MATLAB script): **lab (global) axes**, Z up, force **on** the plate, so standing reads negative; not converted. Plate names: Nexus device names, else `Plate <id>`.
+- Recorded with the board (see Recording): `vicon_<same stem>.csv`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N = **vertical ground reaction force, positive up** (standing ≈ +body weight): the server negates Vicon's `GetGlobalForceVector` Z (lab axes, force exerted **on** the plate, which reads negative). Plate names: Nexus device names, else `Plate <id>`.
 - Both modes.
 
 ### Modes

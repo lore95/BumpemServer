@@ -25,7 +25,7 @@ def test_reader_streams_fz_per_subsample():
     r.close()
     assert len({f for f, _ in frames}) == len(frames)                           # every frame once
     f, subs = frames[0]
-    assert len(subs) == 10 and subs[0] == {"Left Plate": -700.0, "Right Plate": 0.0}
+    assert len(subs) == 10 and subs[0] == {"Left Plate": 700.0, "Right Plate": 0.0}   # Vicon -700 on the plate → GRF +700
     time.sleep(0.1)
     assert not ended.is_set() and not r._proc.is_alive()                        # closing is not a lost link
 

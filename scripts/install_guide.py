@@ -306,7 +306,7 @@ def p_extras(P):
         "1.  Nothing to install: the Vicon SDK comes with this bundle (1_install / update.bat print  Vicon SDK OK).",
         "2.  vicon_probe.bat  (on the Nexus PC itself). From another PC: open a command prompt in BumpemLab and type",
         "    vicon_probe.bat 192.168.1.60:801",
-        "3.  Stand on one belt during the 10 s: note which plate is the LEFT belt (standing reads negative, about minus your weight in N). Send the output to Claude.",
+        "3.  Stand on one belt during the 10 s: note which plate is the LEFT belt (this tool shows Vicon's raw sign: about minus your weight in N; the page shows it positive). Send the output to Claude.",
         "4.  In the page: Ground force card > address (127.0.0.1:801 on the Nexus PC) > Connect. Record (next to Arm) records it with the rope forces.",
     ])
     P.save(fig)

@@ -4,7 +4,8 @@ Device data only (no markers). `start()` runs one reader thread; `on_frame(frame
 `subs` = one {plate: Fz} dict per force-plate subsample, `on_end(message)` when the link is lost.
 SDK: Vicon DataStream SDK 1.13 for Python (`vicon_dssdk`, shipped as a wheel, D36); calls checked against its
 ViconDataStream.py. Force plate API as the legacy MATLAB script (GetForcePlates, GetGlobalForceVector): global
-(lab) axes, force exerted on the plate (not the reaction), so standing reads negative Fz. Device data appear only
+(lab) axes, force exerted on the plate (not the reaction), so Vicon's Fz reads negative when standing: the reader
+negates it, so `subs` carry the vertical ground reaction force, positive up (D40). Device data appear only
 some frames after EnableDeviceData: wait for the plates. Connects to Nexus 2.8.1 (lab, 2026-11-02).
 """
 from __future__ import annotations
@@ -85,7 +86,7 @@ class _SdkSession:
                 last = frame
                 cols = {p: self._client.GetGlobalForceVector(i) for p, i in zip(self.plates, self._ids)}
                 n = min(len(v) for v in cols.values())
-                emit(frame, [{p: float(v[k][2]) for p, v in cols.items()} for k in range(n)])
+                emit(frame, [{p: -float(v[k][2]) for p, v in cols.items()} for k in range(n)])   # GRF, up = +
         finally:
             try:
                 self._client.Disconnect()

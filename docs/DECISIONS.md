@@ -204,3 +204,8 @@ Alternatives: ClientPull with short calls (still holds the GIL per call, can dro
 Decision: the WebSocket thins telemetry to `telemetry_hz` by sending, per channel, the median of the board samples since the previous message (`_MedianThin`) instead of dropping samples. The UI asks for 20 Hz → median of 5 samples (50 ms at 100 Hz). Recordings are unchanged: every sample, raw. The firmware's `filter_hz` stays 0.
 Reason: user (2026-11-02): rope force signal very noisy with spikes. The noise is in the raw single ADC read per 10 ms loop; dropping samples for display kept spikes at full height. A median removes single-sample spikes without touching control or data. `filter_hz` also filters the controller's input (adds lag to perturbations): bench decision with recordings, not a display fix.
 Alternatives: firmware oversampling (several ADC reads per loop, median/mean: cleaner for control too; needs PROTOCOL.md, re-flash); `filter_hz` > 0; smoothing only in the browser (would work on already-dropped samples).
+
+## D40 — 2026-11-02 — Plate force shown and recorded as ground reaction force (positive up)
+Decision: `_SdkSession` negates the Z of `GetGlobalForceVector`, so the stream (`vicon.fz`), the plot and `vicon_*.csv` (`Fz_<plate>`) carry the vertical ground reaction force, positive up. The simulator already did. `vicon_check` / `vicon_probe` still print Vicon's raw numbers (diagnostics).
+Reason: user (2026-11-02): treadmill forces appear negative. Vicon gives the force on the plate (down); gait analysis and the 250 N step threshold of the legacy script use the upward reaction.
+Alternatives: flip only in the plot (CSV would disagree with the screen).
