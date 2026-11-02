@@ -29,7 +29,7 @@ class SerialLink:
         try:   # exclusive: a second program on the same port would silently steal replies (macOS allows sharing)
             self._ser = serial.Serial(port, 115200, timeout=timeout, exclusive=True)
         except serial.SerialException as e:
-            if "exclusively lock" in str(e):
+            if "exclusively lock" in str(e) or "Access is denied" in str(e):   # macOS / Windows wording
                 raise serial.SerialException(f"{port} is busy: another program has it open "
                                              f"(a running `bumpem serve`, monitor or test script?)") from None
             raise

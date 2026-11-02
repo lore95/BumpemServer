@@ -17,7 +17,7 @@ if not exist venv\Scripts\python.exe (
   "%PY%" -m venv venv
   if errorlevel 1 (echo venv failed & pause & exit /b 1)
 )
-venv\Scripts\python -m pip install --no-index --find-links wheels -r requirements.txt || (echo package install failed & pause & exit /b 1)
+venv\Scripts\python -m pip install --disable-pip-version-check --no-index --find-links wheels -r requirements.txt || (echo package install failed & pause & exit /b 1)
 venv\Scripts\python -c "import serial, fastapi, uvicorn, websockets, tkinter; print('All packages OK')" || (echo check failed & pause & exit /b 1)
 echo.
 echo Done. Next: start_simulator.bat (no hardware) or start_server.bat (Teensy plugged in).
