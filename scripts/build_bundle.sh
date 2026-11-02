@@ -32,6 +32,7 @@ got=$(shasum -a 256 "$OUT/installers/$MCX" | cut -d' ' -f1)
   --python-version 3.12 --implementation cp --abi cp312 --target "$OUT/.check" -r "$HERE/scripts/bundle/requirements.txt"
 rm -rf "$OUT/.check"
 
+"$PY" "$HERE/scripts/install_guide.py" >/dev/null       # INSTALL_GUIDE.pdf (not in git)
 for f in "$HERE"/scripts/bundle/*; do
   case "$f" in
     *.bat|*.txt) sed 's/$/\r/' "$f" > "$OUT/$(basename "$f")" ;;   # Windows line endings

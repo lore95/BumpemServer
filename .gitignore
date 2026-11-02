@@ -38,3 +38,6 @@ docs/handbook/*.pdf
 
 # unzipped print jobs (send the zip)
 hardware/enclosures/out/bumpem-druckauftrag-*/
+
+# installation guide: built by scripts/build_bundle.sh (scripts/install_guide.py)
+scripts/bundle/INSTALL_GUIDE.pdf
