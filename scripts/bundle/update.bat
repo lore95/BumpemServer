@@ -31,8 +31,14 @@ choice /c YN /m "Update now"
 if errorlevel 2 exit /b 0
 
 rem --- old code to backup\<date_time>
-for /f "usebackq delims=" %%t in (`""%PYEXE%" -c "import time; print(time.strftime('%%Y%%m%%d_%%H%%M%%S'))""`) do set STAMP=%%t
-if "%STAMP%"=="" (echo could not read the time from Python & pause & exit /b 1)
+rem folder name from Windows' date and time (format depends on the language; only has to be unique)
+set STAMP=%date%_%time%
+set STAMP=%STAMP:/=-%
+set STAMP=%STAMP::=-%
+set STAMP=%STAMP:.=-%
+set STAMP=%STAMP:,=-%
+set STAMP=%STAMP: =0%
+if exist "%DEST%\backup\%STAMP%" (echo backup\%STAMP% exists already: wait a second and run update.bat again & pause & exit /b 1)
 set OLD=%DEST%\backup\%STAMP%
 mkdir "%OLD%" || (echo cannot create %OLD% & pause & exit /b 1)
 move "%DEST%\BumpemServer" "%OLD%\BumpemServer" >nul || (echo BumpemServer is in use ^(a window or file open?^): close it and retry. Nothing changed. & pause & exit /b 1)
