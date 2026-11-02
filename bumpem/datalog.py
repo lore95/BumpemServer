@@ -39,7 +39,8 @@ class ForceLog:
     def __init__(self, folder: str | Path, label: str = ""):
         folder = Path(folder)
         folder.mkdir(parents=True, exist_ok=True)
-        stem = datetime.now().strftime("%Y%m%d_%H%M%S") + (f"_{label}" if label else "")
+        self.stem = stem = datetime.now().strftime("%Y%m%d_%H%M%S") + (f"_{label}" if label else "")
+        self.folder, self.vicon_path = folder, None      # vicon_path: set when Vicon is recorded with it
         self.force_path, self.events_path = folder / f"force_{stem}.csv", folder / f"events_{stem}.csv"
         self._ff, self._ef = open(self.force_path, "w", newline=""), open(self.events_path, "w", newline="")
         self._fw, self._ew = csv.writer(self._ff), csv.writer(self._ef)
@@ -69,16 +70,14 @@ class ForceLog:
 
 
 class ViconLog:
-    """Force-plate Fz per subsample while the board is armed (docs/API.md "Vicon force plates")."""
+    """Force-plate Fz per subsample, recorded with a ForceLog (docs/API.md "Recording", "Vicon force plates")."""
 
-    def __init__(self, folder: str | Path, plates: list[str]):
+    def __init__(self, folder: str | Path, stem: str, plates: list[str]):
         folder = Path(folder)
-        folder.mkdir(parents=True, exist_ok=True)
-        stem, n = f"vicon_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 1
-        self.path, self.plates = folder / f"{stem}.csv", list(plates)
-        while self.path.exists():                       # armed twice within a second: never overwrite
+        self.path, self.plates, n = folder / f"vicon_{stem}.csv", list(plates), 1
+        while self.path.exists():                       # Vicon reconnected during one recording: never overwrite
             n += 1
-            self.path = folder / f"{stem}_{n}.csv"
+            self.path = folder / f"vicon_{stem}_{n}.csv"
         self._f = open(self.path, "w", newline="")
         self._w = csv.writer(self._f)
         self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates])

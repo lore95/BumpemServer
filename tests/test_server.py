@@ -304,7 +304,8 @@ def test_settings_delete_and_off(kept, client):
 def test_recording(kept):
     assert kept.post("/api/v1/log/start").status_code == 409            # not connected
     _connect(kept)
-    assert kept.get("/api/v1/log").json() == {"recording": False, "file": None, "events_file": None, "rows": 0, "duration_s": 0}
+    assert kept.get("/api/v1/log").json() == {"recording": False, "file": None, "events_file": None, "vicon_file": None,
+                                              "rows": 0, "vicon_rows": 0, "duration_s": 0}
     assert kept.get("/api/v1/log/file").status_code == 404              # nothing recorded yet
     kept.patch("/api/v1/params", json={"arm_ms": 0})
     r = kept.post("/api/v1/log/start", json={"label": "closedloop_A"}).json()
@@ -329,6 +330,7 @@ def test_recording(kept):
     assert dl.status_code == 200 and dl.content == Path(done["file"]).read_bytes()
     assert dl.headers["content-type"].startswith("text/csv") and Path(done["file"]).name in dl.headers["content-disposition"]
     assert kept.get("/api/v1/log/file?kind=events").content == Path(done["events_file"]).read_bytes()
+    assert kept.get("/api/v1/log/file?kind=vicon").status_code == 404   # recorded without Vicon
     assert kept.get("/api/v1/log/file?kind=other").status_code == 422
     assert kept.post("/api/v1/log/start", json={"label": "bad label!"}).status_code == 422
 
@@ -341,13 +343,12 @@ def test_recording_stops_at_disconnect(kept):
     assert kept.app.state.hub.log is None and len(open(f).read().splitlines()) > 1
 
 
-def test_vicon_records_while_armed(kept):
+def test_vicon_recorded_with_the_board(kept):
     v = kept.get("/api/v1/vicon").json()
     assert not v["connected"] and v["default_host"] is None
     assert kept.post("/api/v1/vicon/connect", json={"host": "no port"}).status_code == 422
-    assert kept.get("/api/v1/vicon/file").status_code == 404
     v = kept.post("/api/v1/vicon/connect", json={"host": "sim"}).json()
-    assert v["connected"] and v["plates"] == ["Left", "Right"] and not v["recording"]   # no board: nothing to record
+    assert v["connected"] and v["plates"] == ["Left", "Right"]
     with kept.websocket_connect("/api/v1/stream?telemetry_hz=50") as ws:
         m = ws.receive_json()
         while m["type"] != "vicon":
@@ -355,23 +356,25 @@ def test_vicon_records_while_armed(kept):
         assert set(m["fz"]) == {"Left", "Right"} and m["frame"] > 0
     _connect(kept)
     kept.patch("/api/v1/params", json={"arm_ms": 0})
-    assert not kept.get("/api/v1/vicon").json()["recording"]          # DISARMED
     kept.post("/api/v1/arm"); _wait_state(kept, "ARMED"); time.sleep(0.1)
-    r = kept.get("/api/v1/vicon").json()
-    assert r["recording"] and Path(r["file"]).name.startswith("vicon_")
-    assert kept.get("/api/v1/vicon/file").status_code == 409
-    time.sleep(0.5)
-    kept.post("/api/v1/release", json={"ms": 0}); _wait_state(kept, "DISARMED"); time.sleep(0.1)
-    done = kept.get("/api/v1/vicon").json()
-    assert not done["recording"] and done["file"] == r["file"]
-    rows = open(done["file"]).read().splitlines()
-    assert rows[0] == "host_s,frame,sub,board_ms,Fz_Left,Fz_Right"
-    assert len(rows) > 300                                             # ~1000 subsamples/s for > 0.5 s
+    assert kept.get("/api/v1/log").json()["vicon_file"] is None          # arming alone records nothing
+    r = kept.post("/api/v1/log/start", json={"label": "lr20"}).json()
+    assert r["recording"] and Path(r["vicon_file"]).name == Path(r["file"]).name.replace("force_", "vicon_")
+    time.sleep(0.6)
+    kept.post("/api/v1/release", json={"ms": 0}); _wait_state(kept, "DISARMED")
+    assert kept.get("/api/v1/log").json()["recording"]                  # Release does not stop the recording
+    done = kept.post("/api/v1/log/stop").json()
+    assert not done["recording"] and done["vicon_rows"] > 400            # ~1000 subsamples/s
+    rows = open(done["vicon_file"]).read().splitlines()
+    assert rows[0] == "host_s,frame,sub,board_ms,Fz_Left,Fz_Right" and len(rows) == done["vicon_rows"] + 1
     assert all(row.split(",")[3] for row in rows[1:])                  # board time on every row
-    assert kept.get("/api/v1/vicon/file").content == Path(done["file"]).read_bytes()
-    kept.post("/api/v1/arm"); _wait_state(kept, "ARMED"); time.sleep(0.1)
-    second = kept.get("/api/v1/vicon").json()
-    assert second["recording"] and second["file"] != done["file"]       # new file per arming, even within one second
-    off = kept.post("/api/v1/vicon/disconnect").json()                 # ends the recording, board stays armed
-    assert not off["connected"] and not off["recording"] and off["file"] == second["file"]
-    kept.post("/api/v1/release", json={"ms": 0})
+    import csv, json
+    first = next(csv.DictReader(open(done["events_file"])))
+    assert first["kind"] == "PARAMS" and json.loads(first["args"])["kff"] == 7.5
+    assert kept.get("/api/v1/log/file?kind=vicon").content == Path(done["vicon_file"]).read_bytes()
+    kept.post("/api/v1/vicon/disconnect")                                # recording without Vicon: no vicon file
+    assert kept.post("/api/v1/log/start").json()["vicon_file"] is None
+    kept.post("/api/v1/vicon/connect", json={"host": "sim"})            # joins the running recording
+    time.sleep(0.2)
+    done = kept.post("/api/v1/log/stop").json()
+    assert done["vicon_file"] and done["vicon_rows"] > 0

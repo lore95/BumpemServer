@@ -79,7 +79,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 ## Software (Claude builds, you test)
 - [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
 - [ ] Step 3 **trials**: blocks, shuffle, 50–75 steps between perturbations, baseline first 3 s, logs
-- [ ] Step 4 **Vicon live** on the lab PC: server side built (D32, sim-tested). On the lab PC: Nexus Live → UI "Ground force" card → address `192.168.1.60:801` (or `127.0.0.1:801` on the Nexus PC) → Connect; stand on each belt (which name is left? Fz positive or negative?); Arm → a `vicon_*.csv` appears in `Logs/`. Report to Claude
+- [ ] Step 4 **Vicon live** on the lab PC: server side built (D32, sim-tested). On the lab PC: Nexus Live → UI "Ground force" card → address `192.168.1.60:801` (or `127.0.0.1:801` on the Nexus PC) → Connect; stand on each belt (which name is left? Fz positive or negative?); Arm → Record → Stop rec → a `vicon_*.csv` appears in `Logs/`. Report to Claude
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (needs a file from the lab)
 - [ ] 🟢 Fix `scripts/open_loop_test.sh` (your uncommitted edit: `AC` mode, usage text, ACD prompt), then commit
 - [ ] 🟢 `git push` BumpemServer (many commits since 10-02); first push of BumpemUI (`git push -u origin main`; remote github.com/lore95/BumpemUI added 2026-10-19)

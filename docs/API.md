@@ -71,17 +71,17 @@ parameters to the board **at every connect**, after the channels. If the board i
 - Both modes. In testing mode a test pull still restores the parameters it changed.
 
 ### Recording (`host`)
-Writes the board's telemetry at the **full board rate** (not thinned like the stream) to CSV files in `bumpem serve --log-dir PATH` (default `BumpemServer/Logs/`, not in git).
+Writes the board's telemetry at the **full board rate** (not thinned like the stream) to CSV files in `bumpem serve --log-dir PATH` (default `BumpemServer/Logs/`, not in git), and the Vicon force plates when Vicon is connected (also if it connects during the recording).
 
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/log` | | `{"recording": false, "file": null, "events_file": null, "rows": 0, "duration_s": 0}` | host |
+| GET | `/api/v1/log` | | `{"recording": false, "file": null, "events_file": null, "vicon_file": null, "rows": 0, "vicon_rows": 0, "duration_s": 0}` | host |
 | POST | `/api/v1/log/start` | `{"label": "closedloop_A"}` (optional; letters, digits, `_`, `-`, max 40) | same object, `recording: true` | host |
 | POST | `/api/v1/log/stop` | | same object with the final `rows` and `duration_s`; `recording: false` | host |
-| GET | `/api/v1/log/file?kind=force\|events` | | the last **finished** recording's CSV as a download (`text/csv`, attachment, same file name). 404 `not_found` if none since the server started; 409 `board_rejected` while recording | host |
+| GET | `/api/v1/log/file?kind=force\|events\|vicon` | | the last **finished** recording's CSV as a download (`text/csv`, attachment, same file name). 404 `not_found` if none since the server started; 409 `board_rejected` while recording | host |
 
 - `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D` (one row per telemetry line; `time_ms` = board clock).
-- `events_<same>.csv`: `time_ms,kind,args`: board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
+- `events_<same>.csv`: `time_ms,kind,args`: first row `PARAMS` (all board parameters at the start, as JSON), then board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
 - Start while recording → 409 `board_rejected` ("already recording"). Stop while idle → the idle object. Needs a connected board (409 `not_connected`); recording stops by itself at disconnect.
 - Both modes.
 
@@ -91,14 +91,12 @@ The GRAIL belts' force plates, read from Vicon Nexus over Ethernet (DataStream S
 
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/vicon` | | `{"connected": true, "host": "192.168.1.60:801", "default_host": "…" or null, "rate_hz": 100, "plates": ["Left", "Right"], "message": null, "recording": false, "file": null, "rows": 0, "duration_s": 0}` | host |
+| GET | `/api/v1/vicon` | | `{"connected": true, "host": "192.168.1.60:801", "default_host": "…" or null, "rate_hz": 100, "plates": ["Left", "Right"], "message": null}` | host |
 | POST | `/api/v1/vicon/connect` | `{"host": "192.168.1.60:801"}` or `{"host": "sim"}` | same object. Waits up to 5 s for the first frame: no reply → 504 `board_timeout`; SDK missing, bad address or no plate with an `Fz` output → 422 `invalid` | host |
-| POST | `/api/v1/vicon/disconnect` | | same object (ends a running recording) | host |
-| GET | `/api/v1/vicon/file` | | the last **finished** Vicon recording (`text/csv` attachment). 404 `not_found` if none; 409 `board_rejected` while recording | host |
+| POST | `/api/v1/vicon/disconnect` | | same object (a running recording's Vicon file ends there) | host |
 
 - `plates`: Vicon device names that have an `Fz` output (Nexus names them). `message`: why the reader stopped (link lost), else null.
-- **Automatic recording:** with Vicon connected, a recording starts when the board leaves DISARMED/ESTOP (`ARM` → ARMING/ARMED) and ends when it is back in DISARMED or ESTOP (Release, STOP), at board disconnect or Vicon disconnect. Vicon connected while the board is already armed → starts then. No start/stop endpoint.
-- `vicon_<YYYYMMDD_HHMMSS>.csv` in `--log-dir`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N as Vicon reports it (plate axes: sign not converted).
+- Recorded with the board (see Recording): `vicon_<same stem>.csv`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N as Vicon reports it (plate axes: sign not converted).
 - Both modes.
 
 ### Modes

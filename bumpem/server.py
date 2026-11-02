@@ -30,7 +30,6 @@ SERVER_VERSION = "0.5.0"
 MODES = ("production", "testing")
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
-IDLE_STATES = ("DISARMED", "ESTOP")   # anything else = armed: Vicon records (API.md "Vicon force plates")
 SETTINGS_SKIP = ("ch_A", "ch_B", "ch_C", "ch_D", "wd_ms", "loop_ms", "tel_div")   # owned by --modules / the server / timing
 
 
@@ -104,8 +103,7 @@ class Hub:
         self.vicon_default = vicon                # --vicon: connected at startup, shown in the UI
         self.vicon = None                         # ViconReader / SimReader
         self.vicon_message: str | None = None
-        self.vlog: ViconLog | None = None
-        self.last_vicon: Path | None = None
+        self.vlog: ViconLog | None = None         # open while a recording runs and Vicon is connected
         self._t0 = time.monotonic()
         self._vicon_lock = threading.Lock()
         self.settings_path = Path(settings) if settings else None   # saved parameters, written to the board at connect
@@ -218,34 +216,48 @@ class Hub:
     # --- recording (docs/API.md "Recording") ---
     def log_info(self) -> dict[str, Any]:
         lg = self.log
-        return {"recording": lg is not None, "file": str(lg.force_path) if lg else None,
-                "events_file": str(lg.events_path) if lg else None,
-                "rows": lg.rows if lg else 0, "duration_s": lg.duration_s if lg else 0}
+        return self._log_dict(self.log, self.vlog)
+
+    @staticmethod
+    def _log_dict(lg: ForceLog | None, vlg: ViconLog | None) -> dict[str, Any]:
+        vpath = vlg.path if vlg else lg.vicon_path if lg else None
+        return {"recording": False, "file": str(lg.force_path) if lg else None,
+                "events_file": str(lg.events_path) if lg else None, "vicon_file": str(vpath) if vpath else None,
+                "rows": lg.rows if lg else 0, "vicon_rows": vlg.rows if vlg else 0, "duration_s": lg.duration_s if lg else 0}
+
+    def log_info(self) -> dict[str, Any]:
+        return {**self._log_dict(self.log, self.vlog), "recording": self.log is not None}
 
     def log_start(self, label: str) -> dict[str, Any]:
-        self.need()
+        params = self.call(self.need().get)                  # first events row: the settings this recording ran with
         with self._lock:
             if self.log is not None:
                 raise ApiError("board_rejected", 409, "already recording (POST /api/v1/log/stop first)")
             self.log = ForceLog(self.log_dir, label)
+            t = self.board.last.t_ms if self.board and self.board.last else 0
+            self.log.event(t, "PARAMS", json.dumps(params, separators=(",", ":")))
+            self._vicon_open()
         return self.log_info()
 
     def log_stop(self) -> dict[str, Any]:
         with self._lock:
             lg, self.log = self.log, None
+            vlg = self._vicon_close()
         if lg is None:
             return self.log_info()
         lg.close()
         self.last_log = {"force": lg.force_path, "events": lg.events_path}
-        return {"recording": False, "file": str(lg.force_path), "events_file": str(lg.events_path),
-                "rows": lg.rows, "duration_s": lg.duration_s}
+        if lg.vicon_path:
+            self.last_log["vicon"] = lg.vicon_path
+        return self._log_dict(lg, vlg)
 
     def log_file(self, kind: str) -> Path:
         if self.log is not None:
             raise ApiError("board_rejected", 409, "still recording (POST /api/v1/log/stop first)")
         path = self.last_log.get(kind)
         if path is None or not path.is_file():
-            raise ApiError("not_found", 404, "no finished recording since the server started")
+            raise ApiError("not_found", 404, "no finished recording since the server started"
+                           + (" with Vicon data" if kind == "vicon" and self.last_log else ""))
         return path
 
     def log_command(self, kind: str, data: dict) -> None:
@@ -257,11 +269,9 @@ class Hub:
 
     # --- Vicon force plates (docs/API.md "Vicon force plates") ---
     def vicon_info(self) -> dict[str, Any]:
-        v, lg = self.vicon, self.vlog
+        v = self.vicon
         return {"connected": v is not None, "host": v.host if v else None, "default_host": self.vicon_default,
-                "rate_hz": v.rate_hz if v else None, "plates": list(v.plates) if v else [], "message": self.vicon_message,
-                "recording": lg is not None, "file": str(lg.path if lg else self.last_vicon) if (lg or self.last_vicon) else None,
-                "rows": lg.rows if lg else 0, "duration_s": lg.duration_s if lg else 0}
+                "rate_hz": v.rate_hz if v else None, "plates": list(v.plates) if v else [], "message": self.vicon_message}
 
     def vicon_connect(self, host: str) -> None:
         from .vicon import open_reader
@@ -274,49 +284,40 @@ class Hub:
                 raise ApiError("invalid", 422, str(e)) from None
             except TimeoutError as e:
                 raise ApiError("board_timeout", 504, str(e)) from None
-            self.vicon = reader
+            with self._lock:
+                self.vicon = reader
+                self._vicon_open()                     # joins a recording that is already running
             reader.start()
-        self._vicon_rec_check()
 
     def vicon_disconnect(self) -> None:
         with self._vicon_lock:
             self._vicon_disconnect()
 
     def _vicon_disconnect(self) -> None:
-        v, self.vicon = self.vicon, None
-        self._vicon_rec(False)
+        with self._lock:
+            v, self.vicon = self.vicon, None
+            self._vicon_close()
         if v is not None:
             v.close()
 
     def _vicon_lost(self, reader, message: str) -> None:   # reader thread
         if self.vicon is reader:
             self.vicon_message = message
-            self.vicon = None
-            self._vicon_rec(False)
+            with self._lock:
+                self.vicon = None
+                self._vicon_close()
             reader.close()
 
-    def _vicon_rec(self, on: bool) -> None:
-        with self._lock:
-            if on and self.vlog is None and self.vicon is not None:
-                self.vlog = ViconLog(self.log_dir, self.vicon.plates)
-            elif not on and self.vlog is not None:
-                lg, self.vlog = self.vlog, None
-                lg.close()
-                self.last_vicon = lg.path
+    def _vicon_open(self) -> None:           # caller holds self._lock
+        if self.log is not None and self.vlog is None and self.vicon is not None:
+            self.vlog = ViconLog(self.log_dir, self.log.stem, self.vicon.plates)
+            self.log.vicon_path = self.vlog.path
 
-    def _vicon_rec_check(self) -> None:
-        """Record while the board is armed: any state but DISARMED / ESTOP (and nothing without a board)."""
-        b = self.board
-        armed = b is not None and b.last is not None and b.last.state not in IDLE_STATES
-        if armed != (self.vlog is not None):
-            self._vicon_rec(armed)
-
-    def vicon_file(self) -> Path:
-        if self.vlog is not None:
-            raise ApiError("board_rejected", 409, "still recording (the board is armed)")
-        if self.last_vicon is None or not self.last_vicon.is_file():
-            raise ApiError("not_found", 404, "no finished Vicon recording since the server started")
-        return self.last_vicon
+    def _vicon_close(self) -> ViconLog | None:   # caller holds self._lock
+        vlg, self.vlog = self.vlog, None
+        if vlg is not None:
+            vlg.close()
+        return vlg
 
     def _on_vicon(self, reader, frame: int, subs: list[dict[str, float]]) -> None:   # reader thread
         if self.vicon is not reader or not subs:
@@ -343,7 +344,6 @@ class Hub:
         self._ping_stop.set()
         if board is not None:
             board.close()
-        self._vicon_rec(False)
 
     def _ping_loop(self, board: Board, stop: threading.Event) -> None:
         while not stop.wait(0.3):
@@ -423,8 +423,6 @@ class Hub:
     def _dispatch(self, msg: P.Message) -> None:   # board reader thread
         if isinstance(msg, P.Telemetry):
             item = _telemetry_dict(msg)
-            if (msg.state not in IDLE_STATES) != (self.vlog is not None) and (self.vicon or self.vlog):
-                self._vicon_rec_check()
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
             if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
@@ -564,7 +562,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         return hub.log_stop()
 
     @app.get("/api/v1/log/file")
-    def log_file(kind: str = Query("force", pattern="^(force|events)$")):
+    def log_file(kind: str = Query("force", pattern="^(force|events|vicon)$")):
         path = hub.log_file(kind)
         return FileResponse(path, media_type="text/csv", filename=path.name)
 
@@ -581,11 +579,6 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     def vicon_disconnect():
         hub.vicon_disconnect()
         return hub.vicon_info()
-
-    @app.get("/api/v1/vicon/file")
-    def vicon_file():
-        path = hub.vicon_file()
-        return FileResponse(path, media_type="text/csv", filename=path.name)
 
     def only(m: str) -> None:
         if mode != m:
