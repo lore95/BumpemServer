@@ -54,7 +54,7 @@ if exist "%OLD%\BumpemServer\Logs\" robocopy "%OLD%\BumpemServer\Logs" "%DEST%\B
 if errorlevel 8 (echo Logs could not be moved back: they are in %OLD%\BumpemServer\Logs & pause)
 
 rem --- launchers, readme, guide, packages
-for %%f in ("%SRC%\*.bat" "%SRC%\*.txt" "%SRC%\*.pdf") do copy /y "%%~f" "%DEST%\" >nul
+for %%f in ("%SRC%\*.bat" "%SRC%\*.txt" "%SRC%\*.pdf" "%SRC%\*.ico") do copy /y "%%~f" "%DEST%\" >nul
 robocopy "%SRC%\wheels" "%DEST%\wheels" /E /NFL /NDL /NJH /NJS /NP >nul
 "%PYEXE%" -m pip install --disable-pip-version-check --no-index --find-links "%SRC%\wheels" -r "%SRC%\requirements.txt" || (echo package install failed: rollback in README.txt & pause & exit /b 1)
 cd /d "%DEST%\BumpemServer"

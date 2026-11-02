@@ -18,6 +18,11 @@ Built: @BUILT@   BumpemServer @SERVER@   BumpemUI @UI@
    The lab's saved settings (BumpemServer\settings.json, from the Mac) are written to the board at every connect.
    Recordings: BumpemServer\Logs\ (and downloaded by the browser at Stop recording).
 
+Desktop shortcut with the Bump'em icon (once; no script needed)
+- Right-click start_server.bat > Send to > Desktop (create shortcut). On the Desktop: right-click the shortcut >
+  Properties > Change Icon... > Browse > this folder's bumpem.ico > OK > OK. Rename it e.g. "Bump'em".
+  (A .bat file itself cannot have an icon; the black server window keeps the cmd icon.)
+
 Other tools
 - force_logger.bat            one load cell, live plot + CSV (tower D; force_logger.bat --tower B). Server must be stopped.
 - vicon_check.bat             Vicon connection report (read-only): network, port 801, SDK connect, Vicon DLL versions,
