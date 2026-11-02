@@ -32,8 +32,11 @@ got=$(shasum -a 256 "$OUT/installers/$MCX" | cut -d' ' -f1)
   --python-version 3.12 --implementation cp --abi cp312 --target "$OUT/.check" -r "$HERE/scripts/bundle/requirements.txt"
 rm -rf "$OUT/.check"
 
-for f in "$HERE"/scripts/bundle/*; do              # Windows line endings
-  sed 's/$/\r/' "$f" > "$OUT/$(basename "$f")"
+for f in "$HERE"/scripts/bundle/*; do
+  case "$f" in
+    *.bat|*.txt) sed 's/$/\r/' "$f" > "$OUT/$(basename "$f")" ;;   # Windows line endings
+    *) cp "$f" "$OUT/" ;;                                           # INSTALL_GUIDE.pdf (scripts/install_guide.py)
+  esac
 done
 sed -i '' "s/@BUILT@/$(date '+%Y-%m-%d %H:%M')/; s/@SERVER@/$(git -C "$HERE" rev-parse --short HEAD)/; s/@UI@/$(git -C "$UI" rev-parse --short HEAD)/" "$OUT/README.txt"
 echo "Put the Vicon DataStream SDK installer (vicon.com) here before copying the bundle." | sed 's/$/\r/' > "$OUT/vicon/PUT_SDK_INSTALLER_HERE.txt"
