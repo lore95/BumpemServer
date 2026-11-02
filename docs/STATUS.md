@@ -6,6 +6,7 @@
 - Open: rope-force noise (want a rest + one-pull recording; firmware oversampling proposal, D39); which Vicon plate is the left belt; push both repos (user).
 
 ## Done
+- **Logo (2026-11-02):** `scripts/bundle/bumpem.ico` for a desktop shortcut (README: Send to Desktop > Properties > Change Icon); update.bat copies `*.ico`. Page favicon + header logo in BumpemUI. In update `BumpemUpdate_2026-11-02_1851`.
 - **Bug fixed (2026-11-02):** updates 18:32–18:40 could not connect Vicon ("module vicon_dssdk has no attribute ViconDataStream"): the reader process imported the package, whose `__init__` is empty, instead of its `ViconDataStream` submodule. The test fake was a flat module and hid it; now `tests/fake_vicon_dssdk/` has the real layout (the old loader fails on it the same way). Fixed in update `BumpemUpdate_2026-11-02_1851`.
 - **Plate force positive (2026-11-02, D40):** reader negates Vicon's Fz → vertical ground reaction force, up = + (plot, stream, `vicon_*.csv`). Diagnostics tools still raw. In update `BumpemUpdate_2026-11-02_1851`.
 - **Calmer rope-force plot (2026-11-02, D39 / U9):** stream sends the median of the samples between messages; page at 20 Hz = median of 5 (50 ms). Recordings raw. Open: the noise itself (single ADC read per loop; also reaches the controller's D term). Next: a recording at rest + during a pull → look at spike size/frequency, then decide firmware oversampling or `filter_hz` on the bench.
