@@ -157,7 +157,9 @@ def test_ui_served_when_folder_exists(tmp_path):
     with TestClient(create_app(ui_dir=str(tmp_path))) as c:
         r = c.get("/", follow_redirects=False)
         assert r.status_code in (302, 307) and r.headers["location"] == "/ui/"
-        assert "<title>ui</title>" in c.get("/ui/").text
+        r = c.get("/ui/")
+        assert "<title>ui</title>" in r.text and r.headers["cache-control"] == "no-cache"
+        assert "cache-control" not in c.get("/api/v1/info").headers
     with TestClient(create_app(ui_dir=str(tmp_path / "missing"))) as c:
         assert c.get("/ui/").status_code == 404
 

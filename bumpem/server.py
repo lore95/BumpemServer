@@ -696,6 +696,13 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         if Path(ui_dir).is_dir():
             app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
 
+            @app.middleware("http")
+            async def ui_no_cache(request, call_next):   # after an update the browser must not keep the old page
+                response = await call_next(request)
+                if request.url.path.startswith("/ui"):
+                    response.headers["Cache-Control"] = "no-cache"
+                return response
+
             @app.get("/", include_in_schema=False)
             def root():
                 return RedirectResponse("/ui/testing.html" if mode == "testing" else "/ui/")

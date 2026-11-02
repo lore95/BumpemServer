@@ -12,7 +12,7 @@ version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 ## Basics
 - Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). **No authentication** (D22): a `--host` other computers can reach is refused unless `--allow-network` is given.
-- UI: the same server serves the browser UI (`../BumpemUI/web`) at **`http://127.0.0.1:8000/ui/`**; `/` redirects there. Other folder: `bumpem serve --ui PATH`. Same origin, so the UI needs no cross-origin setup.
+- UI: the same server serves the browser UI (`../BumpemUI/web`) at **`http://127.0.0.1:8000/ui/`**; `/` redirects there. Other folder: `bumpem serve --ui PATH`. Same origin, so the UI needs no cross-origin setup. UI files are sent with `Cache-Control: no-cache` (the browser re-checks them on every load, so an update shows at once).
 - One server per PC. The server alone opens the Teensy's serial port (or the simulator).
 - JSON everywhere. Units: force N, time ms, angle degrees.
 - Angle (Vicon Forward/Left/Up axes, counter-clockwise seen from above): **0 = front, +90 = left, −90 = right, 180 = back**. Any value is accepted and normalised to (−180, 180]. The angle is the direction the subject is pulled.
