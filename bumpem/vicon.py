@@ -9,7 +9,9 @@ some frames after EnableDeviceData: wait for the plates. Connects to Nexus 2.8.1
 """
 from __future__ import annotations
 
+import importlib
 import math
+import multiprocessing
 import random
 import threading
 import time
@@ -19,23 +21,27 @@ FrameFn = Callable[[int, list[dict[str, float]]], None]
 EndFn = Callable[[str], None]
 
 
-class ViconReader:
-    """Nexus DataStream (`host` = "address:port", port 801)."""
+class ViconLost(Exception):
+    """Nexus went away (not an OSError, so the worker can tell it from a closed pipe)."""
 
-    def __init__(self, host: str, on_frame: FrameFn, on_end: EndFn, timeout_s: float = 5.0):
+
+class _SdkSession:
+    """The SDK connection itself, used inside the reader process (`_worker`). `sdk`: module holding ViconDataStream."""
+
+    def __init__(self, host: str, timeout_s: float, sdk: str = "vicon_dssdk"):
         try:
-            from vicon_dssdk import ViconDataStream
+            V = importlib.import_module(sdk).ViconDataStream
         except ImportError as e:   # not installed, or its DLLs do not load (Visual C++ runtime missing)
             raise ValueError(f"Vicon SDK not usable ({e}): run update.bat from a bundle that carries vicon_dssdk") from None
-        self._V, self.host, self._on_frame, self._on_end = ViconDataStream, host, on_frame, on_end
-        c = self._client = ViconDataStream.Client()
+        self._V, self.host = V, host
+        c = self._client = V.Client()
         try:
             c.Connect(host)
-        except ViconDataStream.DataStreamException as e:
+        except V.DataStreamException as e:
             raise ValueError(f"cannot connect to Vicon at {host} ({e}): Nexus open in Live mode? address right?") from None
         c.EnableDeviceData()
         try:                                            # every frame in order; ClientPull (legacy MATLAB) can skip frames
-            c.SetStreamMode(ViconDataStream.Client.StreamMode.EServerPush)
+            c.SetStreamMode(V.Client.StreamMode.EServerPush)
         except Exception:
             pass
         end, frames, ids = time.monotonic() + timeout_s, 0, []
@@ -54,10 +60,6 @@ class ViconReader:
         self._ids = ids                                 # SDK plate IDs; names from the device list when they match
         names = [n for n, kind in c.GetDeviceNames() if getattr(kind, "name", str(kind)) == "EForceplate"]
         self.plates = names if len(names) == len(ids) and len(set(names)) == len(names) else [f"Plate {i}" for i in ids]
-        self._stop = threading.Event()
-
-    def start(self) -> None:
-        threading.Thread(target=self._run, daemon=True).start()
 
     def _get_frame(self) -> bool:
         """True when a frame was fetched. The SDK returns False for NoFrame and raises for other errors."""
@@ -66,13 +68,14 @@ class ViconReader:
         except self._V.DataStreamException:
             return False
 
-    def _run(self) -> None:
+    def run(self, emit: FrameFn, stop: Callable[[], bool]) -> None:
+        """Every new frame to `emit` until `stop()`; raises ViconLost when Nexus goes away."""
         last = None
         try:
-            while not self._stop.is_set():
+            while not stop():
                 if not self._get_frame():
                     if not self._client.IsConnected():
-                        raise ConnectionError("Vicon connection lost")
+                        raise ViconLost("Vicon connection lost")
                     time.sleep(0.001)
                     continue
                 frame = int(self._client.GetFrameNumber())
@@ -82,17 +85,87 @@ class ViconReader:
                 last = frame
                 cols = {p: self._client.GetGlobalForceVector(i) for p, i in zip(self.plates, self._ids)}
                 n = min(len(v) for v in cols.values())
-                self._on_frame(frame, [{p: float(v[k][2]) for p, v in cols.items()} for k in range(n)])
-        except Exception as e:
-            if not self._stop.is_set():
-                self._on_end(str(e))
+                emit(frame, [{p: float(v[k][2]) for p, v in cols.items()} for k in range(n)])
+        finally:
+            try:
+                self._client.Disconnect()
+            except Exception:
+                pass
+
+
+def _worker(host: str, conn, timeout_s: float, sdk: str) -> None:
+    """Reader process: ("ready", plates, rate) or ("error", kind, text), then ("frame", n, subs)…, ("end", text)."""
+    try:
+        s = _SdkSession(host, timeout_s, sdk)
+    except Exception as e:
+        conn.send(("error", "timeout" if isinstance(e, TimeoutError) else "invalid", str(e)))
+        return
+    conn.send(("ready", s.plates, s.rate_hz))
+    try:
+        s.run(lambda f, subs: conn.send(("frame", f, subs)), conn.poll)   # anything from the server = stop
+        conn.send(("end", ""))
+    except (BrokenPipeError, EOFError, OSError):
+        pass                                                              # server gone
+    except Exception as e:
+        try:
+            conn.send(("end", str(e)))
+        except OSError:
+            pass
+
+
+class ViconReader:
+    """Nexus DataStream (`host` = "address:port", port 801), read in a separate process.
+
+    Vicon's compiled module never releases Python's GIL (no PyEval_SaveThread in _CoreClient3.pyd): its GetFrame waits
+    for the next frame holding it, which froze the server's serial thread (board timeouts with Vicon connected,
+    2026-11-02, D38). In its own process it can only block itself; frames come over a pipe.
+    """
+
+    def __init__(self, host: str, on_frame: FrameFn, on_end: EndFn, timeout_s: float = 5.0, sdk: str = "vicon_dssdk"):
+        ctx = multiprocessing.get_context("spawn")      # Windows' only start method; same on the Mac for the tests
+        self._conn, child = ctx.Pipe()
+        self._proc = ctx.Process(target=_worker, args=(host, child, timeout_s, sdk), daemon=True, name="vicon")
+        self._proc.start()
+        child.close()
+        self.host, self._on_frame, self._on_end = host, on_frame, on_end
+        self._stop = threading.Event()
+        try:
+            msg = self._conn.recv() if self._conn.poll(timeout_s + 20) else ("error", "timeout", "Vicon reader did not start")
+        except (EOFError, OSError):
+            msg = ("error", "invalid", "Vicon reader process failed at start (see the server window)")
+        if msg[0] != "ready":
+            self.close()
+            raise (TimeoutError if msg[1] == "timeout" else ValueError)(msg[2])
+        _, self.plates, self.rate_hz = msg
+
+    def start(self) -> None:
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self) -> None:
+        text = "Vicon reader process ended"
+        try:
+            while not self._stop.is_set():
+                msg = self._conn.recv()                 # blocks without holding the GIL
+                if msg[0] == "frame":
+                    self._on_frame(msg[1], msg[2])
+                else:
+                    text = msg[1] or text
+                    break
+        except (EOFError, OSError):
+            pass
+        if not self._stop.is_set():
+            self._on_end(text)
 
     def close(self) -> None:
         self._stop.set()
         try:
-            self._client.Disconnect()
-        except Exception:
+            self._conn.send("stop")
+        except OSError:
             pass
+        self._proc.join(2)
+        if self._proc.is_alive():
+            self._proc.terminate()
+        self._conn.close()
 
 
 class SimReader:
