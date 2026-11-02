@@ -6,6 +6,7 @@ setlocal
 set SRC=%~dp0
 set SRC=%SRC:~0,-1%
 set DEST=%USERPROFILE%\BumpemLab
+if not exist "%DEST%\BumpemServer\bumpem\" if exist "C:\Users\operator\BumpemLab\BumpemServer\bumpem\" set DEST=C:\Users\operator\BumpemLab
 if not exist "%SRC%\BumpemServer\bumpem\" (echo This folder has no Bump'em code to install from. & pause & exit /b 1)
 if exist "%SRC%\venv\" goto :installed
 if not exist "%DEST%\BumpemServer\bumpem\" (

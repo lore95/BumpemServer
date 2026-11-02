@@ -29,7 +29,7 @@ Never on this PC: flashing the Teensy (needs PlatformIO + internet: do it from t
 
 Update (new version from the Mac, keeps this PC's settings)
 - Copy BumpemUpdate_<date>.zip to this PC, right-click > Extract All, open the unzipped folder, double-click update.bat.
-  It finds the installation (C:\Users\<you>\BumpemLab, else asks), shows installed vs new version (VERSION.txt),
+  It finds the installation (C:\Users\<you>\BumpemLab or C:\Users\operator\BumpemLab, else asks), shows installed vs new version (VERSION.txt),
   moves the old code to backup\<date_time>\, copies the new code, puts back BumpemServer\settings.json,
   force_logger_cal.json and Logs\, installs changed packages and checks them. Close the server first.
 - Rollback: delete BumpemServer and BumpemUI in the installed folder, move the two from backup\<date_time>\ back.
