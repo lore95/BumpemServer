@@ -73,7 +73,7 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Install the **Vicon DataStream SDK** (vicon.com, free account), then `pip install` its Python folder (`vicon_dssdk`) into `BumpemHome`
 - [ ] 🟢 **Vicon read test:** Nexus in Live mode, force plates on → `python scripts/vicon_probe.py --host 192.168.1.60:801` (needs Python + SDK on that PC: offline install) → frame rate, device names, Fz per plate. Stand on one belt → note which device is the **left** belt. Send the output to Claude
 - [ ] 🟢 Note: walking, running or both in the experiments
-- [x] Offline bundle built (2026-11-02, D28): `../dist/BumpemLab_2026-11-02.zip` (41 MB; rebuild: `scripts/build_bundle.sh`). Target: Windows 10 IoT LTSC x64, per-user Python 3.12.10, no admin
+- [x] Offline bundle built (2026-11-02, D28): `../bumpemInstallation/BumpemLab_2026-11-02.zip` (41 MB; rebuild: `scripts/build_bundle.sh`). Target: Windows 10 IoT LTSC x64, per-user Python 3.12.10, no admin
 - [x] 🟢 **Install on the Vicon PC:** add the Vicon DataStream SDK installer to `vicon/`, copy the folder to `C:\Users\<you>\BumpemLab`, `1_install.bat` (→ "All packages OK"), `start_simulator.bat` (page opens), then Teensy + `start_server.bat`. Blocked or gone after reboot → ask the administrator (app lockdown / write filter). Report each step's output to Claude (done 2026-11-02 by the user)
 - [ ] 🟢 **Update the Vicon PC** (D35): Mac `scripts/build_bundle.sh --update` → copy `BumpemUpdate_<date>.zip` → unzip → `update.bat` → Y → "All packages OK". Then Board settings: kff 2, Apply, Save as default (D34). Report the window text if it stops
 

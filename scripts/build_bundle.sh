@@ -1,9 +1,9 @@
 #!/bin/sh
 # Builds the offline Windows bundle (docs/TODO.md "Offline install"): Python installer, wheels, both repos at HEAD,
-# settings, the .bat files of scripts/bundle/. Output: ../dist/BumpemLab_<date>/ and .zip next to it.
+# settings, the .bat files of scripts/bundle/. Output: ../bumpemInstallation/BumpemLab_<date>/ and .zip next to it.
 # Needs internet (python.org, PyPI). Only committed files of the repos go in (git archive).
 #   scripts/build_bundle.sh            full bundle (installers): first install
-#   scripts/build_bundle.sh --update   ../dist/BumpemUpdate_<date>/ + .zip: code, wheels, launchers only; the lab runs
+#   scripts/build_bundle.sh --update   ../bumpemInstallation/BumpemUpdate_<date>/ + .zip: code, wheels, launchers only; the lab runs
 #                                      update.bat from it (keeps the PC's settings.json, calibration, Logs\)
 set -eu
 UPDATE=0; [ "${1:-}" = "--update" ] && UPDATE=1
@@ -13,7 +13,7 @@ PYV=3.12.10
 MCX=Miniconda3-py312_26.9.4-0-Windows-x86_64.exe     # Anaconda's Miniconda, Python 3.12 base (D30)
 PY="${PY:-$HOME/miniconda3/bin/python}"
 NAME="BumpemLab_$(date +%Y-%m-%d)"; [ $UPDATE = 1 ] && NAME="BumpemUpdate_$(date +%Y-%m-%d_%H%M)"
-DIST="$HERE/../dist"
+DIST="$HERE/../bumpemInstallation"
 OUT="$DIST/$NAME"
 
 [ -e "$OUT" ] && { echo "$OUT exists: remove it first"; exit 1; }
