@@ -4,7 +4,7 @@ rem Example: install_vicon_python.bat "C:\Program Files\Vicon\DataStream SDK\Win
 cd /d "%~dp0"
 rem Python: venv\ from 1_install.bat, else the conda env from 1_install_conda.bat
 set PYEXE=%~dp0venv\Scripts\python.exe
-if not exist "%PYEXE%" set PYEXE=%USERPROFILE%\miniforge3\envs\BumpemHome\python.exe
+if not exist "%PYEXE%" set PYEXE=%USERPROFILE%\miniconda3\envs\BumpemHome\python.exe
 if not exist "%PYEXE%" (echo Not installed yet: run 1_install.bat or 1_install_conda.bat first & pause & exit /b 1)
 if "%~1"=="" (echo Usage: install_vicon_python.bat "path\to\SDK\Python folder" & pause & exit /b 1)
 rem pip builds inside the folder it installs from: copy it out of Program Files (read-only for users) first

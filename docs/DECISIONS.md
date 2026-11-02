@@ -153,3 +153,8 @@ Alternatives: PyInstaller exe (larger, AV false positives under ESET); conda (bi
 Decision: the bundle also carries Miniforge3 25.11.0-1 (Windows x64, checksum checked at build) and `1_install_conda.bat`: per-user install, conda env `BumpemHome` created offline with Python 3.12 (fallback: clone base), packages from the same wheels. The launchers use `venv\` if present, else that env. 25.11.0-1 is the last Miniforge whose base is Python 3.12; the wheels are cp312.
 Reason: the user wants the same conda env as on the Mac. Miniforge uses conda-forge only; Anaconda's default channel needs a paid licence for organisations over 200 people.
 Alternatives: Anaconda/Miniconda (licence); a newer Miniforge (Python 3.13+: wheels for that version needed); only venv (kept as option a).
+
+## D30 — 2026-11-02 — Bundle conda option: Miniconda (Anaconda) instead of Miniforge (replaces D29's installer)
+Decision: `1_install_conda.bat` installs Miniconda3-py312_26.9.4-0 (Windows x64, checksum from repo.anaconda.com checked at build). Before installing, the script shows Anaconda's Terms of Service link and the user must answer Y; only then it installs silently and sets `CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes` for that run. Env creation as in D29.
+Reason: the user wants Anaconda's conda; IBMS is its own organisation with 6 employees (user, 2026-11-02), under Anaconda's 200-employee free limit. The user accepts the terms, not the script.
+Alternatives: keep Miniforge (no terms, same conda); full Anaconda installer (~1 GB, not needed).
