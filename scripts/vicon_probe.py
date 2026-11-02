@@ -5,8 +5,8 @@ outputs, then a few seconds of Fz per force plate so you can see which plate is 
   python scripts/vicon_probe.py --host 192.168.10.1:801 --seconds 10
 
 Before: Nexus open in Live mode on the Vicon PC (DataStream is served on port 801 while it runs).
-Needs the Vicon DataStream SDK Python package `vicon_dssdk` (installed from the SDK folder, docs/knowledge/gait_detection.md).
-Untested against the lab system: written from the SDK's Python API.
+Needs the Vicon DataStream SDK Python package `vicon_dssdk` (bundle wheel, D36). Calls checked against SDK 1.13.
+Force plate Fz: forces on the plate in plate axes (Z up): standing reads negative. Untested against the lab system.
 """
 from __future__ import annotations
 
@@ -16,17 +16,18 @@ import time
 
 try:
     from vicon_dssdk import ViconDataStream
-except ImportError:
-    sys.exit("vicon_dssdk missing: install the Vicon DataStream SDK, then pip install its Python folder")
+except ImportError as e:
+    sys.exit(f"Vicon SDK not usable ({e}): run update.bat from a bundle that carries vicon_dssdk")
 
 
 def next_frame(client) -> None:
-    while True:
+    while True:          # GetFrame: False = no frame yet (SDK 1.13), exception = other errors
         try:
-            client.GetFrame()
-            return
+            if client.GetFrame():
+                return
         except ViconDataStream.DataStreamException:
-            time.sleep(0.001)
+            pass
+        time.sleep(0.001)
 
 
 def main() -> None:

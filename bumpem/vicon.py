@@ -2,7 +2,9 @@
 
 Device data only (no markers). `start()` runs one reader thread; `on_frame(frame, subs)` gets each new frame with
 `subs` = one {plate: Fz} dict per force-plate subsample, `on_end(message)` when the link is lost.
-SDK calls as in scripts/vicon_probe.py; untested against the lab system.
+SDK: Vicon DataStream SDK 1.13 for Python (`vicon_dssdk`, shipped as a wheel, D36); calls checked against its
+ViconDataStream.py. Force plate outputs are plate-local, Z up, forces on the plate (not reactions): standing reads
+negative Fz. Untested against the lab system (Nexus 2.8.1).
 """
 from __future__ import annotations
 
@@ -22,8 +24,8 @@ class ViconReader:
     def __init__(self, host: str, on_frame: FrameFn, on_end: EndFn, timeout_s: float = 5.0):
         try:
             from vicon_dssdk import ViconDataStream
-        except ImportError:
-            raise ValueError("vicon_dssdk missing: install the Vicon DataStream SDK's Python package (install_vicon_python.bat)") from None
+        except ImportError as e:   # not installed, or its DLLs do not load (Visual C++ runtime missing)
+            raise ValueError(f"Vicon SDK not usable ({e}): run update.bat from a bundle that carries vicon_dssdk") from None
         self._V, self.host, self._on_frame, self._on_end = ViconDataStream, host, on_frame, on_end
         c = self._client = ViconDataStream.Client()
         try:
@@ -57,9 +59,9 @@ class ViconReader:
         threading.Thread(target=self._run, daemon=True).start()
 
     def _get_frame(self) -> bool:
+        """True when a frame was fetched. The SDK returns False for NoFrame and raises for other errors."""
         try:
-            self._client.GetFrame()
-            return True
+            return bool(self._client.GetFrame())
         except self._V.DataStreamException:
             return False
 

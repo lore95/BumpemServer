@@ -303,13 +303,11 @@ def p_extras(P):
         "3.  First time, and after moving the sensor to another amplifier: press  Calibrate  and follow the two steps with the 12 kg weight. With the weight on it must read about 118 N / 12.00 kg.",
         "4.  Start > Stop > Save CSV. Threshold line: type a force in the box under the graph.",
         "#Vicon (Nexus must be open in Live mode)",
-        "1.  Install the Vicon DataStream SDK from the  vicon  folder (its own installer; may need the administrator).",
-        "2.  Find the SDK's Python folder (inside the SDK install, a folder named Python containing vicon_dssdk).",
-        "3.  Open a command prompt in BumpemLab (in File Explorer: click the address bar, type  cmd, Enter), then:",
-        "    install_vicon_python.bat \"C:\\Program Files\\Vicon\\DataStream SDK\\...\\Python\"",
-        "    Done when it prints  vicon_dssdk OK.",
-        "4.  vicon_probe.bat  (on the Nexus PC itself). From another PC:  vicon_probe.bat 192.168.1.60:801",
-        "5.  Stand on one belt during the 10 s: note which plate is the LEFT belt. Send the output to Claude.",
+        "1.  Nothing to install: the Vicon SDK comes with this bundle (1_install / update.bat print  Vicon SDK OK).",
+        "2.  vicon_probe.bat  (on the Nexus PC itself). From another PC: open a command prompt in BumpemLab and type",
+        "    vicon_probe.bat 192.168.1.60:801",
+        "3.  Stand on one belt during the 10 s: note which plate is the LEFT belt (standing reads negative, about minus your weight in N). Send the output to Claude.",
+        "4.  In the page: Ground force card > address (127.0.0.1:801 on the Nexus PC) > Connect. Record (next to Arm) records it with the rope forces.",
     ])
     P.save(fig)
 

@@ -19,6 +19,12 @@ if not exist venv\Scripts\python.exe (
 )
 venv\Scripts\python -m pip install --disable-pip-version-check --no-index --find-links wheels -r requirements.txt || (echo package install failed & pause & exit /b 1)
 venv\Scripts\python -c "import serial, fastapi, uvicorn, websockets, tkinter; print('All packages OK')" || (echo check failed & pause & exit /b 1)
+rem Vicon DataStream SDK (vicon_dssdk, MIT) if this bundle carries it: no SDK installer needed (D36)
+if exist wheels\vicon_dssdk-*.whl (
+  "venv\Scripts\python.exe" -m pip install --disable-pip-version-check --no-index --no-deps --find-links wheels vicon_dssdk
+  if errorlevel 1 (echo Vicon SDK install failed & pause & exit /b 1)
+  "venv\Scripts\python.exe" -c "from vicon_dssdk import ViconDataStream; print('Vicon SDK OK')" || echo Vicon SDK installed but does not load: send this window to Claude. Everything else works.
+)
 echo.
 echo Done. Next: start_simulator.bat (no hardware) or start_server.bat (Teensy plugged in).
 pause

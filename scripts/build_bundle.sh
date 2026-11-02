@@ -41,6 +41,11 @@ fi
 "$PY" -m pip install -q --dry-run --no-index --find-links "$OUT/wheels" --only-binary=:all: --platform win_amd64 \
   --python-version 3.12 --implementation cp --abi cp312 --target "$OUT/.check" -r "$HERE/scripts/bundle/requirements.txt"
 rm -rf "$OUT/.check"
+if ls "$HERE"/vendor/vicon_dssdk-*.whl >/dev/null 2>&1; then      # Vicon SDK for Python (scripts/vicon_wheel.sh, D36)
+  cp "$HERE"/vendor/vicon_dssdk-*.whl "$OUT/wheels/"
+else
+  echo "note: no vendor/vicon_dssdk-*.whl (scripts/vicon_wheel.sh): bundle without the Vicon SDK"
+fi
 
 "$PY" "$HERE/scripts/install_guide.py" >/dev/null       # INSTALL_GUIDE.pdf (not in git)
 for f in "$HERE"/scripts/bundle/*; do

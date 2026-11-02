@@ -59,6 +59,12 @@ robocopy "%SRC%\wheels" "%DEST%\wheels" /E /NFL /NDL /NJH /NJS /NP >nul
 "%PYEXE%" -m pip install --disable-pip-version-check --no-index --find-links "%SRC%\wheels" -r "%SRC%\requirements.txt" || (echo package install failed: rollback in README.txt & pause & exit /b 1)
 cd /d "%DEST%\BumpemServer"
 "%PYEXE%" -c "import bumpem.server, serial, fastapi, uvicorn, websockets, tkinter; print('All packages OK')" || (echo check failed: rollback in README.txt & pause & exit /b 1)
+rem Vicon DataStream SDK (vicon_dssdk, MIT) if this bundle carries it: no SDK installer needed (D36)
+if exist "%SRC%\wheels\vicon_dssdk-*.whl" (
+  "%PYEXE%" -m pip install --disable-pip-version-check --no-index --no-deps --find-links "%SRC%\wheels" vicon_dssdk
+  if errorlevel 1 (echo Vicon SDK install failed & pause & exit /b 1)
+  "%PYEXE%" -c "from vicon_dssdk import ViconDataStream; print('Vicon SDK OK')" || echo Vicon SDK installed but does not load: send this window to Claude. Everything else works.
+)
 echo.
 echo Updated. Old code: %OLD%   ^(delete it once the new version works^)
 echo Start as before: start_server.bat in %DEST%

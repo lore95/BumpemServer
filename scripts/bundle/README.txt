@@ -22,8 +22,8 @@ Other tools
 - force_logger.bat            one load cell, live plot + CSV (tower D; force_logger.bat --tower B). Server must be stopped.
 - vicon_probe.bat             Vicon DataStream check (Nexus in Live mode). On the Nexus PC: no argument.
                               From another PC: vicon_probe.bat 192.168.1.60:801
-- install_vicon_python.bat    after installing the Vicon DataStream SDK (vicon.com, needs an account; put its
-                              installer in vicon\ before copying): install_vicon_python.bat "<SDK's Python folder>"
+- Vicon SDK (vicon_dssdk 1.13, MIT): included in wheels\ and installed by 1_install / update.bat ("Vicon SDK OK").
+  install_vicon_python.bat "<SDK's Python folder>" only for bundles without it.
 
 Never on this PC: flashing the Teensy (needs PlatformIO + internet: do it from the Mac).
 

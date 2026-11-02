@@ -36,6 +36,12 @@ if not exist "%ENVPY%" (echo Could not create the conda env BumpemHome & pause &
 "%ENVPY%" -c "import sys; assert sys.version_info[:2] == (3, 12), sys.version; print('Python', sys.version.split()[0])" || (echo The env is not Python 3.12: the wheels need 3.12 & pause & exit /b 1)
 "%ENVPY%" -m pip install --disable-pip-version-check --no-index --find-links wheels -r requirements.txt || (echo package install failed & pause & exit /b 1)
 "%ENVPY%" -c "import serial, fastapi, uvicorn, websockets, tkinter; print('All packages OK')" || (echo check failed & pause & exit /b 1)
+rem Vicon DataStream SDK (vicon_dssdk, MIT) if this bundle carries it: no SDK installer needed (D36)
+if exist wheels\vicon_dssdk-*.whl (
+  "%ENVPY%" -m pip install --disable-pip-version-check --no-index --no-deps --find-links wheels vicon_dssdk
+  if errorlevel 1 (echo Vicon SDK install failed & pause & exit /b 1)
+  "%ENVPY%" -c "from vicon_dssdk import ViconDataStream; print('Vicon SDK OK')" || echo Vicon SDK installed but does not load: send this window to Claude. Everything else works.
+)
 echo.
 echo Done. conda env: %MC%\envs\BumpemHome. Next: start_simulator.bat (no hardware) or start_server.bat (Teensy plugged in).
 echo To use it by hand: Start menu, "Anaconda Prompt", then  conda activate BumpemHome
