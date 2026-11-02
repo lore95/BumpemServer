@@ -30,6 +30,7 @@ fp-info-cache
 *-backups/
 hardware/carrier/fab/gerbers/
 settings.json
+force_logger_cal.json
 
 # handbook build products (rebuild: docs/handbook/README.md)
 docs/handbook/*.zip
