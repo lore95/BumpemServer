@@ -40,7 +40,7 @@ def page(title, steps, top=0.90):
     y = top
     for s in steps:
         head, warn = s.startswith("#"), s.startswith("!")
-        s = wrap(s.lstrip("#!"), 88 if head or warn else 100)
+        s = wrap(s.lstrip("#!"), 80 if head or warn else 100)
         fig.text(0.07, y, s, fontsize=11.5 if head else 10.5, weight="bold" if head or warn else "normal",
                  color=WARN if warn else DARK, va="top")
         y -= 0.0165 * (s.count("\n") + 1) + (0.012 if head else 0.007)
@@ -246,9 +246,9 @@ def p_sim(P):
     fig, y = page("Step 4: test with the simulator (no hardware)", [
         "1.  Double-click  start_simulator.bat. A black window opens and stays open: that IS the server.",
         "2.  After about 4 s the browser opens  http://127.0.0.1:8000/ui/  by itself (if not, type that address).",
-        "3.  Top right shows  sim  and  DISARMED. Try it:",
-        "    Record  >  Arm  >  set Angle and Amplitude  >  Perturb now  >  watch the graph  >  Stop recording.",
-        "    The force CSV downloads to your Downloads folder.",
+        "3.  Top shows  sim  and  DISARMED. Try it:",
+        "    Arm  >  Record (green, top right)  >  set Angle and Amplitude  >  Perturb now  >  watch the graphs  >  Stop rec (blue).",
+        "    The force CSV downloads to your Downloads folder. The simulator also fakes the two treadmill plates.",
         "4.  To stop: close the black window.",
         "#Nothing here talks to the Teensy or the motors. Saved settings and logs go to the  sim  folder.",
         "!If the black window closes at once or shows red text: photograph it and send it to Claude.",
@@ -257,18 +257,18 @@ def p_sim(P):
     tx, ty = window(ax, 0, 0, 10, 7.4, "Bump'em Test  —  127.0.0.1:8000/ui/")
     ax.text(tx, ty - 0.1, "Bump'em test", fontsize=11, weight="bold", va="top")
     ax.text(3.0, ty - 0.12, "simulator ▾   sim · DISARMED", fontsize=8, va="top", family=MONO)
-    for i, (lab, c) in enumerate((("Arm", "#f6f8fa"), ("Release…", "#fff8c5"), ("STOP Esc", "#ffebe9"))):
-        box(ax, 7.0 + i * 0.98, ty - 0.45, 0.85, 0.36, lab, fc=c, size=7.5)
-    for i, t in enumerate(("DIRECTION\n(dial, angle)", "PERTURBATION\n(amplitude, timing)\n[Perturb now]",
-                           "BOARD SETTINGS\n(baseline, max force,\nzero, save)")):
-        box(ax, 0.2 + i * 3.25, 3.5, 3.0, 1.95, t, size=8.5)
-    box(ax, 0.2, 0.25, 9.6, 3.0, "", fc="#0d1117", ec="#30363d")
-    xs = [0.5 + i * 0.09 for i in range(100)]
-    ys = [0.9 + (1.3 if 62 < i < 72 else 0) + 0.05 * ((i * 7) % 3) for i in range(100)]
-    ax.plot(xs, ys, color="#4fd1a5", lw=1.4)
-    ax.text(0.45, 2.95, "LIVE FORCE (large graph)", color="#8b9690", fontsize=8, va="top")
-    box(ax, 0.5, 0.35, 1.3, 0.38, "Record", size=7.5)
-    callout(ax, 9.3, ty - 0.5, "STOP / Esc: always top right", 4.6, ty - 0.85)
+    for i, (lab, c) in enumerate((("Arm", "#f6f8fa"), ("Record", "#dafbe1"), ("Release…", "#fff8c5"), ("STOP Esc", "#ffebe9"))):
+        box(ax, 6.05 + i * 0.98, ty - 0.45, 0.85, 0.36, lab, fc=c, size=7.5)
+    box(ax, 0.2, 3.55, 4.6, 2.0, "DIRECTION\n(dial, angle)", size=8.5)
+    box(ax, 0.2, 1.25, 4.6, 2.05, "PERTURBATION\n(amplitude, timing)\n[Perturb now]", size=8.5)
+    box(ax, 0.2, 0.15, 9.6, 0.85, "BOARD SETTINGS (baseline, max force, kff, zero, save)  — at the bottom", size=8.5)
+    for k, (y0, lab, col) in enumerate(((3.55, "ROPE FORCE (tower sensors)", "#4fd1a5"), (1.25, "GROUND FORCE (GRAIL plates, Vicon)", "#5ec8f2"))):
+        box(ax, 5.1, y0, 4.7, 2.0 if k == 0 else 2.05, "", fc="#0d1117", ec="#30363d")
+        xs = [5.3 + i * 0.043 for i in range(100)]
+        ys = [y0 + 0.45 + ((1.0 if 62 < i < 72 else 0) if k == 0 else 1.1 * max(0, __import__("math").sin(i / 4.5))) for i in range(100)]
+        ax.plot(xs, ys, color=col, lw=1.3)
+        ax.text(5.25, y0 + 1.85, lab, color="#8b9690", fontsize=7.5, va="top")
+    callout(ax, 9.3, ty - 0.5, "STOP / Esc: always top right", 4.0, ty - 0.85)
     P.save(fig)
 
 
@@ -314,6 +314,41 @@ def p_extras(P):
     P.save(fig)
 
 
+def p_update(P):
+    fig, y = page("Updating to a new version", [
+        "When the software changes on the Mac, Claude builds a small update package: BumpemUpdate_<date>.zip (code and packages, no installers). Your settings, calibration and recordings stay.",
+        "1.  Close the Bump'em server window and the force logger.",
+        "2.  Copy the zip to the PC, right-click it > Extract All. Open the unzipped folder.",
+        "3.  Double-click  update.bat  in THAT folder (not the one in BumpemLab).",
+        "4.  It shows the installed and the new version and asks  Update now [Y,N]?  Press  Y.",
+        "#Done when it prints   All packages OK   and   Updated.",
+        "5.  Start as before with  start_server.bat  in BumpemLab. Delete the unzipped update folder.",
+        "#What it does",
+        "•  finds BumpemLab in your user folder (else asks you to paste its path)",
+        "•  moves the old code to  BumpemLab\\backup\\<date_time>,  copies the new code",
+        "•  puts back  settings.json,  force_logger_cal.json  and  Logs  (your recordings)",
+        "•  installs only the Python packages that changed, then checks them",
+        "#Go back to the old version",
+        "Delete BumpemServer and BumpemUI in BumpemLab and move the two folders from  backup\\<date_time>  back (recordings made after the update: move them out of the new BumpemServer\\Logs first).",
+    ])
+    ax = axes(fig, (0.07, 0.06, 0.86, y - 0.09), 10, 5.4)
+    console(ax, 0, 0, 10, 5.4, "C:\\Windows\\System32\\cmd.exe", [
+        "Installed in C:\\Users\\<you>\\BumpemLab:",
+        "built 2026-11-02 11:40   BumpemServer 35fa83b   BumpemUI bd67152",
+        "This update:",
+        "built 2026-11-03 09:15   BumpemServer ca3ecde   BumpemUI 56b6d31",
+        "Kept: BumpemServer\\settings.json, force_logger_cal.json, Logs\\, sim\\, Python.",
+        "?Update now [Y,N]?Y",
+        "Requirement already satisfied: pyserial==3.5 ...",
+        "+All packages OK",
+        "",
+        "Updated. Old code: C:\\Users\\<you>\\BumpemLab\\backup\\20261103_091702",
+        "Press any key to continue . . .",
+    ])
+    ax.text(3.4, 4.8 - 5 * 0.27, "◀  press Y", fontsize=9.5, color="#9a6700", weight="bold", va="top")
+    P.save(fig)
+
+
 def p_trouble(P):
     fig, y = page("If something goes wrong, and how to remove it", [])
     rows = [
@@ -327,6 +362,7 @@ def p_trouble(P):
         ("No COM port in the list", "Other USB cable or port (some cables are charge-only). Check Device Manager."),
         ("\"no Teensy found\" (force logger)", "Teensy not plugged in, or the server holds it: close the server."),
         ("Values look wrong (force logger)", "Calibrate again with the 12 kg weight; 24 V of that tower on?"),
+        ("update.bat: \"server is running\" / \"in use\"", "Close the server and logger windows and any Explorer window inside BumpemLab, run it again."),
     ]
     yy = y - 0.01
     fig.text(0.07, yy, "What you see", fontsize=11, weight="bold"); fig.text(0.45, yy, "What to do", fontsize=11, weight="bold")
@@ -356,7 +392,7 @@ def p_trouble(P):
 
 def main():
     P = Pages(OUT)
-    for f in (p_overview, p_copy, p_choose, p_install_a, p_install_b, p_sim, p_board, p_extras, p_trouble):
+    for f in (p_overview, p_copy, p_choose, p_install_a, p_install_b, p_sim, p_board, p_extras, p_update, p_trouble):
         f(P)
     P.close()
     print(f"{OUT} ({P.n} pages)")
