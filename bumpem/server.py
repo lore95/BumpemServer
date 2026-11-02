@@ -23,13 +23,14 @@ from pydantic import BaseModel, Field
 
 from . import geometry
 from . import protocol as P
-from .datalog import ForceLog
+from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
 
-SERVER_VERSION = "0.4.0"
+SERVER_VERSION = "0.5.0"
 MODES = ("production", "testing")
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
+IDLE_STATES = ("DISARMED", "ESTOP")   # anything else = armed: Vicon records (API.md "Vicon force plates")
 SETTINGS_SKIP = ("ch_A", "ch_B", "ch_C", "ch_D", "wd_ms", "loop_ms", "tel_div")   # owned by --modules / the server / timing
 
 
@@ -69,6 +70,11 @@ class TestPullBody(BaseModel):
     dur_ms: float = Field(ge=100, le=1000, description="Start to end, 50 ms ramps included", examples=[400])
 
 
+class ViconBody(BaseModel):
+    host: str = Field(pattern=r"^(sim|[A-Za-z0-9.\-]+:\d{1,5})$", description='Nexus address:port, or "sim"',
+                      examples=["192.168.1.60:801"])
+
+
 class LogStartBody(BaseModel):
     label: str = Field("", pattern="^[A-Za-z0-9_-]{0,40}$", description="Added to the file names", examples=["closedloop_A"])
 
@@ -92,8 +98,16 @@ def _telemetry_dict(t: P.Telemetry) -> dict[str, Any]:
 class Hub:
     """The one board connection plus the WebSocket clients listening to it."""
 
-    def __init__(self, wd_ms: int = 1000, modules: str | None = None, settings: str | None = None, log_dir: str = "Logs"):
+    def __init__(self, wd_ms: int = 1000, modules: str | None = None, settings: str | None = None, log_dir: str = "Logs",
+                 vicon: str | None = None):
         self.wd_ms = wd_ms
+        self.vicon_default = vicon                # --vicon: connected at startup, shown in the UI
+        self.vicon = None                         # ViconReader / SimReader
+        self.vicon_message: str | None = None
+        self.vlog: ViconLog | None = None
+        self.last_vicon: Path | None = None
+        self._t0 = time.monotonic()
+        self._vicon_lock = threading.Lock()
         self.settings_path = Path(settings) if settings else None   # saved parameters, written to the board at connect
         self.settings_applied, self.settings_pending, self.settings_message = False, False, None
         self.log_dir = log_dir
@@ -241,6 +255,84 @@ class Hub:
                 t = self.board.last.t_ms if self.board and self.board.last else 0
                 self.log.event(t, kind, json.dumps(data, separators=(",", ":")))
 
+    # --- Vicon force plates (docs/API.md "Vicon force plates") ---
+    def vicon_info(self) -> dict[str, Any]:
+        v, lg = self.vicon, self.vlog
+        return {"connected": v is not None, "host": v.host if v else None, "default_host": self.vicon_default,
+                "rate_hz": v.rate_hz if v else None, "plates": list(v.plates) if v else [], "message": self.vicon_message,
+                "recording": lg is not None, "file": str(lg.path if lg else self.last_vicon) if (lg or self.last_vicon) else None,
+                "rows": lg.rows if lg else 0, "duration_s": lg.duration_s if lg else 0}
+
+    def vicon_connect(self, host: str) -> None:
+        from .vicon import open_reader
+        with self._vicon_lock:
+            self._vicon_disconnect()
+            self.vicon_message = None
+            try:
+                reader = open_reader(host, lambda f, s: self._on_vicon(reader, f, s), lambda m: self._vicon_lost(reader, m))
+            except ValueError as e:
+                raise ApiError("invalid", 422, str(e)) from None
+            except TimeoutError as e:
+                raise ApiError("board_timeout", 504, str(e)) from None
+            self.vicon = reader
+            reader.start()
+        self._vicon_rec_check()
+
+    def vicon_disconnect(self) -> None:
+        with self._vicon_lock:
+            self._vicon_disconnect()
+
+    def _vicon_disconnect(self) -> None:
+        v, self.vicon = self.vicon, None
+        self._vicon_rec(False)
+        if v is not None:
+            v.close()
+
+    def _vicon_lost(self, reader, message: str) -> None:   # reader thread
+        if self.vicon is reader:
+            self.vicon_message = message
+            self.vicon = None
+            self._vicon_rec(False)
+            reader.close()
+
+    def _vicon_rec(self, on: bool) -> None:
+        with self._lock:
+            if on and self.vlog is None and self.vicon is not None:
+                self.vlog = ViconLog(self.log_dir, self.vicon.plates)
+            elif not on and self.vlog is not None:
+                lg, self.vlog = self.vlog, None
+                lg.close()
+                self.last_vicon = lg.path
+
+    def _vicon_rec_check(self) -> None:
+        """Record while the board is armed: any state but DISARMED / ESTOP (and nothing without a board)."""
+        b = self.board
+        armed = b is not None and b.last is not None and b.last.state not in IDLE_STATES
+        if armed != (self.vlog is not None):
+            self._vicon_rec(armed)
+
+    def vicon_file(self) -> Path:
+        if self.vlog is not None:
+            raise ApiError("board_rejected", 409, "still recording (the board is armed)")
+        if self.last_vicon is None or not self.last_vicon.is_file():
+            raise ApiError("not_found", 404, "no finished Vicon recording since the server started")
+        return self.last_vicon
+
+    def _on_vicon(self, reader, frame: int, subs: list[dict[str, float]]) -> None:   # reader thread
+        if self.vicon is not reader or not subs:
+            return
+        host_s = time.monotonic() - self._t0
+        b = self.board
+        board_ms = b.last.t_ms if b is not None and b.last is not None else None
+        with self._lock:
+            clients = list(self._clients)
+            if self.vlog is not None:
+                self.vlog.frame(host_s, frame, board_ms, subs)
+        item = {"type": "vicon", "host_s": round(host_s, 4), "frame": frame,
+                "fz": {p: round(sum(s[p] for s in subs) / len(subs), 1) for p in subs[0]}}
+        for loop, q in clients:
+            loop.call_soon_threadsafe(_put_drop, q, item)
+
     def disconnect(self) -> None:
         with self._conn_lock:
             self._disconnect()
@@ -251,6 +343,7 @@ class Hub:
         self._ping_stop.set()
         if board is not None:
             board.close()
+        self._vicon_rec(False)
 
     def _ping_loop(self, board: Board, stop: threading.Event) -> None:
         while not stop.wait(0.3):
@@ -330,6 +423,8 @@ class Hub:
     def _dispatch(self, msg: P.Message) -> None:   # board reader thread
         if isinstance(msg, P.Telemetry):
             item = _telemetry_dict(msg)
+            if (msg.state not in IDLE_STATES) != (self.vlog is not None) and (self.vicon or self.vlog):
+                self._vicon_rec_check()
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
             if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
@@ -360,18 +455,26 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 # ---------- app ----------
 def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None,
                modules: str | None = None, mode: str = "production",
-               settings: str | None = None, log_dir: str = "Logs") -> FastAPI:
+               settings: str | None = None, log_dir: str = "Logs", vicon: str | None = None) -> FastAPI:
     """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists.
-    settings: JSON file of saved board parameters (None = off). log_dir: folder for recordings."""
+    settings: JSON file of saved board parameters (None = off). log_dir: folder for recordings.
+    vicon: Vicon address:port (or "sim") connected at startup."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
-    hub = Hub(wd_ms, modules, settings, log_dir)
+    hub = Hub(wd_ms, modules, settings, log_dir, vicon)
 
     @asynccontextmanager
     async def lifespan(_):
         if board:
             hub.connect(board)
+        if vicon:
+            try:
+                hub.vicon_connect(vicon)
+            except ApiError as e:                 # the server still runs; the UI shows the message and can retry
+                hub.vicon_message = e.message
+                print(f"warning: Vicon not connected: {e.message}")
         yield
+        hub.vicon_disconnect()
         hub.disconnect()
 
     app = FastAPI(title="bumpem server", version=SERVER_VERSION, lifespan=lifespan,
@@ -465,6 +568,25 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         path = hub.log_file(kind)
         return FileResponse(path, media_type="text/csv", filename=path.name)
 
+    @app.get("/api/v1/vicon")
+    def get_vicon():
+        return hub.vicon_info()
+
+    @app.post("/api/v1/vicon/connect")
+    def vicon_connect(body: ViconBody):
+        hub.vicon_connect(body.host)
+        return hub.vicon_info()
+
+    @app.post("/api/v1/vicon/disconnect")
+    def vicon_disconnect():
+        hub.vicon_disconnect()
+        return hub.vicon_info()
+
+    @app.get("/api/v1/vicon/file")
+    def vicon_file():
+        path = hub.vicon_file()
+        return FileResponse(path, media_type="text/csv", filename=path.name)
+
     def only(m: str) -> None:
         if mode != m:
             raise ApiError("wrong_mode", 409, f"server is in {mode} mode; this needs `bumpem serve --{m}`")
@@ -548,7 +670,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     async def stream(ws: WebSocket, telemetry_hz: float = Query(30, gt=0, le=1000)):
         await ws.accept()
         q = hub.subscribe()
-        period, last_t = 1.0 / telemetry_hz, 0.0
+        period, last_t = 1.0 / telemetry_hz, {"telemetry": 0.0, "vicon": 0.0}
 
         async def receive():
             while True:
@@ -563,11 +685,11 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                     item = await asyncio.wait_for(q.get(), timeout=0.5)
                 except asyncio.TimeoutError:
                     continue
-                if item["type"] == "telemetry":
+                if item["type"] in last_t:            # thinned for display, each type on its own
                     now = time.monotonic()
-                    if now - last_t < period:
+                    if now - last_t[item["type"]] < period:
                         continue
-                    last_t = now
+                    last_t[item["type"]] = now
                 await ws.send_json(item)
         except WebSocketDisconnect:
             pass

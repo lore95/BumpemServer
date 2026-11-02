@@ -35,7 +35,7 @@ Alternatives: keep v0 letter commands and add parameters (no general API); angle
 ## D7 — 2026-09-29 — Baseline window and balance recovery
 Decision: baseline force/SD = first 3 s of the trial (fixed). Balance recovery is decided by the lab's existing algorithm (gait prediction + whole-body angular momentum), plugged into the host as an external detector; bumpem does not implement its own.
 Reason: project lead's choice; the recovery algorithm already exists and is validated in the lab.
-Consequence: recovery needs whole-body kinematics (Vicon marker/segment data), not only force plates. `bumpem/vicon.py` must stream markers too.
+Consequence: recovery needs whole-body kinematics (Vicon marker/segment data), not only force plates. `bumpem/vicon.py` must stream markers too. (Deferred by D31: force plates only for now.)
 Alternatives: rolling pre-pulse baseline; stride-time placeholder criterion (dropped).
 
 ## D8 — 2026-09-29 — Recovery hook and stand-in
@@ -158,3 +158,13 @@ Alternatives: Anaconda/Miniconda (licence); a newer Miniforge (Python 3.13+: whe
 Decision: `1_install_conda.bat` installs Miniconda3-py312_26.9.4-0 (Windows x64, checksum from repo.anaconda.com checked at build). Before installing, the script shows Anaconda's Terms of Service link and the user must answer Y; only then it installs silently and sets `CONDA_PLUGINS_AUTO_ACCEPT_TOS=yes` for that run. Env creation as in D29.
 Reason: the user wants Anaconda's conda; IBMS is its own organisation with 6 employees (user, 2026-11-02), under Anaconda's 200-employee free limit. The user accepts the terms, not the script.
 Alternatives: keep Miniforge (no terms, same conda); full Anaconda installer (~1 GB, not needed).
+
+## D31 — 2026-11-02 — Vicon: force plates only, no marker data (for now)
+Decision: the host reads only the GRAIL belts' force plates from Vicon DataStream over Ethernet (`EnableDeviceData`; no marker or segment data). `scripts/vicon_probe.py` and the planned `bumpem/vicon.py` enable device data only. Marker streaming (D7's recovery input) is deferred until the recovery algorithm is integrated.
+Reason: the user needs only the force data for now (2026-11-02); it is what the previous student used (manual §6.2: LAN cable to the Nexus PC, DataStream SDK, vertical GRF; `legacy/MATLAB_script.m:39,75-82`). Less data per frame, and markers need not be labelled live in Nexus.
+Alternatives: stream markers too (D7, needed later for recovery); read the plates from D-Flow instead of Vicon (no SDK or interface known).
+
+## D32 — 2026-11-02 — Vicon force plates in the server: live plot, recording while armed
+Decision: the server reads the force plates itself (`bumpem/vicon.py`: `ViconReader` over DataStream, `SimReader` for `sim`), connected at startup with `bumpem serve --vicon HOST:PORT` or from the UI (`POST /vicon/connect`). Each frame's mean Fz per plate goes on the WebSocket stream (`vicon`, thinned like telemetry); every subsample is written to `vicon_<stamp>.csv` **while the board is armed** (any state but DISARMED / ESTOP), started and stopped by the server from the board's telemetry, no button. Each row carries the latest board time (`board_ms`) to line up with `force_*.csv`. Files never overwrite each other (`_2` suffix within one second).
+Reason: user (2026-11-02): live ground-force graph under the rope-force graph; record Vicon from Arm until stopped. Recording in the server (not the browser) keeps the full 1000 Hz rate and works with the tab closed.
+Alternatives: a Record button for Vicon (forgettable at the start of a trial); recording in the browser (thinned, lost on reload); Vicon in a separate process (second clock, harder to align).

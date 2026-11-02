@@ -45,8 +45,8 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/gait.py` | FS/TO detector, port of MATLAB logic |
 | `bumpem/experiment.py` | Perturbation sequence + FS target generation |
 | `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
-| `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers); `ForceLog` = the server's recordings |
-| `bumpem/vicon.py` | Vicon DataStream client (stub) |
+| `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers); `ForceLog` = the server's recordings; `ViconLog` = force plates while armed |
+| `bumpem/vicon.py` | Vicon force plates (D31, D32): `ViconReader` (DataStream SDK, device data only, Fz per plate per subsample; untested on the lab system), `SimReader` (`sim`: two belts, running) |
 | `bumpem/geometry.py` | Perturbation angle → per-module amplitudes (Vicon axes, D16), reachable directions |
 | `bumpem/cli.py` | `bumpem` command (incl. `bumpem serve`, `bumpem perturb ANGLE AMPLITUDE`) |
 | `bumpem/server.py` | FastAPI server: `board` and `host` endpoints of `docs/API.md` (incl. `/perturbation`, `/geometry`, `/settings`, `/log`) + WebSocket stream; serves `../BumpemUI/web` at `/ui/` |

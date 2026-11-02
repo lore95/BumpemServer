@@ -3,7 +3,7 @@
 The contract between the bumpem server and every client (the web UI in `BumpemUI`, MATLAB, scripts,
 future apps). Clients use only this API, never the Python internals (DECISIONS D10).
 
-**Version:** 1.0-draft. Server 0.4.0 (2026-10-12): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
+**Version:** 1.0-draft. Server 0.5.0 (2026-11-02, Vicon force plates): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
 version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 **Status tags:** `board` = maps directly onto protocol v1 (`docs/PROTOCOL.md`), **implemented**. Interactive test page: `http://127.0.0.1:8000/docs`.
@@ -39,7 +39,7 @@ HTTP 4xx/5xx with:
 ### Connection
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/info` | | `{"server": "0.4.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
+| GET | `/api/v1/info` | | `{"server": "0.5.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
 | GET | `/api/v1/ports` | | `["/dev/tty.usbmodem123", ...]` | board |
 | POST | `/api/v1/connect` | `{"port": "COM7"}` or `{"port": "sim"}` | `info` | board |
 | POST | `/api/v1/disconnect` | | `{}` | board |
@@ -83,6 +83,22 @@ Writes the board's telemetry at the **full board rate** (not thinned like the st
 - `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D` (one row per telemetry line; `time_ms` = board clock).
 - `events_<same>.csv`: `time_ms,kind,args`: board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
 - Start while recording → 409 `board_rejected` ("already recording"). Stop while idle → the idle object. Needs a connected board (409 `not_connected`); recording stops by itself at disconnect.
+- Both modes.
+
+### Vicon force plates (`host`)
+The GRAIL belts' force plates, read from Vicon Nexus over Ethernet (DataStream SDK, `vicon_dssdk`; device data only, no markers: DECISIONS D31). Independent of the board connection.
+`bumpem serve --vicon HOST:PORT` connects at startup (e.g. `192.168.1.60:801`, `127.0.0.1:801` on the Nexus PC; `sim` = two simulated plates, running gait). The UI can also connect with its own address.
+
+| Method | Path | Body | Returns | Status |
+|---|---|---|---|---|
+| GET | `/api/v1/vicon` | | `{"connected": true, "host": "192.168.1.60:801", "default_host": "…" or null, "rate_hz": 100, "plates": ["Left", "Right"], "message": null, "recording": false, "file": null, "rows": 0, "duration_s": 0}` | host |
+| POST | `/api/v1/vicon/connect` | `{"host": "192.168.1.60:801"}` or `{"host": "sim"}` | same object. Waits up to 5 s for the first frame: no reply → 504 `board_timeout`; SDK missing, bad address or no plate with an `Fz` output → 422 `invalid` | host |
+| POST | `/api/v1/vicon/disconnect` | | same object (ends a running recording) | host |
+| GET | `/api/v1/vicon/file` | | the last **finished** Vicon recording (`text/csv` attachment). 404 `not_found` if none; 409 `board_rejected` while recording | host |
+
+- `plates`: Vicon device names that have an `Fz` output (Nexus names them). `message`: why the reader stopped (link lost), else null.
+- **Automatic recording:** with Vicon connected, a recording starts when the board leaves DISARMED/ESTOP (`ARM` → ARMING/ARMED) and ends when it is back in DISARMED or ESTOP (Release, STOP), at board disconnect or Vicon disconnect. Vicon connected while the board is already armed → starts then. No start/stop endpoint.
+- `vicon_<YYYYMMDD_HHMMSS>.csv` in `--log-dir`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N as Vicon reports it (plate axes: sign not converted).
 - Both modes.
 
 ### Modes
@@ -166,10 +182,11 @@ Server → client, one JSON object per message:
 {"type": "telemetry", "t_ms": 1234, "state": "ARMED", "pulse_id": 0,
  "target": {"A": 5.0, ...}, "measured": {"A": 5.1, ...}, "dac": {"A": 1846, ...}}
 {"type": "event", "t_ms": 1300, "kind": "PSTART", "args": ["12"]}
+{"type": "vicon", "host_s": 12.345, "frame": 5021, "fz": {"Left": 812.4, "Right": 3.1}}   // mean over the frame's subsamples
 {"type": "gait", "t_s": 12.345, "event": "FS_VALID", "side": "left"}        // planned
 {"type": "trial", "trial_id": "...", "done": 3, "total": 25}                   // planned
 ```
-Telemetry is thinned to `telemetry_hz` for display. Logs always keep the full board rate.
+Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. Logs always keep the full rate.
 
 Client → server: `{"type": "estop"}` (same as `POST /estop`, for the lowest latency from a UI).
 

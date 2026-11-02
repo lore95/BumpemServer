@@ -1,5 +1,5 @@
-"""Vicon DataStream check, read-only: connect, print frame rate, devices (force plates) with their outputs, subjects,
-then a few seconds of Fz per force plate so you can see which plate is the left belt (stand on one belt).
+"""Vicon DataStream check, read-only, force plates only (no markers, D31): connect, print frame rate, devices with their
+outputs, then a few seconds of Fz per force plate so you can see which plate is the left belt (stand on one belt).
 
   python scripts/vicon_probe.py                         # host from the legacy MATLAB script
   python scripts/vicon_probe.py --host 192.168.10.1:801 --seconds 10
@@ -39,8 +39,6 @@ def main() -> None:
     print("connecting to", a.host)
     client.Connect(a.host)
     client.EnableDeviceData()
-    client.EnableMarkerData()
-    client.EnableSegmentData()
     client.SetAxisMapping(ViconDataStream.Client.AxisMapping.EForward, ViconDataStream.Client.AxisMapping.ELeft,
                           ViconDataStream.Client.AxisMapping.EUp)
     next_frame(client)
@@ -53,8 +51,6 @@ def main() -> None:
             print(f"    {output} / {component} [{unit}]")
             if component == "Fz":
                 plates.append((name, output, component))
-    for subject in client.GetSubjectNames():
-        print(f"subject {subject!r}: {len(client.GetMarkerNames(subject))} markers")
     if not plates:
         sys.exit("no device output with component Fz: check that the force plates are enabled in Nexus")
 

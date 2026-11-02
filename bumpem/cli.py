@@ -111,6 +111,8 @@ def main(argv=None):
     root = Path(__file__).resolve().parents[1]
     sv.add_argument("--settings", default=str(root / "settings.json"),
                     help="saved board parameters, written to the board at connect (default: BumpemServer/settings.json; \"\" = off)")
+    sv.add_argument("--vicon", help="Vicon Nexus address:port to read the force plates from at startup "
+                                     "(e.g. 192.168.1.60:801; 'sim' = simulated plates). The UI can connect later too")
     sv.add_argument("--log-dir", default=str(root / "Logs"), help="folder for recordings (default: BumpemServer/Logs)")
     sv.add_argument("--ui", default=str(Path(__file__).resolve().parents[2] / "BumpemUI" / "web"),
                     help="browser UI folder, served at /ui/ (default: ../BumpemUI/web)")
@@ -128,7 +130,8 @@ def main(argv=None):
         page = "/ui/testing.html" if args.mode == "testing" else "/ui/"
         print(f"bumpem server ({args.mode} mode) on http://{args.host}:{args.port}  (UI: {page}, API test page: /docs)")
         uvicorn.run(create_app(wd_ms=args.wd_ms, board=args.board, ui_dir=args.ui, modules=args.modules or None,
-                               mode=args.mode, settings=args.settings or None, log_dir=args.log_dir),
+                               mode=args.mode, settings=args.settings or None, log_dir=args.log_dir,
+                               vicon=args.vicon),
                     host=args.host, port=args.port)
         return
 

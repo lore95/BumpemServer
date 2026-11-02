@@ -66,3 +66,35 @@ class ForceLog:
     def close(self) -> None:
         self._ff.close()
         self._ef.close()
+
+
+class ViconLog:
+    """Force-plate Fz per subsample while the board is armed (docs/API.md "Vicon force plates")."""
+
+    def __init__(self, folder: str | Path, plates: list[str]):
+        folder = Path(folder)
+        folder.mkdir(parents=True, exist_ok=True)
+        stem, n = f"vicon_{datetime.now().strftime('%Y%m%d_%H%M%S')}", 1
+        self.path, self.plates = folder / f"{stem}.csv", list(plates)
+        while self.path.exists():                       # armed twice within a second: never overwrite
+            n += 1
+            self.path = folder / f"{stem}_{n}.csv"
+        self._f = open(self.path, "w", newline="")
+        self._w = csv.writer(self._f)
+        self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates])
+        self.rows, self.t_first, self.t_last = 0, None, 0.0
+
+    def frame(self, host_s: float, frame: int, board_ms: int | None, subs: list[dict[str, float]]) -> None:
+        for i, s in enumerate(subs):
+            self._w.writerow([f"{host_s:.4f}", frame, i, "" if board_ms is None else board_ms]
+                             + [f"{s.get(p, float('nan')):.2f}" for p in self.plates])
+        self.rows += len(subs)
+        self.t_first = host_s if self.t_first is None else self.t_first
+        self.t_last = host_s
+
+    @property
+    def duration_s(self) -> float:
+        return 0.0 if self.t_first is None else self.t_last - self.t_first
+
+    def close(self) -> None:
+        self._f.close()
