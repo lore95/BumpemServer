@@ -380,3 +380,16 @@ def test_vicon_recorded_with_the_board(kept):
     time.sleep(0.2)
     done = kept.post("/api/v1/log/stop").json()
     assert done["vicon_file"] and done["vicon_rows"] > 0
+
+
+def test_thinned_telemetry_is_median_of_samples():
+    from bumpem.server import _MedianThin
+    thin = _MedianThin()
+    samples = [{"type": "telemetry", "t_ms": t, "measured": {"A": a, "C": 5.0}} for t, a in
+               ((10, 4.0), (20, 95.0), (30, 4.2))]                     # one spike between two normal readings
+    for s in samples:
+        thin.add(s)
+    out = thin.take(samples[-1])
+    assert out["measured"] == {"A": 4.2, "C": 5.0} and out["t_ms"] == 30 and samples[1]["measured"]["A"] == 95.0
+    thin.add(samples[0])
+    assert thin.take(samples[0])["measured"]["A"] == 4.0                # starts over after each message

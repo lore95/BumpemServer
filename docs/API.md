@@ -184,7 +184,9 @@ Server → client, one JSON object per message:
 {"type": "gait", "t_s": 12.345, "event": "FS_VALID", "side": "left"}        // planned
 {"type": "trial", "trial_id": "...", "done": 3, "total": 25}                   // planned
 ```
-Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. Logs always keep the full rate.
+Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. In thinned telemetry, `measured` is the
+**median of the board samples since the previous message** (per channel; removes single-sample spikes); `target`,
+`dac`, `state` are the latest sample's. Logs always keep the full rate, raw.
 
 Client → server: `{"type": "estop"}` (same as `POST /estop`, for the lowest latency from a UI).
 

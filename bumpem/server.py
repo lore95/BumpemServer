@@ -8,6 +8,7 @@ from __future__ import annotations
 import asyncio
 import json
 import re
+import statistics
 import threading
 import time
 from contextlib import asynccontextmanager
@@ -443,6 +444,22 @@ class Hub:
             loop.call_soon_threadsafe(_put_drop, q, item)
 
 
+class _MedianThin:
+    """Thinned telemetry for display: `measured` = per-channel median of the samples since the last message sent."""
+
+    def __init__(self):
+        self.acc: dict[str, list[float]] = {}
+
+    def add(self, item: dict) -> None:
+        for c, v in item["measured"].items():
+            self.acc.setdefault(c, []).append(v)
+
+    def take(self, item: dict) -> dict:
+        out = {**item, "measured": {c: statistics.median(v) for c, v in self.acc.items() if v}}
+        self.acc = {}
+        return out
+
+
 def _put_drop(q: asyncio.Queue, item: dict) -> None:
     try:
         q.put_nowait(item)
@@ -664,6 +681,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         await ws.accept()
         q = hub.subscribe()
         period, last_t = 1.0 / telemetry_hz, {"telemetry": 0.0, "vicon": 0.0}
+        thin = _MedianThin()
 
         async def receive():
             while True:
@@ -678,11 +696,15 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                     item = await asyncio.wait_for(q.get(), timeout=0.5)
                 except asyncio.TimeoutError:
                     continue
+                if item["type"] == "telemetry":
+                    thin.add(item)
                 if item["type"] in last_t:            # thinned for display, each type on its own
                     now = time.monotonic()
                     if now - last_t[item["type"]] < period:
                         continue
                     last_t[item["type"]] = now
+                    if item["type"] == "telemetry":
+                        item = thin.take(item)
                 await ws.send_json(item)
         except WebSocketDisconnect:
             pass
