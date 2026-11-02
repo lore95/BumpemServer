@@ -6,6 +6,7 @@ set -eu
 HERE=$(cd "$(dirname "$0")/.." && pwd)            # BumpemServer
 UI="$HERE/../BumpemUI"
 PYV=3.12.10
+MFV=25.11.0-1                                       # last Miniforge with Python 3.12 (26.x ships 3.13+)
 PY="${PY:-$HOME/miniconda3/bin/python}"
 NAME="BumpemLab_$(date +%Y-%m-%d)"
 DIST="$HERE/../dist"
@@ -19,6 +20,11 @@ git -C "$UI" archive HEAD | tar -x -C "$OUT/BumpemUI"
 for f in settings.json force_logger_cal.json; do [ -f "$HERE/$f" ] && cp "$HERE/$f" "$OUT/BumpemServer/"; done
 
 curl -fL --progress-bar -o "$OUT/installers/python-$PYV-amd64.exe" "https://www.python.org/ftp/python/$PYV/python-$PYV-amd64.exe"
+MFX="Miniforge3-$MFV-Windows-x86_64.exe"
+curl -fL --progress-bar -o "$OUT/installers/$MFX" "https://github.com/conda-forge/miniforge/releases/download/$MFV/$MFX"
+want=$(curl -fsSL "https://github.com/conda-forge/miniforge/releases/download/$MFV/$MFX.sha256" | cut -d' ' -f1)
+got=$(shasum -a 256 "$OUT/installers/$MFX" | cut -d' ' -f1)
+[ "$want" = "$got" ] || { echo "Miniforge checksum mismatch: $got != $want"; exit 1; }
 "$PY" -m pip download -q --only-binary=:all: --platform win_amd64 --python-version 3.12 --implementation cp --abi cp312 \
   -d "$OUT/wheels" -r "$HERE/scripts/bundle/requirements.txt"
 

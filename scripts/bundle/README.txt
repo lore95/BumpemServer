@@ -4,8 +4,12 @@ Built: @BUILT@   BumpemServer @SERVER@   BumpemUI @UI@
 
 1. Copy this whole folder to the PC, e.g. C:\Users\<you>\BumpemLab
    (install it where it will stay: the venv cannot be moved afterwards).
-2. Double-click 1_install.bat. Installs Python 3.12 for this user only (no admin, no internet)
-   and the packages into venv\. Ends with "All packages OK".
+2. Install ONE of the two (both: for this user only, no admin, no internet; both end with "All packages OK"):
+   a) 1_install.bat        Python 3.12 from python.org + venv\ in this folder (smaller, simpler)
+   b) 1_install_conda.bat  Miniforge (conda) + conda env "BumpemHome", Python 3.12, like the Mac.
+                           Uses conda-forge (free); Anaconda's own channel needs a licence at a university.
+                           By hand: Start menu > Miniforge Prompt > conda activate BumpemHome
+   The .bat launchers below use venv\ if it exists, else the conda env.
    If the install is blocked or gone after a reboot: the PC has app lockdown / a write filter: ask the administrator.
 3. Double-click start_simulator.bat: the browser opens http://127.0.0.1:8000/ui/ with a simulated board.
    Close the black window to stop the server.
@@ -22,3 +26,7 @@ Other tools
                               installer in vicon\ before copying): install_vicon_python.bat "<SDK's Python folder>"
 
 Never on this PC: flashing the Teensy (needs PlatformIO + internet: do it from the Mac).
+
+Remove everything
+- a) Settings > Apps > "Python 3.12.10" > Uninstall.   b) Settings > Apps > "Miniforge3" > Uninstall (removes the env too).
+- Delete this folder.

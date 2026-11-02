@@ -148,3 +148,8 @@ Alternatives: build the CSV in the browser from the stream (30 Hz, not the full 
 Decision: `scripts/build_bundle.sh` makes a folder/zip for the Vicon PC: python.org 3.12.10 installer run per-user (no admin), a venv inside the bundle, packages from win_amd64 wheels pinned to the versions tested on the Mac, both repos as plain source (`git archive HEAD`); the server runs as `python -m bumpem.cli serve` from `BumpemServer/` (no install of `bumpem`, so the defaults for `settings.json`, `Logs/` and `../BumpemUI/web` resolve as on the Mac). Teensy is never flashed from that PC.
 Reason: the Vicon network has no internet and the PCs are locked down (TODO "Offline install"); the project lead approved starting tests there (user, 2026-11-02).
 Alternatives: PyInstaller exe (larger, AV false positives under ESET); conda (bigger, needs its own installer); installing `bumpem` as a wheel (paths would point into site-packages).
+
+## D29 — 2026-11-02 — Bundle: optional conda env via Miniforge (not Anaconda)
+Decision: the bundle also carries Miniforge3 25.11.0-1 (Windows x64, checksum checked at build) and `1_install_conda.bat`: per-user install, conda env `BumpemHome` created offline with Python 3.12 (fallback: clone base), packages from the same wheels. The launchers use `venv\` if present, else that env. 25.11.0-1 is the last Miniforge whose base is Python 3.12; the wheels are cp312.
+Reason: the user wants the same conda env as on the Mac. Miniforge uses conda-forge only; Anaconda's default channel needs a paid licence for organisations over 200 people.
+Alternatives: Anaconda/Miniconda (licence); a newer Miniforge (Python 3.13+: wheels for that version needed); only venv (kept as option a).
