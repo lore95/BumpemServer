@@ -1,5 +1,6 @@
 @echo off
-rem Sensor gains from the newest calibration_*.csv (calibrate page) in this folder or Downloads into the saved settings
+rem Sensor gains from the newest calibration_*.csv (calibrate page) in this folder, Downloads or BumpemServer\calibration\
+rem (the one shipped with the update) into the saved settings
 rem (BumpemServer\settings.json; old one kept as settings.json.bak). Report: calibration_<stamp>_applied.txt next to the CSV.
 rem Then: start_server.bat, Connect, Zero sensors with the ropes slack, Save as default.
 cd /d "%~dp0BumpemServer"

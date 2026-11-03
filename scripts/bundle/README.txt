@@ -26,7 +26,8 @@ Desktop shortcut with the Bump'em icon (once; no script needed)
 Sensor calibration with weights
 - start_server.bat, open http://127.0.0.1:8000/ui/calibrate.html (link under Board settings), Connect, board DISARMED.
   Per sensor: Tara with the empty hook, then 3+ different weights (e.g. 2, 5, 8 kg) > Record weight. Download CSV.
-- Put calibration_<date>.csv in this folder (or leave it in Downloads), close the server, double-click
+- The lab's calibration ships in BumpemServer\calibration\. A new one: put calibration_<date>.csv in this folder
+  (or leave it in Downloads). Close the server, double-click
   apply_calibration.bat: writes the gains into BumpemServer\settings.json (old one: settings.json.bak) and
   calibration_<date>_applied.txt. Then start_server.bat > Connect > Zero sensors (ropes slack) > Save as default.
 

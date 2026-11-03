@@ -9,7 +9,7 @@ Gains outside the firmware's 0.5-3 are reported and not written. Old file kept a
 calibration_<stamp>_applied.txt next to the CSV. The server writes the file to the board at the next Connect.
 
   python scripts/apply_calibration.py [CSV] [--settings BumpemServer/settings.json] [--dry-run]
-  (no CSV: the newest calibration_*.csv in --search folders)
+  (no CSV: the newest calibration_*.csv in --search folders: BumpemLab, Downloads, BumpemServer/calibration/)
 """
 from __future__ import annotations
 
@@ -86,7 +86,7 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     ap.add_argument("csv", nargs="?", help="calibration CSV (default: newest calibration_*.csv in --search)")
     ap.add_argument("--settings", default=str(here / "settings.json"))
-    ap.add_argument("--search", nargs="*", default=[str(here.parent), str(Path.home() / "Downloads")])
+    ap.add_argument("--search", nargs="*", default=[str(here.parent), str(Path.home() / "Downloads"), str(here / "calibration")])
     ap.add_argument("--dry-run", action="store_true", help="report only, settings unchanged")
     a = ap.parse_args()
     path = Path(a.csv) if a.csv else newest([Path(d) for d in a.search])
