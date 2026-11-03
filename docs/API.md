@@ -58,6 +58,9 @@ Board parameters live in the Teensy's RAM: a replug resets them to the firmware 
 (`bumpem serve --settings PATH`, default `BumpemServer/settings.json`, not in git; `--settings ""` = off) and writes its
 parameters to the board **at every connect**, after the channels. If the board is not DISARMED or in ESTOP at connect
 (server restarted while armed), nothing changes until it next reports DISARMED.
+**Board restart:** when the board's uptime (`t_ms` in telemetry) jumps back by more than 1 s while connected (Teensy
+reset, brown-out), the board is on firmware defaults again: the server re-sends the channels, its watchdog and the saved
+file, then sends the stream event `RESTART` (also written to a running recording's events file).
 
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
@@ -66,7 +69,9 @@ parameters to the board **at every connect**, after the channels. If the board i
 | DELETE | `/api/v1/settings` | | removes the file (the board keeps its current values) → same object | host |
 
 - Not saved, not applied: `ch_A`…`ch_D` (owned by `--modules`), `wd_ms` (owned by the server), `loop_ms`, `tel_div` (timing).
-- `applied`: the file was written to the board on this connection. `pending`: waiting for DISARMED. `message`: why a value was refused, if any (the rest is still applied).
+- `applied`: the file was written to the board on this connection (and after its last restart). `pending`: waiting for DISARMED. `message`: why a value was refused, if any (the rest is still applied).
+- `RESTART` args: `settings applied`, `settings pending` (board not DISARMED yet), `settings partly applied`, `no saved settings`.
+- Clients compare `GET /params` with `params` here and warn when they differ (board running other values than the saved ones).
 - Sensor zero offsets (`offset_*`) are saved like every other parameter: re-zero and save again when a sensor or its wiring changes.
 - Both modes. In testing mode a test pull still restores the parameters it changed.
 
@@ -180,6 +185,7 @@ Server → client, one JSON object per message:
 {"type": "telemetry", "t_ms": 1234, "state": "ARMED", "pulse_id": 0,
  "target": {"A": 5.0, ...}, "measured": {"A": 5.1, ...}, "dac": {"A": 1846, ...}}
 {"type": "event", "t_ms": 1300, "kind": "PSTART", "args": ["12"]}
+{"type": "event", "t_ms": 40, "kind": "RESTART", "args": ["settings applied"]}   // from the server, see "Saved settings"
 {"type": "vicon", "host_s": 12.345, "frame": 5021, "fz": {"Left": 812.4, "Right": 3.1}}   // mean over the frame's subsamples
 {"type": "gait", "t_s": 12.345, "event": "FS_VALID", "side": "left"}        // planned
 {"type": "trial", "trial_id": "...", "done": 3, "total": 25}                   // planned

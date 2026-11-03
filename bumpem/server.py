@@ -114,6 +114,8 @@ class Hub:
         self.last_log: dict[str, Path] = {}   # files of the last finished recording, for GET /log/file
         self.modules = modules        # e.g. "ACD": channels switched on at connect, the others off
         self.modules_pending = False  # True while the board was not DISARMED when the channels had to be set
+        self._last_t_ms: int | None = None   # board uptime of the last telemetry: a jump back = board restarted
+        self.board_restarts = 0              # restarts seen since the server started (handled)
         self.board: Board | None = None
         self.port: str | None = None
         self.next_pulse_id = 1
@@ -139,6 +141,7 @@ class Hub:
                 board = Board(SerialLink(port))
             except Exception as e:  # serial.SerialException, FileNotFoundError, ...
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
+        self._last_t_ms = None
         board.add_listener(self._dispatch)
         self.board, self.port = board, port
         self.settings_applied, self.settings_pending, self.settings_message = False, False, None
@@ -206,6 +209,26 @@ class Hub:
         self.settings_path.parent.mkdir(parents=True, exist_ok=True)
         self.settings_path.write_text(json.dumps({"saved": datetime.now().isoformat(timespec="seconds"), "params": params}, indent=1))
         self.settings_applied, self.settings_pending, self.settings_message = True, False, None
+
+    def _board_restarted(self, board: Board) -> None:
+        """Uptime jumped back while connected: the board is on firmware defaults again (API.md "Saved settings")."""
+        if board is not self.board:
+            return
+        print("warning: board restarted (uptime dropped): sending channels, watchdog and saved settings again")
+        self.settings_applied, self.settings_pending, self.settings_message = False, False, None
+        try:
+            self.apply_modules()
+            if self.port != "sim" and self.wd_ms > 0:
+                board.set("wd_ms", self.wd_ms)
+        except (BoardError, OSError) as e:
+            print(f"warning: after the board restart: {e}")
+        self.apply_settings()
+        how = ("no saved settings" if self.read_settings() is None else "settings pending" if self.settings_pending
+               else "settings not applied" if not self.settings_applied
+               else "settings partly applied" if self.settings_message else "settings applied")
+        t = board.last.t_ms if board.last else 0
+        self._publish({"type": "event", "t_ms": t, "kind": "RESTART", "args": [how]}, ("event", t, "RESTART", how))
+        self.board_restarts += 1
 
     def settings_info(self) -> dict[str, Any]:
         saved = self.read_settings()
@@ -424,6 +447,9 @@ class Hub:
     def _dispatch(self, msg: P.Message) -> None:   # board reader thread
         if isinstance(msg, P.Telemetry):
             item = _telemetry_dict(msg)
+            last, self._last_t_ms = self._last_t_ms, msg.t_ms
+            if last is not None and msg.t_ms + 1000 < last:
+                threading.Thread(target=self._board_restarted, args=(self.board,), daemon=True).start()
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
             if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
@@ -433,13 +459,18 @@ class Hub:
                     threading.Thread(target=self.apply_settings, daemon=True).start()
         else:
             return
+        self._publish(item, ("telemetry", msg) if isinstance(msg, P.Telemetry)
+                      else ("event", msg.t_ms, msg.kind, " ".join(msg.args)))
+
+    def _publish(self, item: dict, row: tuple) -> None:
+        """To every stream client, and to the running recording (`row`: ("telemetry", msg) or ("event", t, kind, text))."""
         with self._lock:
             clients = list(self._clients)
             if self.log is not None:                # full board rate, before the stream thins it
-                if isinstance(msg, P.Telemetry):
-                    self.log.telemetry(msg)
+                if row[0] == "telemetry":
+                    self.log.telemetry(row[1])
                 else:
-                    self.log.event(msg.t_ms, msg.kind, " ".join(msg.args))
+                    self.log.event(*row[1:])
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
 

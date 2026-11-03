@@ -294,6 +294,24 @@ def test_settings_wait_for_disarmed(kept):
     assert kept.get("/api/v1/params").json()["kff"] == 2
 
 
+def test_settings_again_after_board_restart(kept):
+    """Teensy reset with the USB link kept (2026-10-27, 2026-11-03: a test ran on kff 7.5): saved values go back on."""
+    _connect(kept)
+    kept.patch("/api/v1/params", json={"kff": 2, "baseline_n": 4})
+    kept.post("/api/v1/settings")
+    kept.post("/api/v1/log/start")
+    time.sleep(1.3)                                      # uptime must be > 1 s for the jump back to count
+    hub = kept.app.state.hub
+    hub.board._link.reboot()
+    end = time.monotonic() + 3
+    while not hub.board_restarts and time.monotonic() < end:
+        time.sleep(0.02)
+    p = kept.get("/api/v1/params").json()
+    assert (p["kff"], p["baseline_n"]) == (2, 4)
+    events = Path(kept.post("/api/v1/log/stop").json()["events_file"]).read_text()
+    assert "RESTART" in events and "settings applied" in events
+
+
 def test_settings_delete_and_off(kept, client):
     _connect(kept)
     kept.post("/api/v1/settings")

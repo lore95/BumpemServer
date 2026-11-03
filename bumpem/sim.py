@@ -98,6 +98,15 @@ class SimLink:
     def close(self) -> None:
         self._closed = True
 
+    def reboot(self) -> None:
+        """As a Teensy reset that keeps the USB link (2026-10-27, unnoticed): firmware defaults, uptime from 0."""
+        with self._lock:
+            self._t0, self._vt, self._next_tick = time.monotonic(), 0.0, 0.0
+            self.p, self.state, self.pulse = dict(DEFAULTS), "DISARMED", None
+            self.tgt = {c: 0.0 for c in CHANNELS}
+            self._emit("I,proto=1,fw=sim,board=sim,channels=4,f_hard_max=200")
+            self._event("STATE", "DISARMED")
+
     # ---------- control ----------
     def _pulse_amp(self, c: str, now: float) -> float:
         pl = self.pulse
