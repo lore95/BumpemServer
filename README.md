@@ -36,3 +36,5 @@ bumpem serve --board sim                      # or --board /dev/tty.usbmodemXXXX
 ```
 Open http://127.0.0.1:8000/docs to try every endpoint from the browser. API contract: `docs/API.md`.
 While the server runs it owns the serial port: stop the board through the API (`POST /api/v1/estop`), not the CLI.
+
+License: proprietary to IBMS, non-commercial academic use only. See `LICENSE`.

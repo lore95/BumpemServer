@@ -5,6 +5,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | Path | Purpose |
 |---|---|
 | `CLAUDE.md` | Agent instructions |
+| `LICENSE` | Proprietary to IBMS, non-commercial academic use only; third-party files (Vicon SDK wheel, MIT) keep their own licenses |
 | `docs/thesis/thesis.pdf` | Master thesis (Palanisamy, 2026). Primary reference |
 | `docs/thesis/manual.pdf` | Bumpem user manual |
 | `docs/knowledge/*.md` | Extracted facts with source citations |
