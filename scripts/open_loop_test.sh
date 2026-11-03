@@ -13,8 +13,9 @@ P="${PORT:-/dev/cu.usbmodem169222501}"
 case "$MOD" in
   A)  OFF="ch_B ch_C ch_D"; ON="ch_A";      NAME="module A" ;;
   C)  OFF="ch_A ch_B ch_D"; ON="ch_C";      NAME="module C" ;;
-  AC) OFF="ch_B ch_D";      ON="ch_A ch_C"; NAME="modules A and C" ;;
-  *)  echo "usage: $0 [A|C|AC]" >&2; exit 1 ;;
+  D)  OFF="ch_A ch_C ch_B"; ON="ch_D";      NAME="module D" ;;
+  ACD) OFF="ch_B";      ON="ch_A ch_C ch_D"; NAME="modules A and C and D" ;;
+  *)  echo "usage: $0 [A|C|D]ALL" >&2; exit 1 ;;
 esac
 
 DUR=400   # pulse duration in ms, start to end incl. ramps (was 600; shortened by one third 2026-10-02)
@@ -56,7 +57,7 @@ b release
 sleep 1.5
 
 banner "$GRN" ">>>  DRY RUN DONE: TURN THE 48 V POWER SUPPLY ON  <<<" "" "Ropes tied to fixed anchors, no person, treadmill off, everyone clear." "Hand on the strip switch."
-if [ "$MOD" = "AC" ]; then
+if [ "$MOD" = "ACD" ]; then
   pause "Dry run done. Ropes tied to fixed anchors, no person, treadmill off, everyone clear.
     Switch A's 48 V ON, wait 2 s, then C's 48 V ON (separate sockets, one at a time).
     Both ESCON LEDs must blink GREEN."
@@ -68,7 +69,7 @@ fi
 echo "== 4. Arm: rope(s) should tighten gently (2 N)"
 b arm --watch 3
 
-for f in 5 10 20; do
+for f in 5 10; do
   pause "Next: pulse$(amps $f) N (bigger tug each time; with AC both at once). Stop if a rope pulls hard or slackens."
   # shellcheck disable=SC2046
   b pulse $(amps "$f") --rise 50 --dur "$DUR" --fall 50 --watch 2

@@ -44,3 +44,9 @@ scripts/bundle/INSTALL_GUIDE.pdf
 
 # Vicon DataStream SDK wheel built by scripts/vicon_wheel.sh (Vicon download, not ours to version)
 vendor/
+
+docs/email-makerspace-stulz.txt
+
+docs/email-maxon-escon-repair.txt
+
+scripts/Pertubation_analog/
