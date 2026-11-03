@@ -1,7 +1,9 @@
 """Sensor gains from a weight calibration (BumpemUI calibrate.html CSV) into the saved settings (DECISIONS D42).
 
-Per sensor: gain = slope of expected force (kg x g) over the raw reading (gain 1, offset 0), with intercept when two or
-more different weights were hung (the tara then does not matter), else through the tara. Writes `gain_X` into
+Per sensor: gain = least-squares slope through the tara of expected force (kg x g) over the net raw reading (raw at
+gain 1, offset 0, minus the tara). Points at the ADC's full scale (raw >= 99.5 % of f_full: the sensor is saturated)
+are left out. A free fit (with intercept) is unreliable when the weights are close together (12/16 kg: D's intercept
+came out -5.5 N, 2026-11-03). Writes `gain_X` into
 settings.json; an existing `offset_X` is scaled by new/old gain (a zero offset = -raw at rest x gain, so it stays a zero).
 Gains outside the firmware's 0.5-3 are reported and not written. Old file kept as settings.json.bak. Report to
 calibration_<stamp>_applied.txt next to the CSV. The server writes the file to the board at the next Connect.
@@ -22,30 +24,29 @@ GAIN_RANGE = (0.5, 3.0)            # firmware PARAMS gain_X limits (firmware/src
 WORST_OK_N = 2.0                   # worst point error above this: flagged
 
 
-def fit(points: list[dict]) -> dict:
-    """points: rows of kind "point" for one sensor → gain, intercept, worst error (N)."""
-    x = [float(p["raw_mean_n"]) for p in points]
-    y = [float(p["expected_n"]) for p in points]
-    masses = {float(p["mass_kg"]) for p in points}
-    if len(masses) >= 2:
-        mx, my = sum(x) / len(x), sum(y) / len(y)
-        sxx = sum((a - mx) ** 2 for a in x)
-        gain = sum((a - mx) * (b - my) for a, b in zip(x, y)) / sxx
-        icpt = my - gain * mx
-    else:
-        net = [float(p["raw_mean_n"]) - float(p["tare_n"]) for p in points]
-        gain = sum(y) / sum(net)
-        icpt = -gain * float(points[0]["tare_n"])
-    worst = max(abs(gain * a + icpt - b) for a, b in zip(x, y))
-    return {"gain": gain, "intercept_n": icpt, "worst_n": worst, "points": len(points), "weights": sorted(masses)}
+def saturated(p: dict) -> bool:
+    return float(p["raw_mean_n"]) >= 0.995 * float(p.get("f_full") or 200)
+
+
+def fit(points: list[dict]) -> dict | None:
+    """points: rows of kind "point" for one sensor → gain, worst error (N), points used / left out (saturated)."""
+    use = [p for p in points if not saturated(p)]
+    if not use:
+        return None
+    net = [float(p["raw_mean_n"]) - float(p["tare_n"]) for p in use]
+    y = [float(p["expected_n"]) for p in use]
+    gain = sum(a * b for a, b in zip(net, y)) / sum(a * a for a in net)
+    worst = max(abs(gain * a - b) for a, b in zip(net, y))
+    return {"gain": gain, "worst_n": worst, "points": len(use), "saturated": len(points) - len(use),
+            "weights": sorted({float(p["mass_kg"]) for p in use})}
 
 
 def results(rows: list[dict]) -> dict[str, dict]:
     out = {}
     for c in "ABCD":
-        pts = [r for r in rows if r["sensor"] == c and r["kind"] == "point"]
-        if pts:
-            out[c] = fit(pts)
+        f = fit([r for r in rows if r["sensor"] == c and r["kind"] == "point"])
+        if f:
+            out[c] = f
     return out
 
 
@@ -101,6 +102,8 @@ def main() -> None:
         flag = []
         if len(r["weights"]) < 2:
             flag.append("one weight only")
+        if r["saturated"]:
+            flag.append(f"{r['saturated']} point(s) at full scale left out")
         if r["worst_n"] > WORST_OK_N:
             flag.append(f"worst error > {WORST_OK_N} N: check the points")
         out.append(f"{c}: gain {r['gain']:.4f} from {r['points']} points, weights {r['weights']} kg, worst error "

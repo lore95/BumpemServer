@@ -19,6 +19,7 @@ def _csv(path: Path, sensors: dict[str, tuple[float, float, list[float]]]) -> Pa
             w.writerow(["t", c, "tare", 0, 0, tare, 0.3, 200, 0, tare, 0, 1, 0, 200, 9.81, "1.0.1", "x"])
             for m in masses:
                 raw = m * 9.81 / gain + tare
+                raw = min(raw, 200.0)                                       # ADC full scale (f_full)
                 w.writerow(["t", c, "point", m, m * 9.81, raw, 0.3, 200, 0, tare, raw - tare, 1, 0, 200, 9.81, "1.0.1", "x"])
     return path
 
@@ -31,14 +32,14 @@ def test_gains_written_offsets_scaled(tmp_path):
     settings = tmp_path / "settings.json"
     settings.write_text(json.dumps({"saved": "x", "params": {"kff": 2, "gain_B": 2.12, "offset_B": -4.24, "offset_A": -1.0}}))
     data = _csv(tmp_path / "calibration_20261103_1300.csv",
-                {"A": (1.05, 0.4, [2, 5, 8]), "B": (3.2, 1.0, [2, 5, 8]), "C": (0.98, 0.0, [5])})
+                {"A": (1.05, 0.4, [2, 5, 8, 32]), "B": (3.2, 1.0, [2, 5, 8]), "C": (0.98, 0.0, [5])})
     r = _run(data, "--settings", settings)
     assert r.returncode == 0, r.stderr
     p = json.loads(settings.read_text())["params"]
     assert p["kff"] == 2 and p["gain_A"] == 1.05 and p["gain_C"] == 0.98
     assert p["offset_A"] == -1.05                                   # scaled by 1.05 / 1 (no gain_A before = 1)
     assert "gain_B" in p and p["gain_B"] == 2.12                    # 3.2 is outside 0.5-3: not written
-    assert "NOT written" in r.stdout and "one weight only" in r.stdout
+    assert "NOT written" in r.stdout and "one weight only" in r.stdout and "1 point(s) at full scale left out" in r.stdout
     assert json.loads((tmp_path / "settings.json.bak").read_text())["params"]["gain_B"] == 2.12
     assert (tmp_path / "calibration_20261103_1300_applied.txt").is_file()
 

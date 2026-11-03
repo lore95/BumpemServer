@@ -219,3 +219,8 @@ Decision: BumpemUI `calibrate.html` (U11) records, per sensor, a tara and severa
 Reason: user (2026-11-03): pull strength depends on accurate sensors; B's 200 kg cell (1.0 mV/V) vs 100 kg (1.6 mV/V) suggests gain ≈ 3.2, not the 2.12 in use. Offsets are re-zeroed in the lab (Zero sensors) since they depend on the rope setup; the slope does not. Fit with intercept: the 0 N floor of the ADC biases a tara at rest (seen on B and C, 2026-11-03), not the slope.
 Alternatives: server endpoint that writes the CSV (API change, no gain); fit in the page and PATCH gains directly (no record, lab PC not where the weights are hung).
 Open: if B needs > 3, the firmware range (PROTOCOL.md first, re-flash) or the IAA100 trim must change.
+
+## D43 — 2026-11-03 — Calibration fit through the tara; full-scale points left out (amends D42)
+Decision: gain = least-squares slope through the tara (Σ E·net / Σ net², net = raw − tara) instead of a free fit with intercept; points with raw ≥ 99.5 % of `f_full` are left out (script) / refused (page).
+Reason: first calibration (2026-11-03, `~/Downloads/calibration_20261103_1413.csv`, 12/16/32 kg): with only 12 and 16 kg below full scale, the free fit gave D an intercept of −5.5 N and A a slope of 0.97 against point ratios 1.005–1.023. Every 32 kg point on A, C, D read exactly 200.00 N, sd 0 = ADC full scale (`f_full` 200 at gain 1): a 100 kg cell reads at most ~20 kg. The tara's 0 N clipping (B 20 %, C 35 % of samples) biases it by tenths of a N: negligible against 57–165 N.
+Alternatives: keep the free fit and ask for widely spread weights (the lab's set is 12/16/32 kg).
