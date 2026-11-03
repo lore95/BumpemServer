@@ -77,6 +77,16 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [x] 🟢 **Install on the Vicon PC:** add the Vicon DataStream SDK installer to `vicon/`, copy the folder to `C:\Users\<you>\BumpemLab`, `1_install.bat` (→ "All packages OK"), `start_simulator.bat` (page opens), then Teensy + `start_server.bat`. Blocked or gone after reboot → ask the administrator (app lockdown / write filter). Report each step's output to Claude (done 2026-11-02 by the user)
 - [ ] 🟢 **Update the Vicon PC** (D35): Mac `scripts/build_bundle.sh --update` → copy `BumpemUpdate_<date>.zip` → unzip → `update.bat` → Y → "All packages OK". Then Board settings: kff 2, Apply, Save as default (D34). Report the window text if it stops
 
+## Calibration (2026-11-03, in this order)
+- [x] 🟠 Load cells with weights: gains A 1.013, B 2.075, C 0.953, D 0.998 (`calibration/`, D42/D43). Lab PC: update 1521 → `apply_calibration.bat`
+- [ ] 🟠 Zero offsets in the lab, ropes as installed and slack: Zero sensors → Save as default (again after any rope/sensor change)
+- [ ] 🟠 Rope paths B and C: drag by hand vs A/D (power off); B pulls 44–48 %, C stuck before
+- [ ] 🟠 Pull strength (closed loop): kff 3.5 test with Record (14 / 34 N per tower) → then `kp_pulse` stepwise on the bench (D34)
+- [ ] 🟢 ESCON scaling of C and D: upload their configs in ESCON Studio (look only) → confirm 0–10 V = 0–30 A like A/B (`i_full`/`kt`, control.md)
+- [ ] 🟢 Pull direction: measure tower positions and rope height vs harness height (towers assumed at exactly 0/90/180/−90°, ropes horizontal; `bumpem/geometry.py`)
+- [ ] 🟢 Vicon: which plate is the left belt (stand on one); plates zeroed in Nexus before each session
+- [ ] 🟢 Board ↔ Vicon timing (later, for gait-triggered pulls): offset between `board_ms` and Vicon frames from one sharp pull with someone standing
+
 ## Software (Claude builds, you test)
 - [ ] Step 2 **PTO**: perturb a set time after a foot strike (gait events, simulated / replayed until Vicon)
 - [ ] Step 3 **trials**: blocks, shuffle, 50–75 steps between perturbations, baseline first 3 s, logs
