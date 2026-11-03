@@ -1,8 +1,9 @@
 # Status
 
-## Next session (from 2026-11-02 evening)
-- User brings the **perturbation-strength test** (force + events CSV, settings): pulls still look off. Check per pull: target vs measured per tower, kff in the PARAMS row (should be 2, D34), opposite rope tension before/during the pull, D vs others.
-- Lab PC state: D-Flow PC (192.168.1.50), `C:\Users\operator\BumpemLab`; Vicon via 192.168.1.60:801 works (plates showing). Update to install there: `../bumpemInstallation/BumpemUpdate_2026-11-02_1851.zip` (Vicon in own process D38 + import fix, median plot D39, positive GRF D40) — confirm it was installed.
+## Next session (from 2026-11-03)
+- **Perturbation test 2026-11-03 analysed** (`tests/force_20261103_112027.csv`, 69 s, force file only, no events/PARAMS): the board ran on **firmware defaults** — kff 7.5 on all towers (back-calculated from the DAC: 7.49 at rest), baseline 5 N (default; saved 4). Not kff 2 (D34). Result as predicted: at rest A/C/D hold ~10 N for 5 N; pulls A/D 15 → 26–29 N, D 25 → 44–47 N, A 35 → 60 N (DAC at 4095); the opposite rope spikes (A pull 35 → C 58 N; C pull → A 37 N). B reads ~1:1 (rest 5.5 N, 15 → 13 N) with the same DAC as the others: either B really pulls less or its 200 kg sensor reads half (gain_B 1 on the board; the Mac's settings.json has 2.12) — check B with a known weight.
+- Cause: the saved settings are written to the board only at Connect (`Hub.apply_settings`); the lab PC's settings.json probably never had kff 2 saved, or the Teensy restarted after Connect (not detected). Next: user sets kff 2 (+ baseline, gains) → Apply → Save as default, re-runs the test with Record (gives the events file with PARAMS). Proposed: server re-applies saved settings when the board's uptime drops, and the UI warns when board ≠ saved settings.
+- Lab PC state: D-Flow PC (192.168.1.50), `C:\Users\operator\BumpemLab`; Vicon via 192.168.1.60:801 works (plates showing). Update to install there: `../bumpemInstallation/BumpemUpdate_2026-11-02_1851.zip` — confirm it was installed.
 - Open: rope-force noise (want a rest + one-pull recording; firmware oversampling proposal, D39); which Vicon plate is the left belt; push both repos (user).
 
 ## Done
