@@ -58,6 +58,14 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 - [ ] 🟢 Screenshot each ESCON's firmware version (look only) · `lab`
 - [ ] 🟢 Pull direction: measure tower positions and rope height vs harness height (geometry assumes 0 / 90 / 180 / −90°, horizontal ropes; `bumpem/geometry.py`) · `lab`
 
+## Later · optional: hardware clock sync (Vicon ↔ Teensy, sub-millisecond)
+Only if possible; the software sync (PC clock, ~1–2 ms) and the one-pull delay measurement come first. No new PCB needed: the Teensy has free pins.
+- [ ] 🟢 Ask the Vicon administrator: does the Lock / sync box have a free **sync output** (pulse per frame or at capture start)? Its voltage and connector? May we use it? · `supervisor`
+- [ ] 🟠 **Voltage:** Teensy 4.1 pins take **3.3 V max** (not 5 V tolerant). A 5 V TTL output needs a divider or level shifter (Claude designs it from the output's datasheet) · `Claude`
+- [ ] 🟠 Wiring on the existing carrier board: one wire from the sync output (via the divider) to a **free Teensy pin**, e.g. into an unused socket hole, plus ground; nothing else on the board changes. Check first which pins are free (`hardware/carrier/netlist.py`) · `lab` `parts`
+- [ ] 🟢 Firmware: timestamp each sync pulse in µs and report it (`PROTOCOL.md` first, then code, then the Python mirror; re-flash only after confirming) · `Claude`
+- [ ] 🟢 Server: put rope forces and plates on one timeline from the pulses; compare with the software sync · `Claude`
+
 ## Scheduled
 - [ ] 🟢 Call with the previous student: `QUESTIONS.md`, ask for recorded MATLAB logs
 
