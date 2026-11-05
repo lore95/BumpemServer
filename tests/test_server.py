@@ -386,11 +386,14 @@ def test_vicon_recorded_with_the_board(kept):
     done = kept.post("/api/v1/log/stop").json()
     assert not done["recording"] and done["vicon_rows"] > 100            # ~1000 subsamples/s (slow CI: fewer)
     rows = open(done["vicon_file"]).read().splitlines()
-    assert rows[0] == "host_s,frame,sub,board_ms,Fz_Left,Fz_Right" and len(rows) == done["vicon_rows"] + 1
+    assert rows[0] == "host_s,frame,sub,board_ms,Fz_Left,Fz_Right,pc_s" and len(rows) == done["vicon_rows"] + 1
     assert all(row.split(",")[3] for row in rows[1:])                  # board time on every row
     import csv, json
-    first = next(csv.DictReader(open(done["events_file"])))
-    assert first["kind"] == "PARAMS" and json.loads(first["args"])["kff"] == 7.5
+    ev = csv.DictReader(open(done["events_file"]))
+    clock, first = next(ev), next(ev)
+    assert clock["kind"] == "CLOCK" and float(json.loads(clock["args"])["pc_s"]) > 0 and "T" in json.loads(clock["args"])["wall"]
+    assert first["kind"] == "PARAMS" and json.loads(first["args"])["kff"] == 7.5 and first["pc_s"]
+    assert sum(bool(row.split(",")[-1]) for row in rows[1:]) > 0.5 * done["vicon_rows"]   # pc_s once the Vicon fit exists
     assert kept.get("/api/v1/log/file?kind=vicon").content == Path(done["vicon_file"]).read_bytes()
     kept.post("/api/v1/vicon/disconnect")                                # recording without Vicon: no vicon file
     assert kept.post("/api/v1/log/start").json()["vicon_file"] is None

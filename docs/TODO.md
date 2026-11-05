@@ -23,6 +23,7 @@ Blocks every session with a person. None of the study checks below need a person
 ## 2 · Next lab visit: accurate pulls, then the study (blocked: no lab access since 2026-11-05)
 In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`: study page, calibration).
 - [ ] 🟢 Install the update on the D-Flow PC: `update.bat` → `apply_calibration.bat` (gains A 1.013, B 2.075, C 0.953, D 0.998) → `start_server.bat` · `lab` `Claude`
+- [ ] 🟢 **Connections + clocks:** `start_server.bat` connects COM3 and Vicon by itself: no red line on the pages? (Teensy on another port: Device Manager > Ports → change `set BOARD=COM3` in the .bat.) BumpemActivation's clock line "in sync ✓": note the Teensy and Vicon ± values for Claude · `lab`
 - [ ] 🟠 **Zero sensors** with the ropes installed and slack → **Save as default** (again after any rope / sensor change; ropes were changed, reported 2026-11-05) · `lab`
 - [ ] 🟠 **After moving a tower:** back at its place (front / left / back / right, same distance), rope at harness height, cables not pulled at the plugs, then Zero sensors. Mark the floor positions once so they can be found again · `lab`
 - [ ] 🟠 New ropes: with the tower at its furthest pull, ≥ 3 turns stay on each drum; splices hold after the first pulls (look at them before each session for a while) · `lab`
@@ -71,6 +72,7 @@ Only if possible; the software sync (PC clock, ~1–2 ms) and the one-pull delay
 
 ## Done (recent first)
 - [x] Study runner + study page (D44, D45, U14, U15; 2026-11-05): gait pattern per belt (SLAP logic, thresholds from plate noise), blocks, random / predefined steps, phase of stance or stride, simulator-tested
+- [x] Software clock sync on the station PC + kept connections with alerts (D49, 2026-11-05)
 - [x] All four channels on by default: `bumpem serve --modules` default ABCD; the lab `.bat` files already pass ABCD (2026-11-05)
 - [x] New 3 mm ropes spliced and fitted on the towers (reported 2026-11-05)
 - [x] All printed parts mounted (incl. RSP-2000 brackets); every tower carries all its own components, so it moves as one unit (reported 2026-11-05)

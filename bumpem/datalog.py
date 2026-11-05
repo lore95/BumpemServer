@@ -44,21 +44,21 @@ class ForceLog:
         self.force_path, self.events_path = folder / f"force_{stem}.csv", folder / f"events_{stem}.csv"
         self._ff, self._ef = open(self.force_path, "w", newline=""), open(self.events_path, "w", newline="")
         self._fw, self._ew = csv.writer(self._ff), csv.writer(self._ef)
-        self._fw.writerow(FORCE_HEADER)
-        self._ew.writerow(["time_ms", "kind", "args"])
+        self._fw.writerow(FORCE_HEADER + ["pc_s"])          # pc_s: station-PC clock (clocksync, D49)
+        self._ew.writerow(["time_ms", "kind", "args", "pc_s"])
         self.rows, self.t_first, self.t_last = 0, None, 0
 
-    def telemetry(self, t) -> None:
+    def telemetry(self, t, pc_s: float | None = None) -> None:
         row = [t.t_ms, t.state, t.pulse_id]
         for c in "ABCD":
             row += [t.target[c], t.measured[c], t.dac[c]]
-        self._fw.writerow(row)
+        self._fw.writerow(row + ["" if pc_s is None else f"{pc_s:.4f}"])
         self.rows += 1
         self.t_first = t.t_ms if self.t_first is None else self.t_first
         self.t_last = t.t_ms
 
-    def event(self, t_ms: int, kind: str, args: str) -> None:
-        self._ew.writerow([t_ms, kind, args])
+    def event(self, t_ms: int, kind: str, args: str, pc_s: float | None = None) -> None:
+        self._ew.writerow([t_ms, kind, args, "" if pc_s is None else f"{pc_s:.4f}"])
 
     @property
     def duration_s(self) -> float:
@@ -80,13 +80,15 @@ class ViconLog:
             self.path = folder / f"vicon_{stem}_{n}.csv"
         self._f = open(self.path, "w", newline="")
         self._w = csv.writer(self._f)
-        self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates])
+        self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates] + ["pc_s"])
         self.rows, self.t_first, self.t_last = 0, None, 0.0
 
-    def frame(self, host_s: float, frame: int, board_ms: int | None, subs: list[dict[str, float]]) -> None:
+    def frame(self, host_s: float, frame: int, board_ms: int | None, subs: list[dict[str, float]],
+              pcs: list[float | None] | None = None) -> None:
         for i, s in enumerate(subs):
+            pc = pcs[i] if pcs else None
             self._w.writerow([f"{host_s:.4f}", frame, i, "" if board_ms is None else board_ms]
-                             + [f"{s.get(p, float('nan')):.2f}" for p in self.plates])
+                             + [f"{s.get(p, float('nan')):.2f}" for p in self.plates] + ["" if pc is None else f"{pc:.4f}"])
         self.rows += len(subs)
         self.t_first = host_s if self.t_first is None else self.t_first
         self.t_last = host_s

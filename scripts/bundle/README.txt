@@ -13,7 +13,9 @@ Built: @BUILT@   BumpemServer @SERVER@   BumpemUI @UI@
    If the install is blocked or gone after a reboot: the PC has app lockdown / a write filter: ask the administrator.
 3. Double-click start_simulator.bat: the browser opens http://127.0.0.1:8000/ui/ with a simulated board.
    Close the black window to stop the server.
-4. With the Teensy on USB: start_server.bat, then in the page pick the COM port and press Connect.
+4. With the Teensy on USB: start_server.bat. It connects to the Teensy (COM3) and Vicon (192.168.1.60:801) by itself
+   and keeps retrying every 5 s; every page shows a red line while one of them is missing, with the reason.
+   Teensy on another COM port (Device Manager > Ports): edit the line "set BOARD=COM3" in start_server.bat (Notepad).
    Windows 10 needs no Teensy driver. COM port: Device Manager > Ports (COM & LPT).
    The lab's saved settings (BumpemServer\settings.json, from the Mac) are written to the board at every connect.
    Recordings: BumpemServer\Logs\ (and downloaded by the browser at Stop recording).

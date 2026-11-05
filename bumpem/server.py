@@ -11,6 +11,7 @@ import re
 import statistics
 import threading
 import time
+from collections import deque
 from contextlib import asynccontextmanager
 from datetime import datetime
 from pathlib import Path
@@ -23,6 +24,7 @@ from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import geometry
+from .clocksync import ClockFit
 from . import protocol as P
 from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
@@ -30,6 +32,8 @@ from .study import Protocol, Study
 
 SERVER_VERSION = "0.6.0"
 MODES = ("production", "testing")
+LOST_S, RETRY_S = 2.0, 5.0          # target not heard from this long = lost; retry period (D49)
+SYNC_LIMITS = {"board": 2.0, "vicon": 5.0}   # max clock jitter, ms, for the study handshake
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
 SETTINGS_SKIP = ("ch_A", "ch_B", "ch_C", "ch_D", "wd_ms", "loop_ms", "tel_div")   # owned by --modules / the server / timing
@@ -110,7 +114,13 @@ class Hub:
     def __init__(self, wd_ms: int = 1000, modules: str | None = None, settings: str | None = None, log_dir: str = "Logs",
                  vicon: str | None = None):
         self.wd_ms = wd_ms
-        self.vicon_default = vicon                # --vicon: connected at startup, shown in the UI
+        self.vicon_target = vicon                 # --vicon / last Vicon connect: kept connected (D49)
+        self.board_target: str | None = None      # --board / last connect: kept connected (D49)
+        self.board_message: str | None = None     # why the board target is not connected
+        self.board_clock, self.vicon_clock = ClockFit(), ClockFit()   # device clocks → pc_s
+        self._vicon_lost_frames: deque[tuple[float, int]] = deque()  # (pc_s, frames missing)
+        self._vicon_last: tuple[int, float] | None = None          # last frame number, its pc_s
+        self._sup_stop = threading.Event()
         self.vicon = None                         # ViconReader / SimReader
         self.vicon_message: str | None = None
         self.vlog: ViconLog | None = None         # open while a recording runs and Vicon is connected
@@ -152,6 +162,7 @@ class Hub:
             except Exception as e:  # serial.SerialException, FileNotFoundError, ...
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
         self._last_t_ms = None
+        self.board_clock.reset()
         board.add_listener(self._dispatch)
         self.board, self.port = board, port
         self.settings_applied, self.settings_pending, self.settings_message = False, False, None
@@ -269,7 +280,9 @@ class Hub:
                 raise ApiError("board_rejected", 409, "already recording (POST /api/v1/log/stop first)")
             self.log = ForceLog(self.log_dir, label)
             t = self.board.last.t_ms if self.board and self.board.last else 0
-            self.log.event(t, "PARAMS", json.dumps(params, separators=(",", ":")))
+            pc = self.pc()
+            self.log.event(t, "CLOCK", json.dumps({"pc_s": round(pc, 4), "wall": _wall()}), pc)
+            self.log.event(t, "PARAMS", json.dumps(params, separators=(",", ":")), pc)
             self._vicon_open()
         return self.log_info()
 
@@ -299,12 +312,12 @@ class Hub:
         with self._lock:
             if self.log is not None:
                 t = self.board.last.t_ms if self.board and self.board.last else 0
-                self.log.event(t, kind, json.dumps(data, separators=(",", ":")))
+                self.log.event(t, kind, json.dumps(data, separators=(",", ":")), self.pc())
 
     # --- Vicon force plates (docs/API.md "Vicon force plates") ---
     def vicon_info(self) -> dict[str, Any]:
         v = self.vicon
-        return {"connected": v is not None, "host": v.host if v else None, "default_host": self.vicon_default,
+        return {"connected": v is not None, "host": v.host if v else None, "default_host": self.vicon_target,
                 "rate_hz": v.rate_hz if v else None, "plates": list(v.plates) if v else [], "message": self.vicon_message}
 
     def vicon_connect(self, host: str) -> None:
@@ -319,6 +332,8 @@ class Hub:
             except TimeoutError as e:
                 raise ApiError("board_timeout", 504, str(e)) from None
             with self._lock:
+                self.vicon_clock.reset()
+                self._vicon_last, self._vicon_lost_frames = None, deque()
                 self.vicon = reader
                 self._vicon_open()                     # joins a recording that is already running
             reader.start()
@@ -363,18 +378,124 @@ class Hub:
         host_s = time.monotonic() - self._t0
         b = self.board
         board_ms = b.last.t_ms if b is not None and b.last is not None else None
+        n, rate = len(subs), reader.rate_hz
+        dev = [(frame + (i + 1 - n) / n) / rate for i in range(n)]   # Vicon's clock: frame + subsample (steady)
+        last = self._vicon_last
+        if last is not None and frame > last[0] + 1:
+            self._vicon_lost_frames.append((host_s, frame - last[0] - 1))
+        self._vicon_last = (frame, host_s)
+        self.vicon_clock.add(dev[-1], host_s)
         with self._lock:
             clients = list(self._clients)
             if self.vlog is not None:
-                self.vlog.frame(host_s, frame, board_ms, subs)
+                self.vlog.frame(host_s, frame, board_ms, subs, [self.vicon_clock.to_pc(d) for d in dev])
         item = {"type": "vicon", "host_s": round(host_s, 4), "frame": frame,
                 "fz": {p: round(sum(s[p] for s in subs) / len(subs), 1) for p in subs[0]}}
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
         st = self.study
-        if st is not None:                    # Vicon's clock: frame number + subsample index, steady (not arrival time)
-            n, rate = len(subs), reader.rate_hz
-            st.on_samples([((frame + (i + 1 - n) / n) / rate, s) for i, s in enumerate(subs)], host_s)
+        if st is not None:
+            st.on_samples(list(zip(dev, subs)), host_s)
+
+    # --- station-PC clock, kept connections, sync (docs/API.md "Automatic connection", "Clocks and sync") ---
+    def pc(self) -> float:
+        return time.monotonic() - self._t0
+
+    def start_supervisor(self) -> None:
+        """First connect to the targets now (startup), then keep them connected in two threads."""
+        self._connect_board_target()
+        self._connect_vicon_target()
+        for fn in (self._watch_board, self._watch_vicon):
+            threading.Thread(target=fn, daemon=True).start()
+
+    def stop_supervisor(self) -> None:
+        self._sup_stop.set()
+
+    def _connect_board_target(self) -> None:
+        if self.board is None and self.board_target:
+            try:
+                self.connect(self.board_target)
+                self.board_message = None
+            except ApiError as e:
+                if e.message != self.board_message:      # the server window: once per new reason, not every retry
+                    print(f"warning: board: {e.message}; retrying every {RETRY_S:g} s")
+                self.board_message = e.message
+
+    def _connect_vicon_target(self) -> None:
+        if self.vicon is None and self.vicon_target:
+            prev = self.vicon_message                 # vicon_connect clears it at each try
+            try:
+                self.vicon_connect(self.vicon_target)
+            except ApiError as e:
+                if e.message != prev:
+                    print(f"warning: Vicon: {e.message}; retrying every {RETRY_S:g} s")
+                self.vicon_message = e.message
+
+    def _watch_board(self) -> None:
+        nxt = time.monotonic() + RETRY_S
+        while not self._sup_stop.wait(0.5):
+            b = self.board
+            if b is not None and time.monotonic() - b.last_rx > LOST_S:
+                quiet = time.monotonic() - b.last_rx
+                with self._conn_lock:
+                    if self.board is b:
+                        port = self.port
+                        self._disconnect()
+                        self.board_message = f"lost {port}: no data for {quiet:.0f} s (USB cable, Teensy power?)"
+                        print(f"warning: board {self.board_message}")
+                st = self.study
+                if st is not None:
+                    st.stop("board link lost")
+                nxt = time.monotonic() + 1.0
+            elif b is None and self.board_target and time.monotonic() >= nxt:
+                self._connect_board_target()
+                nxt = time.monotonic() + RETRY_S
+
+    def _watch_vicon(self) -> None:
+        nxt = time.monotonic() + RETRY_S
+        while not self._sup_stop.wait(0.5):
+            v, last = self.vicon, self._vicon_last
+            if v is not None and last is not None and self.pc() - last[1] > LOST_S:
+                quiet = self.pc() - last[1]
+                with self._vicon_lock:
+                    if self.vicon is v:
+                        self._vicon_disconnect()
+                        self.vicon_message = f"lost {v.host}: no frame for {quiet:.0f} s (Nexus still in Live mode?)"
+                        print(f"warning: Vicon {self.vicon_message}")
+                nxt = time.monotonic() + 1.0
+            elif v is None and self.vicon_target and time.monotonic() >= nxt:
+                self._connect_vicon_target()
+                nxt = time.monotonic() + RETRY_S
+
+    def sync_info(self) -> dict[str, Any]:
+        now = self.pc()
+        while self._vicon_lost_frames and now - self._vicon_lost_frames[0][0] > 60:
+            self._vicon_lost_frames.popleft()
+        out: dict[str, Any] = {"pc_s": round(now, 4), "wall": _wall()}
+        problems = []
+        for name, fit, conn, target, msg in (
+                ("board", self.board_clock, self.board is not None, self.board_target or self.port, self.board_message),
+                ("vicon", self.vicon_clock, self.vicon is not None, self.vicon_target, self.vicon_message)):
+            c = fit.status(now) if conn else None
+            if c is not None:
+                bad = [f"span {c['span_s']} s < 5 s"] if c["span_s"] < 5 else []
+                if c["jitter_ms"] > SYNC_LIMITS[name]:
+                    bad.append(f"jitter {c['jitter_ms']} ms > {SYNC_LIMITS[name]:g} ms")
+                if c["age_ms"] is None or c["age_ms"] > 200:
+                    bad.append(f"no data for {c['age_ms']} ms")
+                if name == "vicon":
+                    c["lost_frames"] = sum(k for _, k in self._vicon_lost_frames)
+                    recent = sum(k for t, k in self._vicon_lost_frames if now - t <= 10)
+                    if recent:
+                        bad.append(f"{recent} frames lost in the last 10 s")
+                c["ok"] = not bad
+                problems += [f"{name}: {b}" for b in bad]
+            else:
+                problems.append(f"{name}: " + ("not connected" + (f" ({msg})" if msg else "") if not conn
+                                               else "clock not measured yet (3 s of data needed)"))
+            out[name] = {"target": target, "connected": conn, "message": msg, "clock": c}
+        out["in_sync"], out["problems"] = not problems, problems
+        return out
 
     def broadcast(self, item: dict) -> None:
         """To every stream client, not recorded (the study writes its own events rows)."""
@@ -471,6 +592,7 @@ class Hub:
 
     def _dispatch(self, msg: P.Message) -> None:   # board reader thread
         if isinstance(msg, P.Telemetry):
+            self.board_clock.add(msg.t_ms / 1000, self.pc())
             item = _telemetry_dict(msg)
             last, self._last_t_ms = self._last_t_ms, msg.t_ms
             if last is not None and msg.t_ms + 1000 < last:
@@ -497,11 +619,15 @@ class Hub:
             clients = list(self._clients)
             if self.log is not None:                # full board rate, before the stream thins it
                 if row[0] == "telemetry":
-                    self.log.telemetry(row[1])
+                    self.log.telemetry(row[1], self.board_clock.to_pc(row[1].t_ms / 1000))
                 else:
-                    self.log.event(*row[1:])
+                    self.log.event(*row[1:], self.board_clock.to_pc(row[1] / 1000))
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
+
+
+def _wall() -> str:
+    return datetime.now().astimezone().isoformat(timespec="milliseconds")
 
 
 class _MedianThin:
@@ -540,15 +666,10 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     @asynccontextmanager
     async def lifespan(_):
-        if board:
-            hub.connect(board)
-        if vicon:
-            try:
-                hub.vicon_connect(vicon)
-            except ApiError as e:                 # the server still runs; the UI shows the message and can retry
-                hub.vicon_message = e.message
-                print(f"warning: Vicon not connected: {e.message}")
+        hub.board_target = board                  # kept connected; a failure here never stops the server (D49)
+        hub.start_supervisor()
         yield
+        hub.stop_supervisor()
         hub.vicon_disconnect()
         hub.disconnect()
 
@@ -578,11 +699,14 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     @app.post("/api/v1/connect")
     def connect(body: ConnectBody):
+        hub.board_target = body.port              # kept connected from now on (D49)
         hub.connect(body.port)
+        hub.board_message = None
         return info()
 
     @app.post("/api/v1/disconnect")
     def disconnect():
+        hub.board_target, hub.board_message = None, None   # no retries until the next connect
         hub.disconnect()
         return {}
 
@@ -643,17 +767,23 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         path = hub.log_file(kind)
         return FileResponse(path, media_type="text/csv", filename=path.name)
 
+    @app.get("/api/v1/sync")
+    def get_sync():
+        return hub.sync_info()
+
     @app.get("/api/v1/vicon")
     def get_vicon():
         return hub.vicon_info()
 
     @app.post("/api/v1/vicon/connect")
     def vicon_connect(body: ViconBody):
+        hub.vicon_target = body.host
         hub.vicon_connect(body.host)
         return hub.vicon_info()
 
     @app.post("/api/v1/vicon/disconnect")
     def vicon_disconnect():
+        hub.vicon_target, hub.vicon_message = None, None
         hub.vicon_disconnect()
         return hub.vicon_info()
 
@@ -762,7 +892,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         if hub.vicon is None:
             raise ApiError("not_connected", 409, "Vicon not connected: the study needs the plates (POST /api/v1/vicon/connect)")
         try:
-            hub.study = Study(body, list(hub.vicon.plates), study_send, hub.broadcast, hub.log_command)
+            hub.study = Study(body, list(hub.vicon.plates), study_send, hub.broadcast, hub.log_command,
+                              to_pc=hub.vicon_clock.to_pc, now=hub.pc)
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
         st = hub.study.status()
@@ -808,6 +939,10 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             i = st.check_start()
         except RuntimeError as e:
             raise ApiError("board_rejected", 409, str(e)) from None
+        sync = hub.sync_info()                    # handshake: every clock on the station PC's (D49)
+        hub.log_command("SYNC", sync)
+        if not sync["in_sync"]:
+            raise ApiError("board_rejected", 409, "clocks not in sync: " + "; ".join(sync["problems"]))
         blk, p = st.p.blocks[i], hub.call(b.get)
         study_mods.clear()
         study_mods.update(m for m in geometry.MODULE_ANGLE_DEG if p.get(f"ch_{m}", 0) >= 1)

@@ -44,6 +44,28 @@ HTTP 4xx/5xx with:
 | POST | `/api/v1/connect` | `{"port": "COM7"}` or `{"port": "sim"}` | `info` | board |
 | POST | `/api/v1/disconnect` | | `{}` | board |
 
+#### Automatic connection (`host`, D49)
+`bumpem serve --board COM3 --vicon 192.168.1.60:801` makes them the **targets**: the server connects at startup and, whenever a target is not connected (failed, or lost: no board telemetry for 2 s, Vicon link ended or no frame for 2 s), retries every 5 s. Startup never fails because of them. `POST /connect` / `POST /vicon/connect` set a new target; `POST /disconnect` / `POST /vicon/disconnect` stop the retries until the next connect. A lost board stops the recording and a running study block (`stopped`).
+
+### Clocks and sync (`host`, D49)
+The station PC's clock is the reference: `pc_s` = seconds since the server started (monotonic). The server maps the board clock (`t_ms`) and the Vicon frame clock (frame / rate) onto it, continuously: per 1 s of device time the least-delayed arrival is kept, a straight line through the last 60 s of those gives offset and drift (`pc_s = a + b · device_s`); jitter = spread of those points around the line. Restarts (device clock jumps back) start a new fit.
+
+| Method | Path | Returns |
+|---|---|---|
+| GET | `/api/v1/sync` | below |
+
+```json
+{"pc_s": 812.403, "wall": "2026-11-05T15:02:11.123+01:00",
+ "board": {"target": "COM3", "connected": true, "message": null,
+           "clock": {"ok": true, "drift_ppm": 18.2, "jitter_ms": 0.4, "late_ms": 0.9, "span_s": 60.0, "age_ms": 7}},
+ "vicon": {"target": "192.168.1.60:801", "connected": true, "message": null,
+           "clock": {"ok": true, "drift_ppm": -3.1, "jitter_ms": 0.8, "late_ms": 2.5, "span_s": 60.0, "age_ms": 9, "lost_frames": 0}},
+ "in_sync": true, "problems": []}
+```
+- `message`: why a target is not connected (last error, or how it was lost), else null. `clock` null until 3 s of data. `late_ms`: 95th percentile of how much later than the fitted line samples arrive (transport jitter). `age_ms`: since the last sample. `lost_frames`: Vicon frames missing in the last 60 s.
+- `in_sync`: both clocks `ok`: span ≥ 5 s, jitter ≤ 2 ms (board) / 5 ms (Vicon), age ≤ 200 ms, no Vicon frame lost in the last 10 s. `problems`: the reasons when not.
+- **Handshake:** `POST /study/start` runs this check first and answers 409 `board_rejected` with the `problems` when not in sync; the result is written to the events file (`SYNC` row, the object above). The study's gait-phase delay uses the Vicon mapping (time since the touch-down sample on the PC clock).
+
 ### Board state and parameters
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
@@ -85,8 +107,8 @@ Writes the board's telemetry at the **full board rate** (not thinned like the st
 | POST | `/api/v1/log/stop` | | same object with the final `rows` and `duration_s`; `recording: false` | host |
 | GET | `/api/v1/log/file?kind=force\|events\|vicon` | | the last **finished** recording's CSV as a download (`text/csv`, attachment, same file name). 404 `not_found` if none since the server started; 409 `board_rejected` while recording | host |
 
-- `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D` (one row per telemetry line; `time_ms` = board clock).
-- `events_<same>.csv`: `time_ms,kind,args`: first row `PARAMS` (all board parameters at the start, as JSON), then board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
+- `force_<YYYYMMDD_HHMMSS>[_label].csv`: `time_ms,state,pulse_id,target_A,measured_A,dac_A,…,dac_D,pc_s` (one row per telemetry line; `time_ms` = board clock, `pc_s` = the same moment on the PC clock, empty until the clock fit exists).
+- `events_<same>.csv`: `time_ms,kind,args,pc_s`: first row `CLOCK` (`{"pc_s": …, "wall": "…"}`: ties `pc_s` to the date and time), then `PARAMS` (all board parameters at the start, as JSON), then board events (`STATE`, `PSTART`, `PEND`, `FAULT`, `WD`, …) and one `CMD` row per pulse the server sent (`args` = the request as JSON: angle, amplitude, amps per module, pulse id), stamped with the latest board time.
 - Start while recording → 409 `board_rejected` ("already recording"). Stop while idle → the idle object. Needs a connected board (409 `not_connected`); recording stops by itself at disconnect.
 - Both modes.
 
@@ -101,7 +123,7 @@ The GRAIL belts' force plates, read from Vicon Nexus over Ethernet (DataStream S
 | POST | `/api/v1/vicon/disconnect` | | same object (a running recording's Vicon file ends there) | host |
 
 - `plates`: Vicon device names that have an `Fz` output (Nexus names them). `message`: why the reader stopped (link lost), else null.
-- Recorded with the board (see Recording): `vicon_<same stem>.csv`: `host_s,frame,sub,board_ms,Fz_<plate>,…`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = server clock (s since the server started), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N = **vertical ground reaction force, positive up** (standing ≈ +body weight): the server negates Vicon's `GetGlobalForceVector` Z (lab axes, force exerted **on** the plate, which reads negative). Plate names: Nexus device names, else `Plate <id>`.
+- Recorded with the board (see Recording): `vicon_<same stem>.csv`: `host_s,frame,sub,board_ms,Fz_<plate>,…,pc_s`, one row per force-plate **subsample** (full rate, e.g. 1000 Hz). `host_s` = arrival on the server clock (s since the server started), `pc_s` = the subsample's moment on the PC clock from the Vicon clock fit (empty until it exists; see Clocks and sync), `board_ms` = the latest board telemetry time when the frame arrived (for lining up with `force_*.csv`), `Fz` in N = **vertical ground reaction force, positive up** (standing ≈ +body weight): the server negates Vicon's `GetGlobalForceVector` Z (lab axes, force exerted **on** the plate, which reads negative). Plate names: Nexus device names, else `Plate <id>`.
 - Both modes.
 
 ### Modes

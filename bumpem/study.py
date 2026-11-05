@@ -83,8 +83,12 @@ def default_plates(plates: list[str]) -> dict[str, str]:
 
 class Study:
     def __init__(self, protocol: Protocol, plates: list[str], send: Callable[[dict], int],
-                 publish: Callable[[dict], None], log: Callable[[str, dict], None], rng: random.Random | None = None):
+                 publish: Callable[[dict], None], log: Callable[[str, dict], None], rng: random.Random | None = None,
+                 to_pc: Callable[[float], float | None] | None = None, now: Callable[[], float] | None = None):
+        """to_pc / now: plate clock → station-PC clock and the PC clock now (clocksync, D49): the touch-down's age is
+        then measured on the PC clock; without them, from the frame it arrived in."""
         self.p, self._send, self._publish, self._log = protocol, send, publish, log
+        self._to_pc, self._now = to_pc, now
         self.plates = protocol.plates or default_plates(plates)
         if set(self.plates) != set(SIDES) or any(p not in plates for p in self.plates.values()):
             raise ValueError(f"plates must map left and right to Vicon plates {plates}")
@@ -247,7 +251,9 @@ class Study:
                 return
             g = self.gait[side]
             phase = b.gait_phase_pct / 100 * (g["stance_ms"] if b.gait_phase_of == "stance" else g["stride_ms"])
-            delay, nxt = phase - (t_end - t) * 1000 - self.latency_ms, 0
+            pc = self._to_pc(t) if self._to_pc else None
+            age = (self._now() - pc) * 1000 if pc is not None and self._now else (t_end - t) * 1000
+            delay, nxt = phase - age - self.latency_ms, 0
             while delay < 0:                       # too late for this contact: same phase of the side's next one (SLAP)
                 delay, nxt = delay + g["stride_ms"], nxt + 1
             pert = {"angle_deg": self.seq[self.done], "amplitude_n": self.amplitude_n(), "phase1_ms": b.phase1_ms,
