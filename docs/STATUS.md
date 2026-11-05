@@ -1,6 +1,7 @@
 # Status
 
 ## Next session (from 2026-11-03)
+- **User away one week (from 2026-11-05).** Lab week planned in `docs/lab-week-guide.pdf` (8 pages, also `../bumpemInstallation/LabWeek_Guide_2026-11.pdf`) with update `BumpemUpdate_2026-11-05_1542.zip` (server d7a1829, UI 9219c9e). On return: expect the filled-in pages + CSVs of day 2 (kff 3.5 pulls, noise), day 3 (gait patterns walking / running, left belt), day 4 (test block, ropes tied off); clock numbers; answers to the day-5 questions.
 - **Clock sync + kept connections (2026-11-05, D49):** `start_server.bat` connects COM3 + Vicon 192.168.1.60:801 by itself, retries every 5 s, red line on every page while one is missing; `GET /sync`; Start refuses when the clocks are not in sync (SYNC row in events); `pc_s` in force / events / Vicon CSVs. Checked on the Mac: COM3 + Vicon absent → both alerts, server keeps running; sim → in sync (board ±0.02 ms, Vicon ±0.11 ms), block run, all rows carry `pc_s`. Lab: check the Teensy really is COM3 and the jitter numbers on the real USB / network.
 - **Towers complete (user, reported 2026-11-05):** all printed parts mounted; every tower carries all its own components (supplies, ESCON, amplifier, holders) and can be moved as one unit. After a move: tower back at its angle, then zero.
 - **New ropes (user, reported 2026-11-05):** the 3 mm ropes are spliced (not knotted) and fitted on the towers. Zero offsets and the pull-strength tests from before were with the old ropes: zero again (Zero sensors → Save as default) before the kff 3.5 test.

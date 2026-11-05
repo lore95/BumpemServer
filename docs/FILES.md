@@ -45,6 +45,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/sim.py` | `SimLink`: simulated board speaking protocol v1 |
 | `bumpem/gait.py` | FS/TO detector, port of MATLAB logic; `ContactDetector` + `fit_thresholds` (SLAP script, study D45) |
 | `bumpem/experiment.py` | Perturbation sequence + FS target generation (v0 letters; superseded by `study.py`) |
+| `scripts/lab_week_guide.py` → `docs/lab-week-guide.pdf` | Lab week guide after 2026-11-05: day by day (install, ropes, kff 3.5, gait pattern, test block, safety), fill-in tables; copy in `../bumpemInstallation/` |
 | `bumpem/clocksync.py` | Device clock → station-PC clock fit (D49): board `t_ms`, Vicon frames → `pc_s`; `/sync` |
 | `bumpem/study.py` | Study runner (D44): protocol models, gait pattern per belt, blocks, perturbation at a gait phase; `/api/v1/study` |
 | `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
