@@ -87,10 +87,17 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 - [ ] 🟢 Vicon: which plate is the left belt (stand on one); plates zeroed in Nexus before each session
 - [ ] 🟢 Board ↔ Vicon timing (later, for gait-triggered pulls): offset between `board_ms` and Vicon frames from one sharp pull with someone standing
 
+## Next lab visit · study (before any subject; blocked: no lab access since 2026-11-05)
+Needs the study code on the lab PC: Claude builds an update bundle (`build_bundle.sh --update`) on request before the visit.
+- [ ] 🟢 Install the update (`update.bat`), `start_server.bat`, Connect, Vicon `192.168.1.60:801` → Connect
+- [ ] 🟢 **Left belt:** stand on one belt, see which plate rises; pick it under "Left belt" on the study page (default guess: first plate)
+- [ ] 🟢 **Contacts on real data:** someone runs (and walks) on the treadmill; protocol with 1 block, Start the study → study page → Arm → Record gait pattern 20 s at each speed used → note the thresholds, noise, stride and contact time shown → Release → send force, events and Vicon CSVs to Claude. Claude checks them against the SLAP script's logic (CLAUDE.md rule 5): missed or extra steps, contact times, thresholds stable
+- [ ] 🟢 **System delay (`latency_ms`):** one sharp pull with someone standing on the plates, recorded (force + Vicon CSV) → Claude measures plates → server → board → rope; enter it in "System delay" on the study page
+- [ ] 🟢 Then one test block without a subject in the harness (ropes on a fixed point): check the pulls land at the set phase in the recording
+
 ## Software (Claude builds, you test)
 - [x] Step 2 + 3 **study runner** (D44, 2026-11-05): gait pattern per belt, blocks, random / predefined steps, perturbation at a gait phase, logs
-- [ ] Study: validate per-belt contacts on a recorded lab file (walking and running; thresholds from the swing noise, stance, stride vs the SLAP script) before running a subject
-- [ ] Study: measure `latency_ms` (plates → server → board → rope) and use it at Start (needs the board ↔ Vicon timing above)
+- [ ] Study: lab checks before any subject → section "Next lab visit · study" below
 - [ ] Step 4 **Vicon live** on the lab PC: server side built (D32, sim-tested). On the lab PC: Nexus Live → UI "Ground force" card → address `192.168.1.60:801` (or `127.0.0.1:801` on the Nexus PC) → Connect; stand on each belt (which name is left? Fz positive or negative?); Arm → Record → Stop rec → a `vicon_*.csv` appears in `Logs/`. Report to Claude
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (needs a file from the lab)
 - [ ] 🟢 Fix `scripts/open_loop_test.sh` (your uncommitted edit: `AC` mode, usage text, ACD prompt), then commit
