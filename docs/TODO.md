@@ -62,7 +62,7 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 Only if possible; the software sync (PC clock, ~1–2 ms) and the one-pull delay measurement come first. No new PCB needed: the Teensy has free pins.
 - [ ] 🟢 Ask the Vicon administrator: does the Lock / sync box have a free **sync output** (pulse per frame or at capture start)? Its voltage and connector? May we use it? · `supervisor`
 - [ ] 🟠 **Voltage:** Teensy 4.1 pins take **3.3 V max** (not 5 V tolerant). A 5 V TTL output needs a divider or level shifter (Claude designs it from the output's datasheet) · `Claude`
-- [ ] 🟠 Wiring on the existing carrier board: one wire from the sync output (via the divider) to a **free Teensy pin**, e.g. into an unused socket hole, plus ground; nothing else on the board changes. Check first which pins are free (`hardware/carrier/netlist.py`) · `lab` `parts`
+- [ ] 🟠 Wiring, no carrier change: thin wire (0.14–0.25 mm²) soldered onto the **top of the Teensy's pin 2 joint** (free; carrier uses 14–19 and 27–30; avoid 0, 1, 13) + ground on the neighbouring GND pad. Unpowered, ESD care, meter check for bridges to the next pin, glue / tape as strain relief; 5 V output only through the divider · `lab` `parts`
 - [ ] 🟢 Firmware: timestamp each sync pulse in µs and report it (`PROTOCOL.md` first, then code, then the Python mirror; re-flash only after confirming) · `Claude`
 - [ ] 🟢 Server: put rope forces and plates on one timeline from the pulses; compare with the software sync · `Claude`
 
