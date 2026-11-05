@@ -158,7 +158,7 @@ PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct" | "cycle_pct", "value
 | GET | `/api/v1/geometry` | `{"convention": "...", "modules": {"A": {"angle_deg": 90, "enabled": true}, ...}, "reachable": [{"from_deg": 90, "to_deg": -90}]}` (arcs counter-clockwise from → to; `enabled`/`reachable` null when no board is connected) | host |
 
 ### Study (`host`, production mode)
-One subject and a list of blocks (BumpemUI `protocol.html`), run block by block: foot strikes per belt from the Vicon plates, a perturbation at a gait phase after a foot strike (DECISIONS D44). One study at a time; it lives until replaced or the server stops.
+One subject and a list of blocks (BumpemUI `BumpemSetUp.html`, run from `BumpemActivation.html`), run block by block: foot strikes per belt from the Vicon plates, a perturbation at a gait phase after a foot strike (DECISIONS D44). One study at a time; it lives until replaced or the server stops.
 
 | Method | Path | Body | Returns |
 |---|---|---|---|
