@@ -20,12 +20,12 @@ Blocks every session with a person. None of the study checks below need a person
 - [ ] 🔴 Electrical safety inspection (DGUV V3)? One power strip per tower, each on its own wall socket (no strip in a strip; RSP-2000 inrush 50 A) · `supervisor`
 - [ ] 🔴 **Tower B chopper → ESCON cable:** replace the 14 AWG wire with 1.5 mm² fine-stranded + insulated ferrules (48 V off, chopper < 1 V, photo both ends, + to +, − to −, no short) · `lab` `parts` (ordered 2026-10-19) · status? (B was driven on 2026-11-03)
 - [ ] 🔴 RSP-2000 brackets: supply **unplugged**, two people, fans free, 10 mm gap; mains side stays with the electrician · `lab` · status?
-- [ ] 🟠 **New 3 mm rope** (ordered 2026-10-19): through the tie hole + eyebolt once before cutting; length W + 71 cm; ≥ 3 turns stay on the drum; figure-eight stopper knot · `lab` `parts` · status?
 
 ## 2 · Next lab visit: accurate pulls, then the study (blocked: no lab access since 2026-11-05)
 In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`: study page, calibration).
 - [ ] 🟢 Install the update on the D-Flow PC: `update.bat` → `apply_calibration.bat` (gains A 1.013, B 2.075, C 0.953, D 0.998) → `start_server.bat` · `lab` `Claude`
-- [ ] 🟠 **Zero sensors** with the ropes installed and slack → **Save as default** (again after any rope / sensor change) · `lab`
+- [ ] 🟠 **Zero sensors** with the ropes installed and slack → **Save as default** (again after any rope / sensor change; ropes were changed, reported 2026-11-05) · `lab`
+- [ ] 🟠 New ropes: with the tower at its furthest pull, ≥ 3 turns stay on each drum; splices hold after the first pulls (look at them before each session for a while) · `lab`
 - [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D (B reaches only 44–48 % of the target, C was stuck; B's drive shaft was worn at the collar, 2026-10-29) · `lab`
 - [ ] 🟠 **Pull strength:** kff 3.5 test with Record (14 / 34 N per tower, ropes on a fixed point) → send the CSVs → then `kp_pulse` stepwise (D34) · `lab`
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
@@ -65,6 +65,7 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 
 ## Done (recent first)
 - [x] Study runner + study page (D44, D45, U14, U15; 2026-11-05): gait pattern per belt (SLAP logic, thresholds from plate noise), blocks, random / predefined steps, phase of stance or stride, simulator-tested
+- [x] New 3 mm ropes spliced and fitted on the towers (reported 2026-11-05)
 - [x] Load cells calibrated with weights (2026-11-03): A 1.013, B 2.075, C 0.953, D 0.998 (`calibration/`, D42 / D43)
 - [x] Settings re-applied after a board restart + UI warning (D41, 2026-11-03)
 - [x] Closed-loop pull tests on A, B, C, D (2026-11-03, tests 1–3): firmware defaults found, kff 2 too weak → kff 3.5 next
