@@ -105,9 +105,9 @@ def main(argv=None):
     mg.add_argument("--production", action="store_const", const="production", dest="mode",
                     help="production UI: arm, perturbations, force feedback (default)")
     sv.set_defaults(mode="production")
-    sv.add_argument("--modules", default="ACD",
+    sv.add_argument("--modules", default="ABCD",
                     help="mounted modules: their channels are switched on at connect, the others off "
-                         "(default ACD = setup 2026-10-02; \"\" = keep firmware defaults)")
+                         "(default ABCD: all four towers since 2026-11-03; \"\" = keep firmware defaults)")
     root = Path(__file__).resolve().parents[1]
     sv.add_argument("--settings", default=str(root / "settings.json"),
                     help="saved board parameters, written to the board at connect (default: BumpemServer/settings.json; \"\" = off)")

@@ -240,3 +240,7 @@ Open: validate on a recorded lab file (CLAUDE.md rule 5): thresholds, stance, st
 ## D46 — 2026-11-05 — Study status says which block Start runs; protocol readable from the server
 Decision: study status adds `next_block`, `next_speed_ms`, `gait_ok` (a gait pattern exists at that speed); `GET /api/v1/study/protocol` returns the loaded protocol. `check_start` uses the same test.
 Reason: user (2026-11-05) could not start block 2: block 2 runs at another speed, so a new gait pattern was needed, and the page could only tell that from the protocol in its own browser storage (missing on another browser).
+
+## D47 — 2026-11-05 — `bumpem serve --modules` default ABCD (amends D18)
+Decision: the server switches on all four channels at connect by default (was ACD, set while B's ESCON was broken). The lab launchers already passed `--modules ABCD`.
+Reason: user (2026-11-05): only three sensors under the rope-force plot on the Mac simulator; B has been driven since 2026-11-03.

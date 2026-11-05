@@ -45,7 +45,6 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 - [ ] 🟢 `scripts/open_loop_test.sh`: finish your uncommitted edit (`AC` mode, usage text, ACD prompt), then commit · `Mac`
 - [ ] 🟢 Decide: firmware oversampling for the rope-force noise (D39; `PROTOCOL.md` first, re-flash) · `Claude` after the noise recording
 - [ ] 🟢 Decide: firmware boots with `ch_D = 1` (`PROTOCOL.md` first, re-flash) · `Claude`
-- [ ] 🟢 Start the server with `--modules ABCD` now that B is driven · `lab` · status?
 - [ ] 🟢 Validate the legacy `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (only if the previous student sends logs; the study uses the SLAP logic, D45) · `Claude`
 
 ## 5 · Hardware finish (status? most of these may be done: tell Claude)
@@ -64,6 +63,7 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 
 ## Done (recent first)
 - [x] Study runner + study page (D44, D45, U14, U15; 2026-11-05): gait pattern per belt (SLAP logic, thresholds from plate noise), blocks, random / predefined steps, phase of stance or stride, simulator-tested
+- [x] All four channels on by default: `bumpem serve --modules` default ABCD; the lab `.bat` files already pass ABCD (2026-11-05)
 - [x] New 3 mm ropes spliced and fitted on the towers (reported 2026-11-05)
 - [x] All printed parts mounted (incl. RSP-2000 brackets); every tower carries all its own components, so it moves as one unit (reported 2026-11-05)
 - [x] Load cells calibrated with weights (2026-11-03): A 1.013, B 2.075, C 0.953, D 0.998 (`calibration/`, D42 / D43)
