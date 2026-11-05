@@ -478,7 +478,7 @@ class Hub:
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
             st = self.study
-            if msg.kind == "STATE" and msg.args and msg.args[0] != "ARMED" and st is not None and st.state == "running":
+            if msg.kind == "STATE" and msg.args and msg.args[0] != "ARMED" and st is not None and st.state in ("running", "gait"):
                 # not on the reader thread: the study may be waiting in send() for this thread's reply
                 threading.Thread(target=st.stop, args=(f"board {msg.args[0]}",), daemon=True).start()
             if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
@@ -787,6 +787,9 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         st = study_need()
         if hub.vicon is None:
             raise ApiError("not_connected", 409, "Vicon not connected")
+        b = hub.need()
+        if not b.last or b.last.state != "ARMED":
+            raise ApiError("board_rejected", 409, f"board is {b.last.state if b.last else None}: Arm first (starts the recording)")
         try:
             st.record_gait((body or GaitBody()).duration_s)
         except RuntimeError as e:

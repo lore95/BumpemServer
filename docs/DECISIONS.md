@@ -244,3 +244,7 @@ Reason: user (2026-11-05) could not start block 2: block 2 runs at another speed
 ## D47 — 2026-11-05 — `bumpem serve --modules` default ABCD (amends D18)
 Decision: the server switches on all four channels at connect by default (was ACD, set while B's ESCON was broken). The lab launchers already passed `--modules ABCD`.
 Reason: user (2026-11-05): only three sensors under the rope-force plot on the Mac simulator; B has been driven since 2026-11-03.
+
+## D48 — 2026-11-05 — Gait pattern only while ARMED
+Decision: `POST /study/gait` answers 409 unless the board is ARMED; the board leaving ARMED during the gait pattern cancels it (back to the previous state, `message` says why), as it stops a running block.
+Reason: user (2026-11-05): no gait recording before Arm. Arm starts the recording (U14), so the gait pattern is always in the data, and the subject is on the system with tension on when it is measured.

@@ -160,19 +160,19 @@ def test_server_study_with_simulated_board_and_plates():
         assert s["state"] == "loaded" and s["plates"] == {"left": "Left", "right": "Right"}
         p = c.get(f"{api}/study/protocol").json()
         assert p["subject"]["mass_kg"] == 30 and p["blocks"][0]["gait_phase_of"] == "stance" and p["plates"]["left"] == "Left"
-        assert c.post(f"{api}/study/gait", json={"duration_s": 5}).json()["state"] == "gait"
-        end = time.monotonic() + 8
-        while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:
-            time.sleep(0.2)
-        s = c.get(f"{api}/study").json()
-        assert s["state"] == "ready", s
-        r = c.post(f"{api}/study/start")
+        r = c.post(f"{api}/study/gait", json={"duration_s": 5})
         assert r.status_code == 409 and "Arm first" in r.json()["error"]["message"]
         c.patch(f"{api}/params", json={"fmax_n": 100})
         assert c.post(f"{api}/arm").status_code == 200
         end = time.monotonic() + 4
         while c.get(f"{api}/status").json()["state"] != "ARMED" and time.monotonic() < end:
             time.sleep(0.05)
+        assert c.post(f"{api}/study/gait", json={"duration_s": 5}).json()["state"] == "gait"
+        end = time.monotonic() + 8
+        while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:
+            time.sleep(0.2)
+        s = c.get(f"{api}/study").json()
+        assert s["state"] == "ready", s
         assert c.post(f"{api}/study/start").json()["state"] == "running"
         end = time.monotonic() + 6
         while c.get(f"{api}/study").json()["state"] == "running" and time.monotonic() < end:
@@ -218,3 +218,25 @@ def test_phase_of_cycle_and_next_contact():
     pert = [d for k, d in r.rows if k == "PERT"][0]
     assert pert["next_contact"] == 1 and pert["delay_ms"] == pytest.approx(0.6 * STANCE * 1000 - 200 + STRIDE * 1000, abs=3)
     assert any(k == "FO" for k, _ in r.rows)
+
+
+def test_gait_cancelled_when_board_leaves_armed():
+    """Board ESTOP during the gait pattern: cancelled, back to the previous state (server, sim)."""
+    from fastapi.testclient import TestClient
+    from bumpem.server import create_app
+    with TestClient(create_app()) as c:
+        api = "/api/v1"
+        c.post(f"{api}/connect", json={"port": "sim"})
+        c.post(f"{api}/vicon/connect", json={"host": "sim"})
+        c.post(f"{api}/study", json={"subject": {"mass_kg": 30}, "blocks": [block()]})
+        c.post(f"{api}/arm")
+        end = time.monotonic() + 4
+        while c.get(f"{api}/status").json()["state"] != "ARMED" and time.monotonic() < end:
+            time.sleep(0.05)
+        assert c.post(f"{api}/study/gait", json={"duration_s": 20}).json()["state"] == "gait"
+        c.post(f"{api}/estop")
+        end = time.monotonic() + 2
+        while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:
+            time.sleep(0.05)
+        s = c.get(f"{api}/study").json()
+        assert s["state"] == "loaded" and "ESTOP" in s["message"]
