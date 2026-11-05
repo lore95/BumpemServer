@@ -89,8 +89,8 @@ Teensy port: `/dev/cu.usbmodem169222501` (`PORT`), in the **good USB socket** (t
 
 ## Software (Claude builds, you test)
 - [x] Step 2 + 3 **study runner** (D44, 2026-11-05): gait pattern per belt, blocks, random / predefined steps, perturbation at a gait phase, logs
-- [ ] Study: validate per-belt foot strikes on a recorded lab file (walking and running; 250 N threshold) before running a subject
-- [ ] Study: correct the plates → server → board latency in the gait-phase delay (needs the board ↔ Vicon timing above)
+- [ ] Study: validate per-belt contacts on a recorded lab file (walking and running; thresholds from the swing noise, stance, stride vs the SLAP script) before running a subject
+- [ ] Study: measure `latency_ms` (plates → server → board → rope) and use it at Start (needs the board ↔ Vicon timing above)
 - [ ] Step 4 **Vicon live** on the lab PC: server side built (D32, sim-tested). On the lab PC: Nexus Live → UI "Ground force" card → address `192.168.1.60:801` (or `127.0.0.1:801` on the Nexus PC) → Connect; stand on each belt (which name is left? Fz positive or negative?); Arm → Record → Stop rec → a `vicon_*.csv` appears in `Logs/`. Report to Claude
 - [ ] Validate `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (needs a file from the lab)
 - [ ] 🟢 Fix `scripts/open_loop_test.sh` (your uncommitted edit: `AC` mode, usage text, ACD prompt), then commit

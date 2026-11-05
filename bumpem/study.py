@@ -1,7 +1,8 @@
-"""Study runner (docs/API.md "Study", DECISIONS D44): one subject + blocks, foot strikes per belt from the Vicon
-plates, each perturbation at a gait phase after a foot strike of the trigger side.
+"""Study runner (docs/API.md "Study", DECISIONS D44, D45): one subject + blocks, touch-down / foot-off per belt from
+the Vicon plates (as scripts/Pertubation_analog/AAPertAnalogTrig_SLAP.m), each perturbation at a phase of the stance
+(or stride) after a touch-down of the trigger side.
 
-Pure logic: the server feeds plate samples (`on_samples`) and gives it `send` (one perturbation → pulse id),
+Pure logic: the server feeds plate samples (`on_samples`, Vicon frame clock) and gives it `send` (one perturbation → pulse id),
 `publish` (stream item) and `log` (events-file row). Thread-safe: samples come from the Vicon thread, commands from
 HTTP requests.
 """
@@ -14,7 +15,7 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .gait import FS_VALID, GaitDetector
+from .gait import FO, TD, ContactDetector, fit_thresholds
 
 G = 9.81
 MIN_STRIDES = 5          # per side, for a gait pattern
@@ -40,6 +41,7 @@ class Block(BaseModel):
     phase2_ms: float = Field(ge=0)
     trigger_side: Literal["left", "right", "any"]
     gait_phase_pct: float = Field(ge=0, lt=100)
+    gait_phase_of: Literal["stance", "cycle"] = "stance"
     timing_mode: Literal["random", "predefined"]
     interval_min_steps: int | None = Field(None, ge=1, le=1000)
     interval_max_steps: int | None = Field(None, ge=1, le=1000)
@@ -93,10 +95,11 @@ class Study:
         self.seq: list[float] = []
         self.t_start = 0.0                         # block (re)start, plate clock
         self.gait: dict[str, Any] | None = None
-        self._gait_fs: dict[str, list[float]] | None = None
-        self._gait_until, self._gait_prev, self._gait_speed = 0.0, "loaded", 0.0
-        self._t = 0.0                              # latest plate time
-        self._det = {s: GaitDetector() for s in SIDES}
+        self._rec: dict[str, tuple[list[float], list[float]]] | None = None   # gait pattern: (t, Fz) per side
+        self._gait_until, self._gait_prev, self._gait_speed, self._gait_t0 = 0.0, "loaded", 0.0, 0.0
+        self._t = 0.0                              # latest plate time (Vicon frame clock)
+        self.latency_ms = 0.0                      # plates → board → rope, subtracted from the delay
+        self._det = {s: ContactDetector() for s in SIDES}   # 100 / 25 N until a gait pattern sets the plate's own
         self._log("STUDY", {"load": self.p.subject.model_dump(), "blocks": len(self.p.blocks), "plates": self.plates})
 
     # --- status ---
@@ -115,12 +118,12 @@ class Study:
             if self.state == "running" and self.done < b.n_perturbations:
                 nxt = max(0, (self.target - self.since) if b.timing_mode == "random" else b.schedule_steps[self.done] - self.steps)
             gait = None
-            if self.gait or self._gait_fs is not None:
+            if self.gait or self._rec is not None:
                 gait = {**(self.gait or {}), "until_s": round(max(0.0, self._gait_until - self._t), 1) if self.state == "gait" else None}
             return {"state": self.state, "message": self.message, "subject_id": self.p.subject.subject_id,
                     "block": self.block_i + 1, "blocks": len(self.p.blocks), "label": b.label, "speed_ms": b.speed_ms,
                     "amplitude_n": self.amplitude_n(), "done": self.done, "total": b.n_perturbations, "steps": self.steps,
-                    "next_in_steps": nxt, "gait": gait, "plates": self.plates}
+                    "next_in_steps": nxt, "latency_ms": self.latency_ms, "gait": gait, "plates": self.plates}
 
     def _changed(self) -> None:
         self._publish({"type": "study", **self.status()})
@@ -131,7 +134,7 @@ class Study:
             if self.state in ("running", "gait"):
                 raise RuntimeError(f"study is {self.state}")
             self._gait_prev, self.state, self.message = self.state, "gait", None
-            self._gait_fs, self._gait_until = {s: [] for s in SIDES}, self._t + duration_s
+            self._rec, self._gait_t0, self._gait_until = {s: ([], []) for s in SIDES}, self._t, self._t + duration_s
             self._gait_speed = self.p.blocks[self._next_index()].speed_ms
         self._changed()
 
@@ -152,9 +155,10 @@ class Study:
                 raise RuntimeError(f"record the gait pattern at {speed:g} m/s first (block {i + 1})")
             return i
 
-    def start(self) -> None:
+    def start(self, latency_ms: float = 0.0) -> None:
         with self._lock:
             i = self.check_start()
+            self.latency_ms = latency_ms
             resume = self.state == "stopped" and i == self.block_i and self.seq
             if not resume:
                 b = self.p.blocks[i]
@@ -165,13 +169,13 @@ class Study:
             self.since, self.t_start, self.state, self.message = 0, self._t, "running", None
             self._new_target()
             self._log("STUDY", {"start": self.block_i + 1, "resume": bool(resume), "label": self.block.label,
-                                "amplitude_n": self.amplitude_n(), "sequence": self.seq[self.done:]})
+                                "amplitude_n": self.amplitude_n(), "latency_ms": latency_ms, "sequence": self.seq[self.done:]})
         self._changed()
 
     def stop(self, reason: str = "stopped by the operator") -> None:
         with self._lock:
             if self.state == "gait":
-                self.state, self._gait_fs = self._gait_prev, None
+                self.state, self._rec = self._gait_prev, None
             elif self.state != "running":
                 return
             else:
@@ -186,27 +190,45 @@ class Study:
             self.target = self.rng.randint(b.interval_min_steps, b.interval_max_steps)
 
     # --- plate samples (Vicon thread) ---
-    def on_samples(self, samples: list[tuple[float, dict[str, float]]]) -> None:
-        """(t_s, {plate: Fz}) per subsample, in order."""
+    def on_samples(self, samples: list[tuple[float, dict[str, float]]], host_s: float | None = None) -> None:
+        """One Vicon frame: (t_s on the frame clock, {plate: Fz}) per subsample, in order. `host_s`: server clock when
+        the frame arrived (= its last subsample), for the stream's gait ticks."""
+        if not samples:
+            return
+        t_end = samples[-1][0]
+        if t_end < self._t - 0.5:                  # frame numbers restarted (Vicon reconnected)
+            self._det = {s: ContactDetector(d.td_n, d.fo_n) for s, d in self._det.items()}
+            if self.state == "gait":
+                self.stop("Vicon restarted during the gait pattern: record it again")
+        off = (host_s - t_end) if host_s is not None else 0.0
         for t, fz in samples:
             self._t = t
             for side in SIDES:
                 v = fz.get(self.plates[side])
-                if v is not None and self._det[side].update(t, v) == FS_VALID:
-                    self._foot_strike(side, t)
+                if v is None:
+                    continue
+                rec = self._rec
+                if rec is not None:
+                    rec[side][0].append(t)
+                    rec[side][1].append(v)
+                e = self._det[side].update(t, v)
+                if e:
+                    self._contact(side, e, t, t_end, t + off)
             if self.state == "gait" and t >= self._gait_until:
                 self._gait_done()
 
-    def _foot_strike(self, side: str, t: float) -> None:
+    def _contact(self, side: str, kind: str, t: float, t_end: float, host_t: float) -> None:
         with self._lock:
-            if self.state == "gait":
-                self._gait_fs[side].append(t)
+            if kind == FO:
+                if self.state == "running":
+                    self._log("FO", {"side": side})
+                return
             if self.state != "running":
-                self._publish({"type": "gait", "t_s": round(t, 4), "event": "FS", "side": side, "step": None})
+                self._publish({"type": "gait", "t_s": round(host_t, 4), "event": "FS", "side": side, "step": None})
                 return
             self.steps += 1
             self.since += 1
-            self._publish({"type": "gait", "t_s": round(t, 4), "event": "FS", "side": side, "step": self.steps})
+            self._publish({"type": "gait", "t_s": round(host_t, 4), "event": "FS", "side": side, "step": self.steps})
             self._log("FS", {"side": side, "step": self.steps})
             b = self.block
             if t - self.t_start < b.warmup_s:
@@ -214,9 +236,13 @@ class Study:
             due = self.since >= self.target if b.timing_mode == "random" else self.steps >= b.schedule_steps[self.done]
             if not due or b.trigger_side not in ("any", side):
                 return
-            stride = self.gait[side]["stride_ms"]
+            g = self.gait[side]
+            phase = b.gait_phase_pct / 100 * (g["stance_ms"] if b.gait_phase_of == "stance" else g["stride_ms"])
+            delay, nxt = phase - (t_end - t) * 1000 - self.latency_ms, 0
+            while delay < 0:                       # too late for this contact: same phase of the side's next one (SLAP)
+                delay, nxt = delay + g["stride_ms"], nxt + 1
             pert = {"angle_deg": self.seq[self.done], "amplitude_n": self.amplitude_n(), "phase1_ms": b.phase1_ms,
-                    "dur_ms": b.dur_ms, "phase2_ms": b.phase2_ms, "delay_ms": round(b.gait_phase_pct / 100 * stride, 1)}
+                    "dur_ms": b.dur_ms, "phase2_ms": b.phase2_ms, "delay_ms": round(delay, 1)}
             try:
                 pid = self._send(pert)
             except Exception as e:                 # refused by the board / geometry: stop the block, say why
@@ -226,7 +252,7 @@ class Study:
                 return
             self.done += 1
             self._log("PERT", {"pulse_id": pid, "block": self.block_i + 1, "index": self.done, "side": side,
-                               "step": self.steps, **pert})
+                               "step": self.steps, "next_contact": nxt, **pert})
             self.since = 0
             self._new_target()
             if self.done >= b.n_perturbations:
@@ -235,26 +261,42 @@ class Study:
         self._changed()
 
     def _gait_done(self) -> None:
+        """Thresholds from each plate's swing noise (gait.fit_thresholds), then stride (TD → TD, 0.5–1.5 × median as
+        the SLAP script) and stance (TD → FO) per side."""
         with self._lock:
-            fs, self._gait_fs = self._gait_fs, None
-            res: dict[str, Any] = {"speed_ms": self._gait_speed}
-            short = []
+            rec, self._rec = self._rec, None
+            if rec is None:
+                return
+            n = sum(len(rec[s][0]) for s in SIDES) / 2
+            res: dict[str, Any] = {"speed_ms": self._gait_speed, "rate_hz": round(n / max(1e-9, self._t - self._gait_t0))}
+            short, unstable = [], []
             for side in SIDES:
-                d = [b - a for a, b in zip(fs[side], fs[side][1:])]
+                f = fit_thresholds(*rec[side])
+                tds = [t for k, t in f["events"] if k == TD]
+                d = [b - a for a, b in zip(tds, tds[1:])]
                 if d:
                     m = statistics.median(d)
-                    d = [x for x in d if 0.5 * m <= x <= 1.5 * m]       # missed or extra strikes left out
-                if len(d) < MIN_STRIDES:
-                    short.append(f"{side} {len(d)}")
+                    d = [x for x in d if 0.5 * m <= x <= 1.5 * m]       # missed or extra touch-downs left out
+                st = [b[1] - a[1] for a, b in zip(f["events"], f["events"][1:]) if a[0] == TD and b[0] == FO]
+                if len(d) < MIN_STRIDES or len(st) < MIN_STRIDES:
+                    short.append(f"{side} {min(len(d), len(st))}")
                     continue
-                res[side] = {"stride_ms": round(statistics.mean(d) * 1000, 1),
-                             "sd_ms": round(statistics.pstdev(d) * 1000, 1), "n": len(d)}
+                if not f["stable"]:
+                    unstable.append(side)
+                res[side] = {"stride_ms": round(statistics.mean(d) * 1000, 1), "sd_ms": round(statistics.pstdev(d) * 1000, 1),
+                             "n": len(d), "stance_ms": round(statistics.mean(st) * 1000, 1),
+                             "stance_sd_ms": round(statistics.pstdev(st) * 1000, 1),
+                             "td_n": f["td_n"], "fo_n": f["fo_n"], "noise_sd_n": f["noise_sd_n"]}
             if short:
                 self.state = self._gait_prev
                 self.message = (f"gait pattern: too few strides ({', '.join(short)}; need {MIN_STRIDES} per side). "
                                 "Subject on both belts, Vicon plates right?")
             else:
-                self.gait, self.message = res, None
+                for side in SIDES:                 # the plate's own thresholds from now on
+                    self._det[side] = ContactDetector(res[side]["td_n"], res[side]["fo_n"])
+                self.gait = res
+                self.message = (f"low thresholds unstable on {', '.join(unstable)} (extra or missed touch-downs): "
+                                "100 / 25 N kept there") if unstable else None
                 self.state = "ready" if self._gait_prev in ("loaded", "ready") else self._gait_prev
                 self._log("STUDY", {"gait": res})
         self._changed()

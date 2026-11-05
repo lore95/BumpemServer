@@ -84,6 +84,10 @@ class GaitBody(BaseModel):
     duration_s: float = Field(20, ge=5, le=120, description="Recording time for the gait pattern")
 
 
+class StudyStartBody(BaseModel):
+    latency_ms: float = Field(0, ge=0, le=1000, description="Plates → board → rope delay, subtracted from the pulse delay")
+
+
 class PerturbationBody(BaseModel):
     angle_deg: float = Field(description="Pull direction: 0 front, +90 left, -90 right, 180 back (Vicon axes)",
                              examples=[135])
@@ -368,9 +372,9 @@ class Hub:
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
         st = self.study
-        if st is not None:                    # subsample times: the frame's arrival is its last subsample
-            dt = 1 / (reader.rate_hz * len(subs))
-            st.on_samples([(host_s - (len(subs) - 1 - i) * dt, s) for i, s in enumerate(subs)])
+        if st is not None:                    # Vicon's clock: frame number + subsample index, steady (not arrival time)
+            n, rate = len(subs), reader.rate_hz
+            st.on_samples([((frame + (i + 1 - n) / n) / rate, s) for i, s in enumerate(subs)], host_s)
 
     def broadcast(self, item: dict) -> None:
         """To every stream client, not recorded (the study writes its own events rows)."""
@@ -786,7 +790,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         return st.status()
 
     @app.post("/api/v1/study/start")
-    def study_start():
+    def study_start(body: StudyStartBody | None = None):
         only("production")
         st, b = study_need(), hub.need()
         if hub.vicon is None:
@@ -810,7 +814,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                 raise ApiError("board_rejected", 409, f"block {i + 1}: {max(amps.values()):.1f} N on one rope is above "
                                f"Max force − baseline ({limit:g} N)")
         try:
-            st.start()
+            st.start((body or StudyStartBody()).latency_ms)
         except RuntimeError as e:
             raise ApiError("board_rejected", 409, str(e)) from None
         return st.status()
