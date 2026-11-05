@@ -26,8 +26,9 @@ from . import geometry
 from . import protocol as P
 from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
+from .study import Protocol, Study
 
-SERVER_VERSION = "0.5.0"
+SERVER_VERSION = "0.6.0"
 MODES = ("production", "testing")
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
 API_VERSION = "1.0"
@@ -79,6 +80,10 @@ class LogStartBody(BaseModel):
     label: str = Field("", pattern="^[A-Za-z0-9_-]{0,40}$", description="Added to the file names", examples=["closedloop_A"])
 
 
+class GaitBody(BaseModel):
+    duration_s: float = Field(20, ge=5, le=120, description="Recording time for the gait pattern")
+
+
 class PerturbationBody(BaseModel):
     angle_deg: float = Field(description="Pull direction: 0 front, +90 left, -90 right, 180 back (Vicon axes)",
                              examples=[135])
@@ -124,6 +129,7 @@ class Hub:
         self._conn_lock = threading.Lock()    # one connect / disconnect at a time (double clicks, two tabs)
         self._test_lock = threading.Lock()    # one test pull at a time
         self._ping_stop = threading.Event()   # replaced per connection, so an old ping thread can't be revived
+        self.study: Study | None = None       # docs/API.md "Study"
 
     # --- connection ---
     def connect(self, port: str) -> None:
@@ -323,6 +329,8 @@ class Hub:
             self._vicon_close()
         if v is not None:
             v.close()
+            if self.study is not None:
+                self.study.vicon_lost()
 
     def _vicon_lost(self, reader, message: str) -> None:   # reader thread
         if self.vicon is reader:
@@ -331,6 +339,8 @@ class Hub:
                 self.vicon = None
                 self._vicon_close()
             reader.close()
+            if self.study is not None:
+                self.study.vicon_lost()
 
     def _vicon_open(self) -> None:           # caller holds self._lock
         if self.log is not None and self.vlog is None and self.vicon is not None:
@@ -355,6 +365,17 @@ class Hub:
                 self.vlog.frame(host_s, frame, board_ms, subs)
         item = {"type": "vicon", "host_s": round(host_s, 4), "frame": frame,
                 "fz": {p: round(sum(s[p] for s in subs) / len(subs), 1) for p in subs[0]}}
+        for loop, q in clients:
+            loop.call_soon_threadsafe(_put_drop, q, item)
+        st = self.study
+        if st is not None:                    # subsample times: the frame's arrival is its last subsample
+            dt = 1 / (reader.rate_hz * len(subs))
+            st.on_samples([(host_s - (len(subs) - 1 - i) * dt, s) for i, s in enumerate(subs)])
+
+    def broadcast(self, item: dict) -> None:
+        """To every stream client, not recorded (the study writes its own events rows)."""
+        with self._lock:
+            clients = list(self._clients)
         for loop, q in clients:
             loop.call_soon_threadsafe(_put_drop, q, item)
 
@@ -452,6 +473,10 @@ class Hub:
                 threading.Thread(target=self._board_restarted, args=(self.board,), daemon=True).start()
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
+            st = self.study
+            if msg.kind == "STATE" and msg.args and msg.args[0] != "ARMED" and st is not None and st.state == "running":
+                # not on the reader thread: the study may be waiting in send() for this thread's reply
+                threading.Thread(target=st.stop, args=(f"board {msg.args[0]}",), daemon=True).start()
             if msg.kind == "STATE" and list(msg.args) == ["DISARMED"]:
                 if self.modules_pending:
                     threading.Thread(target=self.apply_modules, daemon=True).start()   # not on the reader thread
@@ -705,6 +730,96 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         pid = hub.test_pull(m, body.force_n, body.dur_ms)
         hub.log_command("CMD", {"pulse_id": pid, "test_pull": m, "force_n": body.force_n, "dur_ms": body.dur_ms})
         return {"pulse_id": pid, "module": m, "force_n": body.force_n, "dur_ms": body.dur_ms}
+
+    # --- study (docs/API.md "Study") ---
+    study_mods: set[str] = set()                  # enabled channels, read at each block start
+
+    def study_send(pert: dict) -> int:
+        amps = geometry.split(pert["angle_deg"], pert["amplitude_n"], study_mods)
+        pid = send_pulse(amps, pert["delay_ms"], pert["phase1_ms"], pert["dur_ms"], pert["phase2_ms"])
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "study": True, **pert})
+        return pid
+
+    def study_need() -> Study:
+        if hub.study is None:
+            raise ApiError("not_found", 404, "no study loaded (POST /api/v1/study)")
+        return hub.study
+
+    @app.get("/api/v1/study")
+    def get_study():
+        return hub.study.status() if hub.study else {"state": "none"}
+
+    @app.post("/api/v1/study")
+    def load_study(body: Protocol):
+        only("production")
+        old = hub.study
+        if old is not None and old.state in ("running", "gait"):
+            raise ApiError("board_rejected", 409, f"study is {old.state}: stop it first")
+        if hub.vicon is None:
+            raise ApiError("not_connected", 409, "Vicon not connected: the study needs the plates (POST /api/v1/vicon/connect)")
+        try:
+            hub.study = Study(body, list(hub.vicon.plates), study_send, hub.broadcast, hub.log_command)
+        except ValueError as e:
+            raise ApiError("invalid", 422, str(e)) from None
+        st = hub.study.status()
+        hub.broadcast({"type": "study", **st})
+        return st
+
+    @app.delete("/api/v1/study")
+    def delete_study():
+        st = hub.study
+        if st is not None and st.state == "running":
+            raise ApiError("board_rejected", 409, "a block is running: stop it first")
+        hub.study = None
+        hub.broadcast({"type": "study", "state": "none"})
+        return {"state": "none"}
+
+    @app.post("/api/v1/study/gait")
+    def study_gait(body: GaitBody | None = None):
+        st = study_need()
+        if hub.vicon is None:
+            raise ApiError("not_connected", 409, "Vicon not connected")
+        try:
+            st.record_gait((body or GaitBody()).duration_s)
+        except RuntimeError as e:
+            raise ApiError("board_rejected", 409, str(e)) from None
+        return st.status()
+
+    @app.post("/api/v1/study/start")
+    def study_start():
+        only("production")
+        st, b = study_need(), hub.need()
+        if hub.vicon is None:
+            raise ApiError("not_connected", 409, "Vicon not connected")
+        if not b.last or b.last.state != "ARMED":
+            raise ApiError("board_rejected", 409, f"board is {b.last.state if b.last else None}: Arm first")
+        try:
+            i = st.check_start()
+        except RuntimeError as e:
+            raise ApiError("board_rejected", 409, str(e)) from None
+        blk, p = st.p.blocks[i], hub.call(b.get)
+        study_mods.clear()
+        study_mods.update(m for m in geometry.MODULE_ANGLE_DEG if p.get(f"ch_{m}", 0) >= 1)
+        limit = p["fmax_n"] - p["baseline_n"]
+        for a in set(blk.directions_deg):
+            try:
+                amps = geometry.split(a, st.amplitude_n(blk), study_mods)
+            except ValueError as e:
+                raise ApiError("board_rejected", 409, f"block {i + 1}: {e}") from None
+            if max(amps.values()) > limit:
+                raise ApiError("board_rejected", 409, f"block {i + 1}: {max(amps.values()):.1f} N on one rope is above "
+                               f"Max force − baseline ({limit:g} N)")
+        try:
+            st.start()
+        except RuntimeError as e:
+            raise ApiError("board_rejected", 409, str(e)) from None
+        return st.status()
+
+    @app.post("/api/v1/study/stop")
+    def study_stop():
+        st = study_need()
+        st.stop()
+        return st.status()
 
     # --- live stream ---
     @app.websocket("/api/v1/stream")

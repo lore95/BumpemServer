@@ -3,12 +3,12 @@
 The contract between the bumpem server and every client (the web UI in `BumpemUI`, MATLAB, scripts,
 future apps). Clients use only this API, never the Python internals (DECISIONS D10).
 
-**Version:** 1.0-draft. Server 0.5.0 (2026-11-02, Vicon force plates): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
+**Version:** 1.0-draft. Server 0.6.0 (2026-11-05, study runner): `board` and `host` endpoints implemented in `bumpem/server.py` (tests `tests/test_server.py`, `tests/test_geometry.py`, simulator). `planned` endpoints not implemented. Breaking changes bump the major
 version and the path prefix (`/api/v1` → `/api/v2`). Additions do not.
 
 **Status tags:** `board` = maps directly onto protocol v1 (`docs/PROTOCOL.md`), **implemented**. Interactive test page: `http://127.0.0.1:8000/docs`.
 `host` = computed by the server, then sent as protocol v1 commands, **implemented**.
-`planned` = needs gait events / trials (PTO, scheduling); schema is a proposal.
+`planned` = schema is a proposal, not implemented.
 
 ## Basics
 - Server: `bumpem serve`, listens on `http://127.0.0.1:8000` (this PC only). **No authentication** (D22): a `--host` other computers can reach is refused unless `--allow-network` is given.
@@ -157,25 +157,43 @@ PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct" | "cycle_pct", "value
 |---|---|---|---|
 | GET | `/api/v1/geometry` | `{"convention": "...", "modules": {"A": {"angle_deg": 90, "enabled": true}, ...}, "reachable": [{"from_deg": 90, "to_deg": -90}]}` (arcs counter-clockwise from → to; `enabled`/`reachable` null when no board is connected) | host |
 
-### Trials (`planned`)
-| Method | Path | Body |
-|---|---|---|
-| POST | `/api/v1/trials` | trial config (below) → `{"trial_id": "20260929_142301"}` |
-| POST | `/api/v1/trials/{id}/start` | |
-| POST | `/api/v1/trials/{id}/stop` | ends scheduling; does not release tension |
-| GET | `/api/v1/trials/{id}` | progress, log file paths, per-pulse measured vs commanded |
+### Study (`host`, production mode)
+One subject and a list of blocks (BumpemUI `protocol.html`), run block by block: foot strikes per belt from the Vicon plates, a perturbation at a gait phase after a foot strike (DECISIONS D44). One study at a time; it lives until replaced or the server stops.
 
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/v1/study` | | status (below); `"state": "none"` when no study is loaded |
+| POST | `/api/v1/study` | protocol (below) | status. Replaces the loaded study; 409 `board_rejected` while a block runs or the gait recording runs |
+| DELETE | `/api/v1/study` | | status (`none`); 409 while a block runs |
+| POST | `/api/v1/study/gait` | `{"duration_s": 20}` (5–120) | status (`gait`). Needs Vicon (409 `not_connected`). Collects foot strikes per belt, then stride time per side → `ready`. Fewer than 5 strides on a side → back to the previous state with a `message` |
+| POST | `/api/v1/study/start` | | status (`running`). Starts the current block (after `block_done`: the next one), or resumes a `stopped` block where it was. Needs: board ARMED, Vicon, a gait pattern recorded at this block's `speed_ms`, the block's force within `fmax_n − baseline_n`, its directions reachable with the enabled channels. Else 409 `board_rejected` with the reason |
+| POST | `/api/v1/study/stop` | | status (`stopped`): no further perturbations; a pulse already sent still runs. Does not release tension |
+
+Protocol (numbers as numbers; other keys are kept and written to the events file, not used):
 ```json
-{
-  "perturbations": [{"angle_deg": 90, "amplitude_n": 95, "phase1_ms": 50, "dur_ms": 600, "phase2_ms": 0}],
-  "blocks": 5, "shuffle": true,
-  "pto": {"mode": "stance_pct", "value": 20},
-  "interval": {"steps_min": 50, "steps_max": 75, "count_from": "recovery"},
-  "recovery": {"method": "fixed_wait", "wait_s": 10},
-  "baseline_window_s": 3
-}
+{"subject": {"subject_id": "S014", "mass_kg": 72.5},
+ "blocks": [{"label": "Familiarisation", "speed_ms": 2.5, "warmup_s": 60, "n_perturbations": 10,
+             "directions_deg": [90, -90], "intensity_pct_bw": 10, "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50,
+             "trigger_side": "any", "gait_phase_pct": 20,
+             "timing_mode": "random", "interval_min_steps": 50, "interval_max_steps": 75}],
+ "plates": {"left": "Left", "right": "Right"}}
 ```
-`recovery.method` is `fixed_wait` (stand-in, D8) until the lab algorithm is added. Values above are examples.
+- `subject.mass_kg` > 0 (≤ 300). Block: `speed_ms` > 0; `warmup_s` ≥ 0 (default 0: no perturbation in the first seconds of the block); `n_perturbations` 1–500; `directions_deg` ≥ 1 angle (API angle convention); with several, the block's perturbations take them in turn, shuffled; `intensity_pct_bw` > 0 (≤ 100): amplitude_n = intensity / 100 × mass_kg × 9.81, split over the modules as in Perturbation form; `phase1_ms`, `dur_ms`, `phase2_ms` as Perturbation form; `trigger_side` `left` | `right` | `any`; `gait_phase_pct` 0–<100.
+- `timing_mode` `random`: `interval_min_steps` ≤ `interval_max_steps` (1–1000), a new random count (inclusive) after each perturbation. `predefined`: `schedule_steps` increasing step numbers, one per perturbation.
+- Steps = valid foot strikes on either belt, counted while the block runs. A perturbation is due when the count is reached (random: steps since the last perturbation; predefined: steps since the block started), and is sent at the **next foot strike of `trigger_side`** with board-side delay = `gait_phase_pct` / 100 × that side's stride time (the gait pattern). No correction yet for the plates → server → board latency (TODO: board ↔ Vicon timing).
+- Foot strike / toe-off: `bumpem/gait.py` per plate (250 N threshold, legacy MATLAB logic). `plates` names the plate of each belt (`GET /vicon` `plates`); default: plates named left/right, else the first plate = left.
+- The block stops (`stopped`, `message` = why) when the board leaves ARMED (STOP, FAULT, Release), Vicon is lost or a pulse is refused. After the last perturbation of a block: `block_done`; after the last block: `finished`.
+- Events file of a running recording: `STUDY` (load, block start / stop / done, gait pattern), `FS` (`{"side": "left", "step": 12}`), `PERT` (pulse id, block, index, angle, amplitude, side, delay).
+
+Status:
+```json
+{"state": "running", "message": null, "subject_id": "S014", "block": 1, "blocks": 4, "label": "Familiarisation",
+ "speed_ms": 2.5, "amplitude_n": 71.1, "done": 3, "total": 10, "steps": 212, "next_in_steps": 41,
+ "gait": {"speed_ms": 2.5, "left": {"stride_ms": 721, "sd_ms": 9, "n": 14}, "right": {"stride_ms": 719, "sd_ms": 8, "n": 14},
+          "until_s": null},
+ "plates": {"left": "Left", "right": "Right"}}
+```
+`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running.
 
 ## Live stream (WebSocket)
 `ws://127.0.0.1:8000/api/v1/stream?telemetry_hz=30`
@@ -187,8 +205,8 @@ Server → client, one JSON object per message:
 {"type": "event", "t_ms": 1300, "kind": "PSTART", "args": ["12"]}
 {"type": "event", "t_ms": 40, "kind": "RESTART", "args": ["settings applied"]}   // from the server, see "Saved settings"
 {"type": "vicon", "host_s": 12.345, "frame": 5021, "fz": {"Left": 812.4, "Right": 3.1}}   // mean over the frame's subsamples
-{"type": "gait", "t_s": 12.345, "event": "FS_VALID", "side": "left"}        // planned
-{"type": "trial", "trial_id": "...", "done": 3, "total": 25}                   // planned
+{"type": "gait", "t_s": 12.345, "event": "FS", "side": "left", "step": 212}  // study loaded: every valid foot strike
+{"type": "study", "state": "running", ...}                                      // study status (GET /study) on every change
 ```
 Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. In thinned telemetry, `measured` is the
 **median of the board samples since the previous message** (per channel; removes single-sample spikes); `target`,
