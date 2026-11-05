@@ -165,6 +165,7 @@ One subject and a list of blocks (BumpemUI `BumpemSetUp.html`, run from `BumpemA
 | GET | `/api/v1/study` | | status (below); `"state": "none"` when no study is loaded |
 | POST | `/api/v1/study` | protocol (below) | status. Replaces the loaded study; 409 `board_rejected` while a block runs or the gait recording runs |
 | DELETE | `/api/v1/study` | | status (`none`); 409 while a block runs |
+| GET | `/api/v1/study/protocol` | | the loaded protocol as accepted (numbers as numbers, defaults filled in, `plates` resolved); 404 `not_found` when none |
 | POST | `/api/v1/study/gait` | `{"duration_s": 20}` (5–120) | status (`gait`). Needs Vicon (409 `not_connected`). Records both plates, sets the contact thresholds from the swing noise, then stride and stance time per side → `ready`. Fewer than 5 strides on a side → back to the previous state with a `message` |
 | POST | `/api/v1/study/start` | `{"latency_ms": 0}` (optional, 0–1000) | status (`running`). Starts the current block (after `block_done`: the next one), or resumes a `stopped` block where it was. Needs: board ARMED, Vicon, a gait pattern recorded at this block's `speed_ms`, the block's force within `fmax_n − baseline_n`, its directions reachable with the enabled channels. Else 409 `board_rejected` with the reason |
 | POST | `/api/v1/study/stop` | | status (`stopped`): no further perturbations; a pulse already sent still runs. Does not release tension |
@@ -190,13 +191,14 @@ Status:
 ```json
 {"state": "running", "message": null, "subject_id": "S014", "block": 1, "blocks": 4, "label": "Familiarisation",
  "speed_ms": 2.5, "amplitude_n": 71.1, "done": 3, "total": 10, "steps": 212, "next_in_steps": 41,
+ "next_block": 1, "next_speed_ms": 2.5, "gait_ok": true,
  "latency_ms": 0,
  "gait": {"speed_ms": 2.5, "rate_hz": 1000, "until_s": null,
           "left": {"stride_ms": 721, "sd_ms": 9, "n": 14, "stance_ms": 251, "stance_sd_ms": 6, "td_n": 31.2, "fo_n": 15.6, "noise_sd_n": 1.9},
           "right": {...}},
  "plates": {"left": "Left", "right": "Right"}}
 ```
-`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running.
+`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409).
 
 ## Live stream (WebSocket)
 `ws://127.0.0.1:8000/api/v1/stream?telemetry_hz=30`

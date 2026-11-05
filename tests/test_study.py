@@ -106,6 +106,8 @@ def test_predefined_any_side_warmup_and_two_blocks():
     assert [d["step"] for k, d in r.rows if k == "PERT"] == [2, 6]
     assert sorted(p["angle_deg"] for p in r.sent) == [-90, 90]
     assert r.st.state == "block_done"
+    s = r.st.status()
+    assert (s["next_block"], s["next_speed_ms"], s["gait_ok"]) == (2, 3.0, False)
     with pytest.raises(RuntimeError, match="3 m/s"):             # block 2 runs at another speed
         r.st.start()
     r.ready()
@@ -156,6 +158,8 @@ def test_server_study_with_simulated_board_and_plates():
         assert c.post(f"{api}/study", json={**body, "blocks": [block(interval_min_steps=9)]}).status_code == 422
         s = c.post(f"{api}/study", json=body).json()
         assert s["state"] == "loaded" and s["plates"] == {"left": "Left", "right": "Right"}
+        p = c.get(f"{api}/study/protocol").json()
+        assert p["subject"]["mass_kg"] == 30 and p["blocks"][0]["gait_phase_of"] == "stance" and p["plates"]["left"] == "Left"
         assert c.post(f"{api}/study/gait", json={"duration_s": 5}).json()["state"] == "gait"
         end = time.monotonic() + 8
         while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:

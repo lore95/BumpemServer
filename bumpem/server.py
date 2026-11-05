@@ -769,6 +769,10 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         hub.broadcast({"type": "study", **st})
         return st
 
+    @app.get("/api/v1/study/protocol")
+    def study_protocol():
+        return study_need().protocol()
+
     @app.delete("/api/v1/study")
     def delete_study():
         st = hub.study

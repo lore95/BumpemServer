@@ -236,3 +236,7 @@ Decision: the study detects contacts per plate with `gait.ContactDetector`, a po
 Reason: user (2026-11-05): gait detection as the lab's SLAP script; plate rate as close to 1000 Hz and as steady as possible; force threshold as small as possible but stable. The legacy 250 N single threshold (D44) found contacts ~13 ms late and had no foot-off hysteresis.
 Alternatives: fixed low thresholds (a noisy plate gives false steps); thresholds from standing still (swing noise while running includes belt vibration); processing in 100 ms blocks like the DAQ script (adds up to 100 ms of delay: each 10 ms Vicon frame is processed as it comes).
 Open: validate on a recorded lab file (CLAUDE.md rule 5): thresholds, stance, stride against the SLAP script's output; measure `latency_ms`.
+
+## D46 — 2026-11-05 — Study status says which block Start runs; protocol readable from the server
+Decision: study status adds `next_block`, `next_speed_ms`, `gait_ok` (a gait pattern exists at that speed); `GET /api/v1/study/protocol` returns the loaded protocol. `check_start` uses the same test.
+Reason: user (2026-11-05) could not start block 2: block 2 runs at another speed, so a new gait pattern was needed, and the page could only tell that from the protocol in its own browser storage (missing on another browser).

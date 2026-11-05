@@ -107,6 +107,9 @@ class Study:
     def block(self) -> Block:
         return self.p.blocks[self.block_i]
 
+    def protocol(self) -> dict[str, Any]:
+        return {**self.p.model_dump(), "plates": self.plates}
+
     def amplitude_n(self, b: Block | None = None) -> float:
         b = b or self.block
         return round(b.intensity_pct_bw / 100 * self.p.subject.mass_kg * G, 2)
@@ -123,7 +126,14 @@ class Study:
             return {"state": self.state, "message": self.message, "subject_id": self.p.subject.subject_id,
                     "block": self.block_i + 1, "blocks": len(self.p.blocks), "label": b.label, "speed_ms": b.speed_ms,
                     "amplitude_n": self.amplitude_n(), "done": self.done, "total": b.n_perturbations, "steps": self.steps,
-                    "next_in_steps": nxt, "latency_ms": self.latency_ms, "gait": gait, "plates": self.plates}
+                    "next_in_steps": nxt, "latency_ms": self.latency_ms, "gait": gait, "plates": self.plates,
+                    **self._next()}
+
+    def _next(self) -> dict[str, Any]:
+        i = self._next_index()
+        speed = self.p.blocks[i].speed_ms
+        return {"next_block": i + 1, "next_speed_ms": speed,
+                "gait_ok": bool(self.gait) and abs(self.gait["speed_ms"] - speed) < 1e-6}
 
     def _changed(self) -> None:
         self._publish({"type": "study", **self.status()})
@@ -149,11 +159,10 @@ class Study:
         with self._lock:
             if self.state in ("running", "gait", "finished"):
                 raise RuntimeError(f"study is {self.state}")
-            i = self._next_index()
-            speed = self.p.blocks[i].speed_ms
-            if not self.gait or abs(self.gait["speed_ms"] - speed) > 1e-6:
-                raise RuntimeError(f"record the gait pattern at {speed:g} m/s first (block {i + 1})")
-            return i
+            n = self._next()
+            if not n["gait_ok"]:
+                raise RuntimeError(f"record the gait pattern at {n['next_speed_ms']:g} m/s first (block {n['next_block']})")
+            return n["next_block"] - 1
 
     def start(self, latency_ms: float = 0.0) -> None:
         with self._lock:
