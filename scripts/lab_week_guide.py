@@ -13,7 +13,7 @@ from install_guide import ACCENT, DARK, MUTED, WARN, Pages as _Pages, arrow, box
 from install_guide import axes as _axes  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "lab-week-guide.pdf"
-UPDATE = "BumpemUpdate_2026-11-16_1157.zip"
+UPDATE = "BumpemUpdate_2026-11-16_1351.zip"
 YELLOW = "#9a6700"
 
 
@@ -145,7 +145,7 @@ def p_day1b(P):
         "#6. Rope paths B and C (power OFF: power strips off)",
         "•  Pull each rope slowly by hand, compare with A and D. B reached only 44–48 % of the target, C was stuck before. Feel for rubbing, a tight pulley, the rope off its groove. Note it below.",
         "#7. Zero the sensors (new ropes = new zero)",
-        "1.  Power on, start_server.bat, test page (http://127.0.0.1:8000/ui/). Board DISARMED, ropes on, slack.",
+        "1.  Power on, start_server.bat, test page (http://127.0.0.1:8000/ui/BumpemTest.html). Board DISARMED, ropes on, slack.",
         "2.  Board settings > Zero sensors > Save as default. The yellow \"differs\" line must disappear.",
     ])
     ax = axes(fig, (0.07, 0.07, 0.86, y - 0.09), 10, 7)
@@ -163,7 +163,7 @@ def p_day2(P):
         "With kff 2 the pulls reached only ~60 % of the target (A, D), less on B and C. kff 3.5 should give about 100 %. This test checks it, tower by tower.",
         "#Setup (nobody on the treadmill)",
         "•  Each rope tied to a solid anchor (strap round a frame part / post) at harness height, in the rope's normal direction but OUTSIDE the treadmill area where a person walks (days 3 and 4 use the same setup). Straight, just tight. Stand aside, out of the rope line.",
-        "#Steps (test page, http://127.0.0.1:8000/ui/)",
+        "#Steps (test page, http://127.0.0.1:8000/ui/BumpemTest.html)",
         "1.  Board settings: Baseline 4 N, Feedforward gain (kff) 3.5 > Apply. Check the yellow line: it lists exactly what differs.",
         "2.  Arm. Record (top right, green > blue).",
         "3.  Direction: angle of one tower (A +90, B 0, C −90, D 180). Perturbation: Amplitude 10 N, Duration 400 ms > Perturb now, twice, 5 s apart. Then Amplitude 30 N, twice.",
@@ -283,7 +283,7 @@ def p_back(P):
         "    \"I'm back from the lab. Read STATUS and TODO. The ForClaude zips are in ~/Downloads.\"",
         "Claude then: checks pull strength per tower (kff), the gait detection against the SLAP script, the test block timing, the clock numbers; updates TODO; next steps.",
         "#Pages (server running)",
-        "•  Test page: http://127.0.0.1:8000/ui/        •  Calibration: …/ui/calibrate.html",
+        "•  Home: http://127.0.0.1:8000/ui/  •  Test page: …/ui/BumpemTest.html        •  Calibration: …/ui/calibrate.html",
         "•  BumpemSetUp (protocol): …/ui/BumpemSetUp.html        •  BumpemActivation (study): …/ui/BumpemActivation.html",
         "#If something goes wrong",
         "•  Red box on a page: read it; it says what is missing (Teensy port, Vicon) and retries by itself.",
