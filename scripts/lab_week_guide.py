@@ -13,7 +13,7 @@ from install_guide import ACCENT, DARK, MUTED, WARN, Pages as _Pages, arrow, box
 from install_guide import axes as _axes  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "lab-week-guide.pdf"
-UPDATE = "BumpemUpdate_2026-11-05_1542.zip"
+UPDATE = "BumpemUpdate_2026-11-16_1124.zip"
 YELLOW = "#9a6700"
 
 
@@ -27,7 +27,7 @@ class Pages(_Pages):
     def save(self, fig):
         self.n += 1
         fig.text(0.93, 0.025, f"{self.n}", fontsize=9, color=MUTED, ha="right")
-        fig.text(0.07, 0.025, "Bump'em: lab week guide (written 2026-11-05)", fontsize=9, color=MUTED)
+        fig.text(0.07, 0.025, "Bump'em: lab week guide (updated 2026-11-16)", fontsize=9, color=MUTED)
         self.pdf.savefig(fig)
         if self.preview:
             fig.savefig(Path(self.preview) / f"week_{self.n}.png", dpi=70)
@@ -62,7 +62,7 @@ def checklist(fig, y, items, size=10.3):
 def p_week(P):
     fig, y = page("Back in the lab: your week", [
         "#Bring",
-        f"•  the USB stick with  {UPDATE}  (in bumpemInstallation on the Mac; built 2026-11-05)",
+        f"•  the USB stick with  {UPDATE}  (in bumpemInstallation on the Mac; built 2026-11-16)",
         "•  this guide (fill in the tables by hand), the Mac with Claude, a meter, a pen",
         "#How to use it",
         "One page per day. Do the boxes in order; tick them. Fill in the grey tables and bring them (and the CSV files) back to Claude: start Claude with  /clear , then say \"I'm back from the lab\" and attach the files. Claude reads docs/STATUS.md and docs/TODO.md and knows the rest.",
@@ -192,10 +192,11 @@ def p_day3(P):
         "#1. Plates",
         "•  In Nexus (look only): plates zeroed before the session, as usual.",
         "•  Ground force plot (test page): stand on ONE belt. The line that rises is that belt's plate. Note its name below.",
-        "#2. A short protocol",
-        "1.  http://127.0.0.1:8000/ui/BumpemSetUp.html > Download template > open in Excel: one subject (made-up code, real mass), ONE block at a walking speed, then one at a running speed. Save as CSV. (Check: does Excel open it in columns? Note it.)",
-        "2.  Import CSV > yellow Confirm each block > Start the study (opens BumpemActivation).",
-        "3.  Left belt: pick the plate you found above.",
+        "#2. A short pattern and protocol",
+        "1.  http://127.0.0.1:8000/ui/BumpemPattern.html: name  test-lr-4 , directions 90 and −90, 4 perturbations, gaps 10–15 steps > Generate > Save pattern.",
+        "2.  BumpemSetUp > Download template > Excel: subject (made-up code, real mass, mode walking, baseline 4 N); block 1 at a walking speed, block 2 at a running speed, both with pattern test-lr-4. Save as CSV. (Does Excel open it in columns? Note it.)",
+        "3.  Import CSV > pick the pattern if empty > yellow Confirm each block (a red \"too many for … s\" = block too short) > Start the study.",
+        "4.  BumpemActivation, Left belt: pick the plate you found above.",
         "#3. Gait pattern (ropes tied off as day 2, not on the person)",
         "1.  Arm (recording starts). The person walks on the treadmill at block 1's speed, steadily.",
         "2.  Record gait pattern, 20 s. Write down what it shows (table). Same at the running speed (block 2): the page says when.",
@@ -225,9 +226,9 @@ def p_day4(P):
         "#Why",
         "The whole study chain once, without risk: plates find the steps, the server times the pulls, the ropes pull into the fixed points. The recording then shows whether the pulls land at the set gait phase.",
         "#Steps",
-        "1.  BumpemSetUp: one block, walking speed, 4 perturbations, directions 90 -90, intensity small (5 % body weight), phase 60 % stance, timing random 10–15 steps. Confirm > Start the study.",
-        "2.  BumpemActivation: Arm > person walks > Record gait pattern > System delay stays 0 for now > Start block 1.",
-        "3.  Watch: the \"P\" marks on the ground force plot, the counter \"1 / 4 perturbations\". The block ends by itself.",
+        "1.  BumpemSetUp: one block: walking speed, duration 120 s, warm-up 10 s, 4 perturbations, pattern test-lr-4, leg left, phase 30 % of the cycle, ramps 50 / 50 ms, amplitude 5 % body weight, duration 400 ms. Confirm > Start the study.",
+        "2.  BumpemActivation: Arm (also sets the baseline) > person walks > Record gait pattern > System delay stays 0 for now > Start block 1.",
+        "3.  Watch: the \"P\" marks on the ground force plot, the counter \"1 / 4 perturbations\" and the time left. The block ends by itself.",
         "4.  Release (treadmill stopped first) > Stop rec > copy force, events, Vicon CSVs.",
         "!The ropes stay tied to the anchors outside the walking area, never to the person. Nobody stands in a rope line.",
     ])
@@ -258,7 +259,7 @@ def p_day5(P):
     fig.text(0.07, y - 0.01, "Questions to ask (write the answers here)", fontsize=11.5, weight="bold", va="top")
     y = checklist(fig, y - 0.04, [
         "Walking, running or both in the study?",
-        "The study's parameter list (subject + per block, units, limits): needed for BumpemSetUp.",
+        "Typical step rate of your subjects? BumpemSetUp's duration check assumes 108 (walking) / 168 (running) steps/min.",
         "Vicon administrator: is there a free sync output on the Lock box (voltage, connector), may we use it? (optional hardware sync)",
         "Supervisor: may we ask Motek about controlling the treadmill from our app? (Claude drafts the email)",
         "Carrier board: is it in use (or still the breadboard)? Tell Claude.",
