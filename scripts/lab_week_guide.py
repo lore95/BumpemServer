@@ -13,7 +13,7 @@ from install_guide import ACCENT, DARK, MUTED, WARN, Pages as _Pages, arrow, box
 from install_guide import axes as _axes  # noqa: E402
 
 OUT = Path(__file__).resolve().parents[1] / "docs" / "lab-week-guide.pdf"
-UPDATE = "BumpemUpdate_2026-11-16_1124.zip"
+UPDATE = "BumpemUpdate_2026-11-16_1157.zip"
 YELLOW = "#9a6700"
 
 
@@ -168,7 +168,7 @@ def p_day2(P):
         "2.  Arm. Record (top right, green > blue).",
         "3.  Direction: angle of one tower (A +90, B 0, C −90, D 180). Perturbation: Amplitude 10 N, Duration 400 ms > Perturb now, twice, 5 s apart. Then Amplitude 30 N, twice.",
         "4.  Next tower, same. (Target = baseline + amplitude = 14 N and 34 N, as test 3.)",
-        "5.  Release… (treadmill is off) > Stop rec > the force CSV downloads; also click events. Copy both to the USB stick.",
+        "5.  Release… (treadmill is off) > Stop rec > click \"delay report\": its \"ratio\" column = pull strength per pull (1.00 = exactly the target). Note the ratios in the table.",
         "6.  Noise: Arm, Record 20 s doing nothing, one 10 N pull, Release, Stop rec. Copy the files.",
         "!Anything wrong (a rope moves that should not, FAULT, a noise): STOP (Esc). Note it.",
     ])
@@ -180,7 +180,7 @@ def p_day2(P):
     ax.add_patch(Rectangle((3.9, 0.8), 0.35, 3.2, fc="#d0d7de", ec=DARK))
     ax.text(4.07, 4.15, "fixed anchor\n(off the treadmill)", ha="center", fontsize=8.5)
     ax.text(2.4, 2.25, "tied at harness height", ha="center", fontsize=8, color=MUTED)
-    table(ax, 5.9, 4.6, ["Tower", "10 N ok?", "30 N ok?", "Notes"], [["A", "", "", ""], ["B", "", "", ""], ["C", "", "", ""], ["D", "", "", ""]],
+    table(ax, 5.9, 4.6, ["Tower", "ratio 10 N", "ratio 30 N", "Notes"], [["A", "", "", ""], ["B", "", "", ""], ["C", "", "", ""], ["D", "", "", ""]],
           [0.9, 1.0, 1.0, 1.5], h=0.62)
     ax.text(5.9, 1.2, "Files: force + events CSV (pulls),\nforce + events CSV (noise)", fontsize=8.5, color=MUTED, va="top")
     P.save(fig)
@@ -229,17 +229,18 @@ def p_day4(P):
         "1.  BumpemSetUp: one block: walking speed, duration 120 s, warm-up 10 s, 4 perturbations, pattern test-lr-4, leg left, phase 30 % of the cycle, ramps 50 / 50 ms, amplitude 5 % body weight, duration 400 ms. Confirm > Start the study.",
         "2.  BumpemActivation: Arm (also sets the baseline) > person walks > Record gait pattern > System delay stays 0 for now > Start block 1.",
         "3.  Watch: the \"P\" marks on the ground force plot, the counter \"1 / 4 perturbations\" and the time left. The block ends by itself.",
-        "4.  Release (treadmill stopped first) > Stop rec > copy force, events, Vicon CSVs.",
+        "4.  Release (treadmill stopped first) > Stop rec > click \"delay report\": the last line gives the recommended System delay. Note it, enter it next to Start, run the block once more: the timing errors should then be near 0.",
         "!The ropes stay tied to the anchors outside the walking area, never to the person. Nobody stands in a rope line.",
     ])
     ax = axes(fig, (0.07, 0.30, 0.86, y - 0.33), 10, 2.0)
     flow(ax, 0.5)
-    fig.text(0.07, 0.27, "System delay (later, needs the harness = after day 5)", fontsize=11.5, weight="bold", va="top")
+    fig.text(0.07, 0.27, "System delay: from this test block", fontsize=11.5, weight="bold", va="top")
     from install_guide import wrap
-    fig.text(0.07, 0.245, wrap("The pulls land a little late by the plates → PC → Teensy → rope delay. It is measured once with a person standing on the plates in the harness and one sharp small pull, recorded; Claude reads the delay from the files and you enter it in \"System delay\" next to Start. Only after the e-stop is wired and tested.", 100),
+    fig.text(0.07, 0.245, wrap("The pulls land a little late by the plates → PC → Teensy → rope delay. The delay report measures it on every study pull (rope force start vs the intended moment) and recommends the System delay: no harness needed. Write both runs below.", 100),
              fontsize=10.3, va="top", color=DARK)
     ax2 = axes(fig, (0.07, 0.06, 0.86, 0.12), 10, 1.5)
-    table(ax2, 0, 1.4, ["Test block ran?", "Pulls seen (P marks)", "Messages / problems"], [["", "", ""]], [2.4, 2.8, 4.4], h=0.6)
+    table(ax2, 0, 1.4, ["Run", "System delay used", "Recommended ms", "Timing errors ms", "Problems"],
+          [["1", "0", "", "", ""], ["2", "", "", "", ""]], [0.8, 2.0, 2.2, 2.2, 2.4], h=0.5)
     P.save(fig)
 
 
@@ -272,15 +273,14 @@ def p_day5(P):
 
 def p_back(P):
     fig, y = page("Back to Claude: what to bring", [
-        "#Files (USB stick, from the lab PC's Downloads or C:\\Users\\operator\\BumpemLab\\BumpemServer\\Logs)",
-        "•  Day 2: force + events CSVs of the kff 3.5 pulls; the noise recording",
-        "•  Day 3: force, events, Vicon CSVs of the gait patterns",
-        "•  Day 4: force, events, Vicon CSVs of the test block",
+        "#Files: one double-click",
+        "•  At the end of each lab day: double-click  collect_for_claude.bat  in the BumpemLab folder. It makes ForClaude_<date>.zip there with the error log, the delay reports, the newest 3 recordings, version and settings. Copy that zip to the USB stick.",
+        "•  Recordings older than the newest 3 (e.g. day 2 when you collect on day 4): collect each day, or copy their force / events / Vicon CSVs from BumpemServer\\Logs.",
         "•  calibration_..._applied.txt (from apply_calibration.bat, next to the calibration CSV)",
         "•  photos of these filled-in pages",
         "#Start the session",
         "Type  /clear  (fresh start, uses far less of your limit), then for example:",
-        "    \"I'm back from the lab. Read STATUS and TODO. Files from day 2–4 are in ~/Downloads/lab_week.\"",
+        "    \"I'm back from the lab. Read STATUS and TODO. The ForClaude zips are in ~/Downloads.\"",
         "Claude then: checks pull strength per tower (kff), the gait detection against the SLAP script, the test block timing, the clock numbers; updates TODO; next steps.",
         "#Pages (server running)",
         "•  Test page: http://127.0.0.1:8000/ui/        •  Calibration: …/ui/calibrate.html",
