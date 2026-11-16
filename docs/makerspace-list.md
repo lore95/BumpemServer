@@ -31,7 +31,11 @@ From your separate guide (resistor R3 = 150 Ω). This list doesn't include the r
 ## 3 · Other jobs that need a soldering station (if time)
 | ☐ | Part | For |
 |---|---|---|
-| ☐ | Hirose DF11-12DS housing + DF11 crimp terminals, or plan to solder | 🔴 e-stop at CN501 (pin 7 + 11), TODO 1 |
+| ☐ | 🔴 e-stop (the yellow BACO box): first open it, read the contact block(s): green / 13-14 = NO (needed), red / 11-12 = NC | TODO 1 |
+| ☐ | 4 × NO contact block for that button (one per 48 V supply, same make as the one inside), if they fit on its base | e-stop |
+| ☐ | 4 × Hirose DF11-12DS housing + 8 DF11 crimp terminals 24–28 AWG (+ spares), crimp tool | plug onto CN501 pin 7 + 11 of each RSP-2000 |
+| ☐ | 2-core cable 0.25 mm² (24 AWG), one run from the button to each tower; a 2-pin inline connector per tower (towers stay movable) | e-stop |
+| ☐ | cable gland / strain relief for the box, labels A–D on each pair | e-stop |
 | ☐ | 1.5 mm² fine-stranded wire + insulated ferrules + crimp tool | 🔴 tower B chopper → ESCON cable, TODO 1 |
 | ☐ | thin wire 0.14–0.25 mm² | optional hardware sync on Teensy pin 2 (TODO "Later"); only once the Vicon sync output is known |
 
