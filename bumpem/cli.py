@@ -56,6 +56,8 @@ def main(argv=None):
     ap = argparse.ArgumentParser(prog="bumpem")
     sub = ap.add_subparsers(dest="cmd", required=True)
     sub.add_parser("ports", help="list serial ports")
+    dl = sub.add_parser("delays", help="delay report of a recording (events_*.csv; force / vicon found by name), D51")
+    dl.add_argument("events", help="events_<stem>.csv")
     specs = {
         "info": "board info", "get": "read parameters", "set": "set a parameter",
         "arm": "enable drivers, ramp to baseline", "pulse": "one pulse (amplitudes relative to baseline)",
@@ -135,6 +137,18 @@ def main(argv=None):
                                mode=args.mode, settings=args.settings or None, log_dir=args.log_dir,
                                vicon=args.vicon, patterns=args.patterns),
                     host=args.host, port=args.port)
+        return
+
+    if args.cmd == "delays":
+        from .delays import analyze
+        ev = Path(args.events)
+        force, vicon = ev.with_name(ev.name.replace("events_", "force_")), ev.with_name(ev.name.replace("events_", "vicon_"))
+        if not ev.is_file() or not force.is_file():
+            sys.exit(f"need {ev.name} and {force.name} in the same folder")
+        res = analyze(ev, force, vicon if vicon.is_file() else None)
+        out = ev.with_name(ev.name.replace("events_", "delay_").replace(".csv", ".txt"))
+        out.write_text(res["text"], encoding="utf-8")
+        print(res["text"] + f"\n(written to {out})")
         return
 
     if args.cmd == "ports":

@@ -106,6 +106,12 @@ class Board:
         note = getattr(self._link, "_note", None)
         if note:
             note(f"!! reader error in {where} (#{self._errors}): {text}")
+        cb = getattr(self, "on_error", None)               # the server's error log (D51)
+        if cb is not None:
+            try:
+                cb(where, text)
+            except Exception:
+                pass
         if self._errors <= 3:
             print(f"bumpem: reader error in {where}: {exc!r} (reader keeps running)", file=sys.stderr)
 

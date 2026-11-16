@@ -80,15 +80,16 @@ class ViconLog:
             self.path = folder / f"vicon_{stem}_{n}.csv"
         self._f = open(self.path, "w", newline="")
         self._w = csv.writer(self._f)
-        self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates] + ["pc_s"])
+        self._w.writerow(["host_s", "frame", "sub", "board_ms"] + [f"Fz_{p}" for p in self.plates] + ["pc_s", "latency_ms"])
         self.rows, self.t_first, self.t_last = 0, None, 0.0
 
     def frame(self, host_s: float, frame: int, board_ms: int | None, subs: list[dict[str, float]],
-              pcs: list[float | None] | None = None) -> None:
+              pcs: list[float | None] | None = None, latency_ms: float | None = None) -> None:
+        lat = "" if latency_ms is None else f"{latency_ms:.1f}"
         for i, s in enumerate(subs):
             pc = pcs[i] if pcs else None
             self._w.writerow([f"{host_s:.4f}", frame, i, "" if board_ms is None else board_ms]
-                             + [f"{s.get(p, float('nan')):.2f}" for p in self.plates] + ["" if pc is None else f"{pc:.4f}"])
+                             + [f"{s.get(p, float('nan')):.2f}" for p in self.plates] + ["" if pc is None else f"{pc:.4f}", lat])
         self.rows += len(subs)
         self.t_first = host_s if self.t_first is None else self.t_first
         self.t_last = host_s

@@ -86,7 +86,11 @@ class _SdkSession:
                 last = frame
                 cols = {p: self._client.GetGlobalForceVector(i) for p, i in zip(self.plates, self._ids)}
                 n = min(len(v) for v in cols.values())
-                emit(frame, [{p: -float(v[k][2]) for p, v in cols.items()} for k in range(n)])   # GRF, up = +
+                try:                                     # camera → DataStream, Vicon's own estimate (D51)
+                    lat = float(self._client.GetLatencyTotal()) * 1000
+                except Exception:
+                    lat = None
+                emit(frame, [{p: -float(v[k][2]) for p, v in cols.items()} for k in range(n)], lat)   # GRF, up = +
         finally:
             try:
                 self._client.Disconnect()
@@ -103,7 +107,7 @@ def _worker(host: str, conn, timeout_s: float, sdk: str) -> None:
         return
     conn.send(("ready", s.plates, s.rate_hz))
     try:
-        s.run(lambda f, subs: conn.send(("frame", f, subs)), conn.poll)   # anything from the server = stop
+        s.run(lambda f, subs, lat: conn.send(("frame", f, subs, lat)), conn.poll)   # anything from the server = stop
         conn.send(("end", ""))
     except (BrokenPipeError, EOFError, OSError):
         pass                                                              # server gone
@@ -129,6 +133,7 @@ class ViconReader:
         self._proc.start()
         child.close()
         self.host, self._on_frame, self._on_end = host, on_frame, on_end
+        self.latency_ms: float | None = None          # Vicon's latency of the last frame (GetLatencyTotal), ms
         self._stop = threading.Event()
         try:
             msg = self._conn.recv() if self._conn.poll(timeout_s + 20) else ("error", "timeout", "Vicon reader did not start")
@@ -148,6 +153,7 @@ class ViconReader:
             while not self._stop.is_set():
                 msg = self._conn.recv()                 # blocks without holding the GIL
                 if msg[0] == "frame":
+                    self.latency_ms = msg[3] if len(msg) > 3 else None
                     self._on_frame(msg[1], msg[2])
                 else:
                     text = msg[1] or text
@@ -176,6 +182,7 @@ class SimReader:
 
     def __init__(self, on_frame: FrameFn, on_end: EndFn, rate_hz: float = 100, subs: int = 10):
         self.host, self.rate_hz, self._subs, self._on_frame = "sim", rate_hz, subs, on_frame
+        self.latency_ms = None                        # no camera latency to report
         self._stop = threading.Event()
 
     def start(self) -> None:

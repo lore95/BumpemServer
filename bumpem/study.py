@@ -104,11 +104,13 @@ def default_plates(plates: list[str]) -> dict[str, str]:
 class Study:
     def __init__(self, protocol: Protocol, plates: list[str], send: Callable[[dict], int],
                  publish: Callable[[dict], None], log: Callable[[str, dict], None], rng: random.Random | None = None,
-                 to_pc: Callable[[float], float | None] | None = None, now: Callable[[], float] | None = None):
+                 to_pc: Callable[[float], float | None] | None = None, now: Callable[[], float] | None = None,
+                 report: Callable[[str, str], None] | None = None):
         """to_pc / now: plate clock → station-PC clock and the PC clock now (clocksync, D49): the touch-down's age is
         then measured on the PC clock; without them, from the frame it arrived in."""
         self.p, self._send, self._publish, self._log = protocol, send, publish, log
         self._to_pc, self._now = to_pc, now
+        self._report = report or (lambda level, msg: None)   # (level, message) → the server's error log (D51)
         self.plates = protocol.plates or default_plates(plates)
         if set(self.plates) != set(SIDES) or any(p not in plates for p in self.plates.values()):
             raise ValueError(f"plates must map left and right to Vicon plates {plates}")
@@ -272,6 +274,8 @@ class Study:
                 self.state = "stopped"
             self.message = reason
             self._log("STUDY", {"stop": self.block_i + 1, "done": self.done, "reason": reason})
+            if reason != "stopped by the operator":
+                self._report("warn", f"block {self.block_i + 1} stopped: {reason}")
         self._changed()
 
     def _new_target(self) -> None:
@@ -323,6 +327,7 @@ class Study:
                 self.state = "finished" if self.block_i == len(self.p.blocks) - 1 else "block_done"
                 self.message = f"block duration {b.duration_s:g} s reached: {self.done} of {b.n_perturbations} perturbations"
                 self._log("STUDY", {"done": self.block_i + 1, "reason": self.message})
+                self._report("warn", f"block {self.block_i + 1}: {self.message}")
                 self._changed()
                 return
             self.steps += 1
@@ -346,11 +351,13 @@ class Study:
             except Exception as e:                 # refused by the board / geometry: stop the block, say why
                 self.state, self.message = "stopped", f"perturbation refused: {getattr(e, 'message', None) or e}"
                 self._log("STUDY", {"stop": self.block_i + 1, "done": self.done, "reason": self.message})
+                self._report("error", f"block {self.block_i + 1}: {self.message}")
                 self._changed()
                 return
             self.done += 1
             self._log("PERT", {"pulse_id": pid, "block": self.block_i + 1, "index": self.done, "side": side,
-                               "step": self.steps, "next_contact": nxt, **pert})
+                               "step": self.steps, "next_contact": nxt, "td_pc": None if pc is None else round(pc, 4),
+                               "phase_ms": round(phase, 1), "age_ms": round(age, 1), "latency_ms": self.latency_ms, **pert})
             self.since = 0
             self._new_target()
             if self.done >= b.n_perturbations:
@@ -390,6 +397,7 @@ class Study:
                 self.state = self._gait_prev
                 self.message = (f"gait pattern: too few strides ({', '.join(short)}; need {MIN_STRIDES} per side). "
                                 "Subject on both belts, Vicon plates right?")
+                self._report("warn", self.message)
             else:
                 for side in SIDES:                 # the plate's own thresholds from now on
                     self._det[side] = ContactDetector(res[side]["td_n"], res[side]["fo_n"])
@@ -405,6 +413,8 @@ class Study:
                                      f"(stride {lim['stride'][0]}–{lim['stride'][1]} s, contact {lim['contact'][0]}–"
                                      f"{lim['contact'][1]} s): mode, speed or plates right?")
                 self.message = "; ".join(notes) or None
+                if notes:
+                    self._report("warn", "gait pattern: " + self.message)
                 self.state = "ready" if self._gait_prev in ("loaded", "ready") else self._gait_prev
                 self._log("STUDY", {"gait": res})
         self._changed()

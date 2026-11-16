@@ -1,6 +1,7 @@
 """bumpem/study.py: gait pattern, block runner, perturbation timing (docs/API.md "Study", D44)."""
 import random
 import time
+from pathlib import Path
 
 import pytest
 
@@ -144,11 +145,11 @@ def test_too_few_strides():
     assert r.st.state == "loaded" and "too few strides" in r.st.message and r.st.gait is None
 
 
-def test_server_study_with_simulated_board_and_plates():
+def test_server_study_with_simulated_board_and_plates(tmp_path):
     """End to end: sim board + sim plates (real time, ~8 s)."""
     from fastapi.testclient import TestClient
     from bumpem.server import create_app
-    with TestClient(create_app()) as c:
+    with TestClient(create_app(log_dir=str(tmp_path))) as c:
         api = "/api/v1"
         body = {"subject": {"subject_id": "S1", "mass_kg": 30},
                 "blocks": [block(n_perturbations=2, interval_min_steps=1, interval_max_steps=1)]}
@@ -173,13 +174,23 @@ def test_server_study_with_simulated_board_and_plates():
             time.sleep(0.2)
         s = c.get(f"{api}/study").json()
         assert s["state"] == "ready", s
+        r = c.post(f"{api}/study/start")
+        assert r.status_code == 409 and "not recording" in r.json()["error"]["message"]      # D51
+        c.post(f"{api}/log/start", json={"label": "e2e"})
         assert c.post(f"{api}/study/start").json()["state"] == "running"
         end = time.monotonic() + 6
         while c.get(f"{api}/study").json()["state"] == "running" and time.monotonic() < end:
             time.sleep(0.2)
         s = c.get(f"{api}/study").json()
         assert s["state"] == "finished" and s["done"] == 2, s
+        time.sleep(1.2)                                                       # the last pulse runs to its end
         c.post(f"{api}/estop")
+        if c.get(f"{api}/log").json()["recording"]:
+            done = c.post(f"{api}/log/stop").json()
+            rep = c.get(f"{api}/log/delay").json()                            # D51: the study pulls, measured
+            assert [p["pulse_id"] for p in rep["pulses"]] and rep["recommended_latency_ms"] is not None
+            assert all(p.get("timing_error_ms") is not None and p.get("command_ms") is not None for p in rep["pulses"]), rep["text"]
+            assert Path(rep["file"]).is_file() and "recommended System delay" in rep["text"]
 
 
 def test_contact_detector_hysteresis():
@@ -302,7 +313,7 @@ def test_mode_plausibility_message():
 def test_patterns_api_and_pattern_study(tmp_path):
     from fastapi.testclient import TestClient
     from bumpem.server import create_app
-    with TestClient(create_app(patterns=str(tmp_path / "patterns"))) as c:
+    with TestClient(create_app(patterns=str(tmp_path / "patterns"), log_dir=str(tmp_path))) as c:
         api = "/api/v1"
         pat = {"name": "lat-2", "items": [{"angle_deg": 270, "gap_steps": 2}, {"angle_deg": 90, "gap_steps": 2}],
                "rules": {"seed": 7}}
@@ -328,6 +339,7 @@ def test_patterns_api_and_pattern_study(tmp_path):
         end = time.monotonic() + 8
         while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:
             time.sleep(0.2)
+        c.post(f"{api}/log/start")
         r = c.post(f"{api}/study/start")
         assert r.status_code == 409 and "baseline 5 N, the protocol wants 7 N" in r.json()["error"]["message"]
         c.patch(f"{api}/params", json={"baseline_n": 7})
@@ -337,4 +349,62 @@ def test_patterns_api_and_pattern_study(tmp_path):
             time.sleep(0.2)
         s = c.get(f"{api}/study").json()
         assert s["state"] == "finished" and s["done"] == 2, s
+        time.sleep(1.2)                                                       # the last pulse runs to its end
+        c.post(f"{api}/estop")
+        if c.get(f"{api}/log").json()["recording"]:
+            done = c.post(f"{api}/log/stop").json()
+            rep = c.get(f"{api}/log/delay").json()                            # D51: the study pulls, measured
+            assert [p["pulse_id"] for p in rep["pulses"]] and rep["recommended_latency_ms"] is not None
+            assert all(p.get("timing_error_ms") is not None and p.get("command_ms") is not None for p in rep["pulses"]), rep["text"]
+            assert Path(rep["file"]).is_file() and "recommended System delay" in rep["text"]
+
+
+def test_error_log(tmp_path):
+    """D51: API problems, page errors and board events land in errors_<day>.jsonl."""
+    import json
+    from fastapi.testclient import TestClient
+    from bumpem.server import create_app
+    with TestClient(create_app(log_dir=str(tmp_path))) as c:
+        api = "/api/v1"
+        assert c.post(f"{api}/arm").status_code == 409                       # no board
+        c.post(f"{api}/errors", json={"page": "BumpemActivation.html", "message": "TypeError: x is null", "stack": "at f"})
+        c.post(f"{api}/connect", json={"port": "sim"})
+        c.post(f"{api}/estop")
+        end = time.monotonic() + 2
+        while not any(e["message"].startswith("STATE ESTOP") for e in c.get(f"{api}/errors").json()) and time.monotonic() < end:
+            time.sleep(0.05)
+        recent = c.get(f"{api}/errors").json()
+        kinds = {(e["source"], e["level"]) for e in recent}
+        assert ("api", "warn") in kinds and ("client", "error") in kinds and ("board", "warn") in kinds
+        assert any(e.get("request") == "POST /api/v1/arm" and e["status"] == 409 for e in recent)
+        lines = [json.loads(x) for x in c.get(f"{api}/errors/file").text.splitlines()]
+        assert len(lines) == len(recent) and lines[1]["page"] == "BumpemActivation.html"
+        assert c.get(f"{api}/errors/file?day=20000101").status_code == 404
+
+
+def test_delay_report_perturbations(tmp_path):
+    """D51: plain perturbations on the simulator: command, rise, lag, ratio measured; no study → no System delay."""
+    from fastapi.testclient import TestClient
+    from bumpem.server import create_app
+    with TestClient(create_app(log_dir=str(tmp_path))) as c:
+        api = "/api/v1"
+        c.post(f"{api}/connect", json={"port": "sim"}); c.patch(f"{api}/params", json={"arm_ms": 0, "kff": 2})
+        c.post(f"{api}/arm")
+        end = time.monotonic() + 3
+        while c.get(f"{api}/status").json()["state"] != "ARMED" and time.monotonic() < end:
+            time.sleep(0.05)
+        c.post(f"{api}/log/start", json={"label": "delays"})
+        time.sleep(0.5)
+        for a in (90, -90):
+            assert c.post(f"{api}/perturbation", json={"angle_deg": a, "amplitude_n": 20, "phase1_ms": 50, "dur_ms": 400,
+                                                       "phase2_ms": 50, "delay_ms": 30}).status_code == 200
+            time.sleep(0.8)
+        assert c.get(f"{api}/log/delay").status_code == 409                    # still recording
+        c.post(f"{api}/log/stop")
+        rep = c.get(f"{api}/log/delay").json()
+        assert len(rep["pulses"]) == 2 and rep["recommended_latency_ms"] is None
+        for p in rep["pulses"]:
+            assert p["module"] in ("A", "C") and p["command_ms"] is not None and -5 < p["command_ms"] < 60
+            assert p["rise_ms"] is not None and p["ratio"] is not None
+        assert "No study pulls" in c.get(f"{api}/log/delay?format=text").text
         c.post(f"{api}/estop")

@@ -46,6 +46,9 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/gait.py` | FS/TO detector, port of MATLAB logic; `ContactDetector` + `fit_thresholds` (SLAP script, study D45) |
 | `bumpem/experiment.py` | Perturbation sequence + FS target generation (v0 letters; superseded by `study.py`) |
 | `scripts/lab_week_guide.py` → `docs/lab-week-guide.pdf` | Lab week guide after 2026-11-05: day by day (install, ropes, kff 3.5, gait pattern, test block, safety), fill-in tables; copy in `../bumpemInstallation/` |
+| `bumpem/delays.py` | Delay report of a recording (D51): command, rise, lag, ratio per pulse; study timing error → System delay; `bumpem delays`, `GET /log/delay` |
+| `bumpem/errlog.py` | Error log `errors_<day>.jsonl` (D51) |
+| `scripts/collect_for_claude.py` + `bundle/collect_for_claude.bat` | Zip of error logs, delay reports, newest recordings, version, settings for Claude (D51) |
 | `bumpem/patterns.py` | Saved perturbation patterns (D50): directions + step gaps, JSON per pattern in `patterns/`, never overwritten |
 | `bumpem/clocksync.py` | Device clock → station-PC clock fit (D49): board `t_ms`, Vicon frames → `pc_s`; `/sync` |
 | `bumpem/study.py` | Study runner (D44): protocol models, gait pattern per belt, blocks, perturbation at a gait phase; `/api/v1/study` |

@@ -19,12 +19,14 @@ from typing import Any
 
 from fastapi import FastAPI, Query, WebSocket, WebSocketDisconnect
 from fastapi.exceptions import RequestValidationError
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, PlainTextResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel, Field
 
 from . import geometry
 from .clocksync import ClockFit
+from .delays import analyze as analyze_delays
+from .errlog import ErrorLog, install as install_errlog
 from . import protocol as P
 from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
@@ -85,6 +87,12 @@ class LogStartBody(BaseModel):
     label: str = Field("", pattern="^[A-Za-z0-9_-]{0,40}$", description="Added to the file names", examples=["closedloop_A"])
 
 
+class ClientErrorBody(BaseModel):
+    page: str = Field("", max_length=200)
+    message: str = Field(max_length=4000)
+    stack: str = Field("", max_length=8000)
+
+
 class GaitBody(BaseModel):
     duration_s: float = Field(20, ge=5, le=120, description="Recording time for the gait pattern")
 
@@ -122,6 +130,9 @@ class Hub:
         self._vicon_lost_frames: deque[tuple[float, int]] = deque()  # (pc_s, frames missing)
         self._vicon_last: tuple[int, float] | None = None          # last frame number, its pc_s
         self._sup_stop = threading.Event()
+        self.errlog = ErrorLog(log_dir, self.pc)         # problems for Claude (D51)
+        self._vicon_lat: deque[float] = deque(maxlen=200)
+        self.last_sent_pc: float | None = None             # PC time of the last PULSE sent (delay report)
         self.vicon = None                         # ViconReader / SimReader
         self.vicon_message: str | None = None
         self.vlog: ViconLog | None = None         # open while a recording runs and Vicon is connected
@@ -164,6 +175,7 @@ class Hub:
                 raise ApiError("invalid", 422, f"cannot open {port}: {e}") from None
         self._last_t_ms = None
         self.board_clock.reset()
+        board.on_error = lambda where, text: self.errlog.write("error", "board", f"reader error in {where}", port=port, traceback=text)
         board.add_listener(self._dispatch)
         self.board, self.port = board, port
         self.settings_applied, self.settings_pending, self.settings_message = False, False, None
@@ -355,6 +367,7 @@ class Hub:
     def _vicon_lost(self, reader, message: str) -> None:   # reader thread
         if self.vicon is reader:
             self.vicon_message = message
+            self.errlog.write("error", "vicon", f"reader ended: {message}", host=reader.host)
             with self._lock:
                 self.vicon = None
                 self._vicon_close()
@@ -386,10 +399,13 @@ class Hub:
             self._vicon_lost_frames.append((host_s, frame - last[0] - 1))
         self._vicon_last = (frame, host_s)
         self.vicon_clock.add(dev[-1], host_s)
+        lat = getattr(reader, "latency_ms", None)
+        if lat is not None:
+            self._vicon_lat.append(lat)
         with self._lock:
             clients = list(self._clients)
             if self.vlog is not None:
-                self.vlog.frame(host_s, frame, board_ms, subs, [self.vicon_clock.to_pc(d) for d in dev])
+                self.vlog.frame(host_s, frame, board_ms, subs, [self.vicon_clock.to_pc(d) for d in dev], lat)
         item = {"type": "vicon", "host_s": round(host_s, 4), "frame": frame,
                 "fz": {p: round(sum(s[p] for s in subs) / len(subs), 1) for p in subs[0]}}
         for loop, q in clients:
@@ -420,6 +436,7 @@ class Hub:
             except ApiError as e:
                 if e.message != self.board_message:      # the server window: once per new reason, not every retry
                     print(f"warning: board: {e.message}; retrying every {RETRY_S:g} s")
+                    self.errlog.write("warn", "board", f"cannot connect {self.board_target}: {e.message}")
                 self.board_message = e.message
 
     def _connect_vicon_target(self) -> None:
@@ -430,6 +447,7 @@ class Hub:
             except ApiError as e:
                 if e.message != prev:
                     print(f"warning: Vicon: {e.message}; retrying every {RETRY_S:g} s")
+                    self.errlog.write("warn", "vicon", f"cannot connect {self.vicon_target}: {e.message}")
                 self.vicon_message = e.message
 
     def _watch_board(self) -> None:
@@ -444,6 +462,7 @@ class Hub:
                         self._disconnect()
                         self.board_message = f"lost {port}: no data for {quiet:.0f} s (USB cable, Teensy power?)"
                         print(f"warning: board {self.board_message}")
+                        self.errlog.write("error", "board", self.board_message)
                 st = self.study
                 if st is not None:
                     st.stop("board link lost")
@@ -463,6 +482,7 @@ class Hub:
                         self._vicon_disconnect()
                         self.vicon_message = f"lost {v.host}: no frame for {quiet:.0f} s (Nexus still in Live mode?)"
                         print(f"warning: Vicon {self.vicon_message}")
+                        self.errlog.write("error", "vicon", self.vicon_message)
                 nxt = time.monotonic() + 1.0
             elif v is None and self.vicon_target and time.monotonic() >= nxt:
                 self._connect_vicon_target()
@@ -486,6 +506,7 @@ class Hub:
                     bad.append(f"no data for {c['age_ms']} ms")
                 if name == "vicon":
                     c["lost_frames"] = sum(k for _, k in self._vicon_lost_frames)
+                    c["latency_ms"] = round(statistics.median(self._vicon_lat), 1) if self._vicon_lat else None
                     recent = sum(k for t, k in self._vicon_lost_frames if now - t <= 10)
                     if recent:
                         bad.append(f"{recent} frames lost in the last 10 s")
@@ -600,6 +621,8 @@ class Hub:
                 threading.Thread(target=self._board_restarted, args=(self.board,), daemon=True).start()
         elif isinstance(msg, P.Event):
             item = {"type": "event", "t_ms": msg.t_ms, "kind": msg.kind, "args": list(msg.args)}
+            if msg.kind in ("FAULT", "WD", "PABORT") or (msg.kind == "STATE" and list(msg.args) == ["ESTOP"]):
+                self.errlog.write("warn", "board", " ".join([msg.kind, *msg.args]), board_ms=msg.t_ms, port=self.port)
             st = self.study
             if msg.kind == "STATE" and msg.args and msg.args[0] != "ARMED" and st is not None and st.state in ("running", "gait"):
                 # not on the reader thread: the study may be waiting in send() for this thread's reply
@@ -669,10 +692,12 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     @asynccontextmanager
     async def lifespan(_):
+        undo = install_errlog(hub.errlog)         # unhandled exceptions → the error log (D51)
         hub.board_target = board                  # kept connected; a failure here never stops the server (D49)
         hub.start_supervisor()
         yield
         hub.stop_supervisor()
+        undo()
         hub.vicon_disconnect()
         hub.disconnect()
 
@@ -681,11 +706,15 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     app.state.hub = hub
 
     @app.exception_handler(ApiError)
-    async def _api_error(_, e: ApiError):
+    async def _api_error(request, e: ApiError):
+        hub.errlog.write("error" if e.status >= 500 else "warn", "api", e.message, code=e.code, status=e.status,
+                         request=f"{request.method} {request.url.path}")
         return JSONResponse({"error": {"code": e.code, "message": e.message}}, status_code=e.status)
 
     @app.exception_handler(RequestValidationError)
-    async def _invalid(_, e: RequestValidationError):
+    async def _invalid(request, e: RequestValidationError):
+        hub.errlog.write("warn", "api", str(e.errors())[:2000], code="invalid", status=422,
+                         request=f"{request.method} {request.url.path}")
         return JSONResponse({"error": {"code": "invalid", "message": str(e.errors())}}, status_code=422)
 
     # --- connection ---
@@ -770,6 +799,36 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         path = hub.log_file(kind)
         return FileResponse(path, media_type="text/csv", filename=path.name)
 
+    @app.get("/api/v1/log/delay")
+    def log_delay(format: str = Query("json", pattern="^(json|text)$")):
+        if hub.log is not None:
+            raise ApiError("board_rejected", 409, "still recording (Stop rec first)")
+        files = hub.last_log
+        if not files.get("events") or not files["events"].is_file():
+            raise ApiError("not_found", 404, "no finished recording since the server started")
+        res = analyze_delays(files["events"], files["force"], files.get("vicon"))
+        out = files["events"].with_name(files["events"].name.replace("events_", "delay_").replace(".csv", ".txt"))
+        out.write_text(res["text"], encoding="utf-8")
+        if format == "text":
+            return PlainTextResponse(res["text"])
+        return {"file": str(out), **res}
+
+    @app.get("/api/v1/errors")
+    def get_errors(limit: int = Query(200, ge=1, le=500)):
+        return list(hub.errlog.recent)[-limit:]
+
+    @app.post("/api/v1/errors")
+    def post_error(body: ClientErrorBody):
+        hub.errlog.write("error", "client", body.message, page=body.page, stack=body.stack or None)
+        return {}
+
+    @app.get("/api/v1/errors/file")
+    def errors_file(day: str = Query("", pattern="^([0-9]{8})?$")):
+        path = hub.errlog.path(day or None)
+        if not path.is_file():
+            raise ApiError("not_found", 404, f"no error log for {day or 'today'}")
+        return FileResponse(path, media_type="application/json", filename=path.name)
+
     @app.get("/api/v1/sync")
     def get_sync():
         return hub.sync_info()
@@ -824,6 +883,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     def send_pulse(amps: dict[str, float], delay_ms: float, rise_ms: float, dur_ms: float, fall_ms: float) -> int:
         b = hub.need()
         pid = hub.next_pulse_id
+        hub.last_sent_pc = hub.pc()               # for the delay report (D51)
         hub.call(b.pulse, pid, amps, delay_ms=delay_ms, rise_ms=rise_ms, dur_ms=dur_ms, fall_ms=fall_ms)
         hub.next_pulse_id += 1
         return pid
@@ -837,7 +897,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         only("production")
         amps = {k.upper(): v for k, v in body.amps.items()}
         pid = send_pulse(amps, body.delay_ms, body.rise_ms, body.dur_ms, body.fall_ms)
-        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, **body.model_dump(exclude={"amps"})})
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "sent_pc": round(hub.last_sent_pc, 4), **body.model_dump(exclude={"amps"})})
         return {"pulse_id": pid}
 
     # --- host layer ---
@@ -857,7 +917,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
         pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
-        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, **body.model_dump()})
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "sent_pc": round(hub.last_sent_pc, 4), **body.model_dump()})
         return {"pulse_id": pid, "amps": amps}
 
     @app.post("/api/v1/test/pull")
@@ -874,7 +934,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     def study_send(pert: dict) -> int:
         amps = geometry.split(pert["angle_deg"], pert["amplitude_n"], study_mods)
         pid = send_pulse(amps, pert["delay_ms"], pert["phase1_ms"], pert["dur_ms"], pert["phase2_ms"])
-        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "study": True, **pert})
+        hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "study": True, "sent_pc": round(hub.last_sent_pc, 4), **pert})
         return pid
 
     def study_need() -> Study:
@@ -923,7 +983,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                                    "(make it in BumpemPattern)") from None
         try:
             hub.study = Study(body, list(hub.vicon.plates), study_send, hub.broadcast, hub.log_command,
-                              to_pc=hub.vicon_clock.to_pc, now=hub.pc)
+                              to_pc=hub.vicon_clock.to_pc, now=hub.pc,
+                              report=lambda level, msg: hub.errlog.write(level, "study", msg))
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
         st = hub.study.status()
@@ -965,6 +1026,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             raise ApiError("not_connected", 409, "Vicon not connected")
         if not b.last or b.last.state != "ARMED":
             raise ApiError("board_rejected", 409, f"board is {b.last.state if b.last else None}: Arm first")
+        if hub.log is None:                       # a block without data is lost (2026-11-16: Stop rec before Start)
+            raise ApiError("board_rejected", 409, "not recording: start the recording first (BumpemActivation does it at Start)")
         try:
             i = st.check_start()
         except RuntimeError as e:
@@ -1033,7 +1096,10 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                     last_t[item["type"]] = now
                     if item["type"] == "telemetry":
                         item = thin.take(item)
-                await ws.send_json(item)
+                try:
+                    await ws.send_json(item)
+                except (WebSocketDisconnect, RuntimeError):   # the page closed while we were sending
+                    break
         except WebSocketDisconnect:
             pass
         finally:
