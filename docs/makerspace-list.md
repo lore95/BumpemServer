@@ -31,11 +31,12 @@ From that project's own guide (resistor R3 = 150 Ω). Only the parts below; the 
 ## 3 · Other jobs that need a soldering station (if time)
 | ☐ | Part | For |
 |---|---|---|
-| ☐ | 🔴 e-stop (the yellow BACO box): first open it, read the contact block(s): green / 13-14 = NO (needed), red / 11-12 = NC | TODO 1 |
-| ☐ | 4 × NO contact block for that button (one per 48 V supply, same make as the one inside), if they fit on its base | e-stop |
-| ☐ | 4 × Hirose DF11-12DS housing + 8 DF11 crimp terminals 24–28 AWG (+ spares), crimp tool | plug onto CN501 pin 7 + 11 of each RSP-2000 |
-| ☐ | 2-core cable 0.25 mm² (24 AWG), one run from the button to each tower; a 2-pin inline connector per tower (towers stay movable) | e-stop |
-| ☐ | cable gland / strain relief for the box, labels A–D on each pair | e-stop |
+| ☐ | 🔴 e-stop: 2 BACO boxes found (2026-11-16), each with **2 green NO blocks (3-4)**, own red + black pair per block. One box = 2 supplies only, and one press must stop all 4 → plan below (ask the technician to check it) | TODO 1 |
+| ☐ | 1 × BACO **NC** contact block (red, terminals 1-2), same series as the green ones | in ONE box: opens on press or a cut wire (fail-safe) |
+| ☐ | 1 × relay, **24 V DC coil, 4 changeover contacts, gold-flashed contacts** (e.g. Finder 55.34.9.024 gold version) + its screw socket + coil module (diode + LED) | its 4 NC contacts short CN501 pin 7 + 11 of each supply when the coil drops |
+| ☐ | 4 × Hirose DF11-12DS housing + 8 DF11 crimp terminals 24–28 AWG (+ spares), crimp tool | plug onto CN501 of each RSP-2000 |
+| ☐ | 2-core cable 0.25 mm²: button → relay, relay → each tower; a 2-pin inline connector per tower (towers stay movable); small box for the relay | e-stop |
+| ☐ | cable gland / strain relief, labels A–D on each pair | e-stop |
 | ☐ | 1.5 mm² fine-stranded wire + insulated ferrules + crimp tool | 🔴 tower B chopper → ESCON cable, TODO 1 |
 | ☐ | thin wire 0.14–0.25 mm² | optional hardware sync on Teensy pin 2 (TODO "Later"); only once the Vicon sync output is known |
 
