@@ -17,8 +17,8 @@ Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 
 | ☐ | 20 | wire-end ferrules 0.25–0.5 mm² | module wires into the plugs | "Aderendhülsen 0,5 mm²" |
 | ☐ | 2 | male pin strip 1 × 24 (spare) | keeps the sockets straight while soldering (not soldered in) | "Stiftleiste 1x40" |
 
-## 2 · LED circuit (breadboard)
-From your separate guide (resistor R3 = 150 Ω). This list doesn't include the rest of that guide's parts.
+## 2 · Other project (not Bump'em): LED circuit on a breadboard
+From that project's own guide (resistor R3 = 150 Ω). Only the parts below; the rest is in that guide.
 
 | ☐ | Qty | Part | Note |
 |---|---|---|---|
