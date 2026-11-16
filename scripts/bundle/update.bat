@@ -1,6 +1,6 @@
 @echo off
 rem Bump'em update. Run it from the NEW folder (BumpemUpdate_<date> or BumpemLab_<date>), not from the installed one.
-rem Replaces the code of the installed folder; keeps settings.json, force_logger_cal.json, Logs\, sim\ and Python.
+rem Replaces the code of the installed folder; keeps settings.json, force_logger_cal.json, Logs\, patterns\, sim\ and Python.
 rem The old code goes to backup\<date_time>\ in the installed folder (rollback: README.txt).
 setlocal
 set SRC=%~dp0
@@ -26,7 +26,7 @@ echo Installed in %DEST%:
 type "%DEST%\VERSION.txt" 2>nul || echo   unknown version ^(installed before update.bat existed^)
 echo This update:
 type "%SRC%\VERSION.txt"
-echo Kept: BumpemServer\settings.json, force_logger_cal.json, Logs\, sim\, Python.
+echo Kept: BumpemServer\settings.json, force_logger_cal.json, Logs\, patterns\, sim\, Python.
 choice /c YN /m "Update now"
 if errorlevel 2 exit /b 0
 
@@ -52,6 +52,9 @@ if errorlevel 8 goto :copyfail
 for %%f in (settings.json force_logger_cal.json) do if exist "%OLD%\BumpemServer\%%f" copy /y "%OLD%\BumpemServer\%%f" "%DEST%\BumpemServer\" >nul
 if exist "%OLD%\BumpemServer\Logs\" robocopy "%OLD%\BumpemServer\Logs" "%DEST%\BumpemServer\Logs" /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 (echo Logs could not be moved back: they are in %OLD%\BumpemServer\Logs & pause)
+rem saved perturbation patterns (D50): copied, the backup keeps them too
+if exist "%OLD%\BumpemServer\patterns\" robocopy "%OLD%\BumpemServer\patterns" "%DEST%\BumpemServer\patterns" /E /NFL /NDL /NJH /NJS /NP >nul
+if errorlevel 8 (echo Patterns could not be copied back: they are in %OLD%\BumpemServer\patterns & pause)
 
 rem --- launchers, readme, guide, packages
 for %%f in ("%SRC%\*.bat" "%SRC%\*.txt" "%SRC%\*.pdf" "%SRC%\*.ico") do copy /y "%%~f" "%DEST%\" >nul

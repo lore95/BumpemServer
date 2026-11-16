@@ -179,6 +179,22 @@ PTO (`planned`): adds `"pto": {"mode": "ms" | "stance_pct" | "cycle_pct", "value
 |---|---|---|---|
 | GET | `/api/v1/geometry` | `{"convention": "...", "modules": {"A": {"angle_deg": 90, "enabled": true}, ...}, "reachable": [{"from_deg": 90, "to_deg": -90}]}` (arcs counter-clockwise from → to; `enabled`/`reachable` null when no board is connected) | host |
 
+### Perturbation patterns (`host`, D50)
+A pattern = a saved sequence of directions and step gaps, made once (BumpemUI `BumpemPattern.html`) and used by a block for **every participant**, so all get the same pulls in the same order at the same step counts. Stored as JSON files in `bumpem serve --patterns DIR` (default `BumpemServer/patterns/`; `update.bat` keeps them). A saved pattern never changes: the same name again → 409.
+
+| Method | Path | Body | Returns |
+|---|---|---|---|
+| GET | `/api/v1/patterns` | | `[{"name": "lateral-12", "n": 12, "created": "…", "angles": [90, -90], "gap_min": 40, "gap_max": 60, "note": ""}]` (summary, newest first) |
+| GET | `/api/v1/patterns/{name}` | | the pattern; 404 `not_found` |
+| POST | `/api/v1/patterns` | pattern | the saved pattern (`created` set by the server); 409 `board_rejected` when the name exists; 422 `invalid` |
+
+```json
+{"name": "lateral-12", "note": "balanced, max 2 same in a row",
+ "items": [{"angle_deg": 90, "gap_steps": 52}, {"angle_deg": -90, "gap_steps": 47}, ...],
+ "rules": {"angles": [90, -90], "n": 12, "gap_min": 40, "gap_max": 60, "balanced": true, "max_run": 2, "seed": 1234}}
+```
+- `name`: letters, digits, `_`, `-`, max 40. `items`: 1–500; `angle_deg` API convention (normalised); `gap_steps` 1–1000 = steps (touch-downs, either foot) after the previous perturbation; item 1: after the block's warm-up. `rules`: how it was generated (kept, not used).
+
 ### Study (`host`, production mode)
 One subject and a list of blocks (BumpemUI `BumpemSetUp.html`, run from `BumpemActivation.html`), run block by block: foot strikes per belt from the Vicon plates, a perturbation at a gait phase after a foot strike (DECISIONS D44). One study at a time; it lives until replaced or the server stops.
 
@@ -189,21 +205,23 @@ One subject and a list of blocks (BumpemUI `BumpemSetUp.html`, run from `BumpemA
 | DELETE | `/api/v1/study` | | status (`none`); 409 while a block runs |
 | GET | `/api/v1/study/protocol` | | the loaded protocol as accepted (numbers as numbers, defaults filled in, `plates` resolved); 404 `not_found` when none |
 | POST | `/api/v1/study/gait` | `{"duration_s": 20}` (5–120) | status (`gait`). Needs Vicon (409 `not_connected`) and the board ARMED (409 `board_rejected`: Arm first, so the recording holds it). Leaving ARMED during it cancels it. Records both plates, sets the contact thresholds from the swing noise, then stride and stance time per side → `ready`. Fewer than 5 strides on a side → back to the previous state with a `message` |
-| POST | `/api/v1/study/start` | `{"latency_ms": 0}` (optional, 0–1000) | status (`running`). Starts the current block (after `block_done`: the next one), or resumes a `stopped` block where it was. Needs: board ARMED, Vicon, a gait pattern recorded at this block's `speed_ms`, the block's force within `fmax_n − baseline_n`, its directions reachable with the enabled channels. Else 409 `board_rejected` with the reason |
+| POST | `/api/v1/study/start` | `{"latency_ms": 0}` (optional, 0–1000) | status (`running`). Starts the current block (after `block_done`: the next one), or resumes a `stopped` block where it was (warm-up and duration count again from the resume). Needs: board ARMED, Vicon, a gait pattern recorded at this block's `speed_ms`, the clocks in sync, the board's `baseline_n` = the subject's `baseline_n` (when given), the block's force within `fmax_n − baseline_n`, its directions reachable with the enabled channels, and its perturbations fitting in `duration_s` at the measured cadence. Else 409 `board_rejected` with the reason (for the duration: the maximum number that fits) |
 | POST | `/api/v1/study/stop` | | status (`stopped`): no further perturbations; a pulse already sent still runs. Does not release tension |
 
-Protocol (numbers as numbers; other keys are kept and written to the events file, not used):
+Protocol (numbers as numbers; other keys are kept and written to the events file, not used). BumpemSetUp sends this form:
 ```json
-{"subject": {"subject_id": "S014", "mass_kg": 72.5},
- "blocks": [{"label": "Familiarisation", "speed_ms": 2.5, "warmup_s": 60, "n_perturbations": 10,
-             "directions_deg": [90, -90], "intensity_pct_bw": 10, "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50,
-             "trigger_side": "any", "gait_phase_pct": 60, "gait_phase_of": "stance",
-             "timing_mode": "random", "interval_min_steps": 50, "interval_max_steps": 75}],
+{"subject": {"subject_id": "S014", "mass_kg": 72.5, "height_cm": 178, "mode": "running", "baseline_n": 4},
+ "blocks": [{"label": "Main 1", "speed_ms": 2.5, "duration_s": 300, "warmup_s": 60, "n_perturbations": 10,
+             "pattern": "lateral-12", "trigger_side": "left", "gait_phase_pct": 30,
+             "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50, "amplitude_mode": "percent_bw", "amplitude": 10}],
  "plates": {"left": "Left", "right": "Right"}}
 ```
-- `subject.mass_kg` > 0 (≤ 300). Block: `speed_ms` > 0; `warmup_s` ≥ 0 (default 0: no perturbation in the first seconds of the block); `n_perturbations` 1–500; `directions_deg` ≥ 1 angle (API angle convention); with several, the block's perturbations take them in turn, shuffled; `intensity_pct_bw` > 0 (≤ 100): amplitude_n = intensity / 100 × mass_kg × 9.81, split over the modules as in Perturbation form; `phase1_ms`, `dur_ms`, `phase2_ms` as Perturbation form; `trigger_side` `left` | `right` | `any`; `gait_phase_pct` 0–<100 of `gait_phase_of` `stance` (contact time, touch-down → foot-off; default) or `cycle` (stride, touch-down → touch-down).
-- `timing_mode` `random`: `interval_min_steps` ≤ `interval_max_steps` (1–1000), a new random count (inclusive) after each perturbation. `predefined`: `schedule_steps` increasing step numbers, one per perturbation.
-- Steps = touch-downs on either belt, counted while the block runs. A perturbation is due when the count is reached (random: steps since the last perturbation; predefined: steps since the block started), and is sent at the **next touch-down of `trigger_side`**. Board-side delay = phase − age of that touch-down sample − `latency_ms`, phase = `gait_phase_pct` / 100 × that side's stance (or stride) time. When that is below 0 the pull aims at the same phase of the side's **next** contact (+ one stride; as `AAPertAnalogTrig_SLAP.m`). `latency_ms` = plates → board → rope delay, from Start (default 0: to be measured, TODO board ↔ Vicon timing).
+- Subject: `mass_kg` > 0 (≤ 300); `mode` `walking` (default) | `running`: sets the cadence assumed by BumpemSetUp's duration check and the plausibility check of the gait pattern (walking: stride 0.7–1.8 s, contact ≥ 0.35 s; running: stride 0.45–1.0 s, contact ≤ 0.4 s; outside → `message`, the pattern is still kept); `baseline_n` (0–50, optional): rope tension between pulls; BumpemActivation sets it on the board before Arm and Start checks it.
+- Block: `speed_ms` > 0; `duration_s` (10–7200, optional): the block ends when all perturbations are done or this time has passed since its start, whichever first (`message` says which); `warmup_s` ≥ 0 (default 0): no perturbation and no step counted in the first seconds; `n_perturbations` 1–500.
+- Directions and timing: **`pattern`** (name of a saved pattern, D50): perturbation k gets the pattern's item k: its angle, `gap_steps` after the previous one (the first after the warm-up); `n_perturbations` ≤ the pattern's length (the first n are used). The server reads the pattern at load; `GET /study/protocol` shows it under `pattern_items`. Without `pattern` (scripts, tests): `directions_deg` (≥ 1 angle; taken in turn, shuffled when several) and `timing_mode` `random` (`interval_min_steps` ≤ `interval_max_steps`, 1–1000, a new random count after each perturbation) or `predefined` (`schedule_steps`, increasing step numbers from the block start, one per perturbation).
+- Force: `amplitude_mode` `newton` (`amplitude` in N) or `percent_bw` (`amplitude` in % body weight: amplitude_n = amplitude / 100 × mass_kg × 9.81); legacy `intensity_pct_bw` = `percent_bw`. Split over the modules as in Perturbation form. `phase1_ms` (ramp up), `dur_ms` (start → end, ramps included), `phase2_ms` (ramp down) as Perturbation form.
+- Phase: `trigger_side` `left` | `right` | `any` (the leg whose touch-down starts the phase); `gait_phase_pct` 0–<100 of `gait_phase_of` `cycle` (stride, touch-down → touch-down; **default since D50**) or `stance` (contact time, touch-down → foot-off).
+- Steps = touch-downs on either belt, counted while the block runs after the warm-up. A perturbation is due when its gap is reached (pattern / random: steps since the last perturbation; predefined: steps since the block started), and is sent at the **next touch-down of `trigger_side`**. Board-side delay = phase − age of that touch-down sample − `latency_ms`, phase = `gait_phase_pct` / 100 × that side's stance (or stride) time. When that is below 0 the pull aims at the same phase of the side's **next** contact (+ one stride; as `AAPertAnalogTrig_SLAP.m`). `latency_ms` = plates → board → rope delay, from Start (default 0: to be measured, TODO board ↔ Vicon timing).
 - Contacts (`bumpem/gait.py` `ContactDetector`, from `scripts/Pertubation_analog/AAPertAnalogTrig_SLAP.m`): per plate, touch-down when Fz rises above `td_n`, foot-off when it falls below `fo_n` (hysteresis). Defaults 100 / 25 N (the script). The gait pattern lowers them to the plate's swing noise: `td_n` = swing mean + max(6 × sd, 20 N), `fo_n` = swing mean + max(3 × sd, 10 N), never above the defaults; kept only if they find the same touch-downs as the defaults (± 1 per side), else the defaults stay and `message` says why.
 - Sample time: Vicon frame number / frame rate + subsample index (steady 1 ms at 1000 Hz), not the arrival time on the PC. `gait.rate_hz` = plate samples per second during the gait pattern. `plates` names the plate of each belt (`GET /vicon` `plates`); default: plates named left/right, else the first plate = left.
 - A gait pattern being recorded is cancelled (`message` = why) and a block stops (`stopped`, `message` = why) when the board leaves ARMED (STOP, FAULT, Release), Vicon is lost or a pulse is refused. After the last perturbation of a block: `block_done`; after the last block: `finished`.
@@ -212,7 +230,7 @@ Protocol (numbers as numbers; other keys are kept and written to the events file
 Status:
 ```json
 {"state": "running", "message": null, "subject_id": "S014", "block": 1, "blocks": 4, "label": "Familiarisation",
- "speed_ms": 2.5, "amplitude_n": 71.1, "done": 3, "total": 10, "steps": 212, "next_in_steps": 41,
+ "speed_ms": 2.5, "amplitude_n": 71.1, "done": 3, "total": 10, "steps": 212, "next_in_steps": 41, "ends_in_s": 184,
  "next_block": 1, "next_speed_ms": 2.5, "gait_ok": true,
  "latency_ms": 0,
  "gait": {"speed_ms": 2.5, "rate_hz": 1000, "until_s": null,
@@ -220,7 +238,7 @@ Status:
           "right": {...}},
  "plates": {"left": "Left", "right": "Right"}}
 ```
-`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409).
+`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `ends_in_s`: seconds left of `duration_s` while running, else null. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409).
 
 ## Live stream (WebSocket)
 `ws://127.0.0.1:8000/api/v1/stream?telemetry_hz=30`

@@ -28,6 +28,7 @@ from .clocksync import ClockFit
 from . import protocol as P
 from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
+from .patterns import Pattern, PatternStore
 from .study import Protocol, Study
 
 SERVER_VERSION = "0.6.0"
@@ -656,13 +657,15 @@ def _put_drop(q: asyncio.Queue, item: dict) -> None:
 # ---------- app ----------
 def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None = None,
                modules: str | None = None, mode: str = "production",
-               settings: str | None = None, log_dir: str = "Logs", vicon: str | None = None) -> FastAPI:
+               settings: str | None = None, log_dir: str = "Logs", vicon: str | None = None,
+               patterns: str = "patterns") -> FastAPI:
     """ui_dir: folder with the browser UI (BumpemUI/web), served at /ui/ when it exists.
     settings: JSON file of saved board parameters (None = off). log_dir: folder for recordings.
-    vicon: Vicon address:port (or "sim") connected at startup."""
+    vicon: Vicon address:port (or "sim") connected at startup. patterns: folder of saved perturbation patterns (D50)."""
     if mode not in MODES:
         raise ValueError(f"mode must be one of {MODES}")
     hub = Hub(wd_ms, modules, settings, log_dir, vicon)
+    store = PatternStore(patterns)
 
     @asynccontextmanager
     async def lifespan(_):
@@ -879,6 +882,26 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             raise ApiError("not_found", 404, "no study loaded (POST /api/v1/study)")
         return hub.study
 
+    # --- perturbation patterns (docs/API.md "Perturbation patterns") ---
+    @app.get("/api/v1/patterns")
+    def list_patterns():
+        return store.list()
+
+    @app.get("/api/v1/patterns/{name}")
+    def get_pattern(name: str):
+        try:
+            return store.get(name).model_dump()
+        except KeyError:
+            raise ApiError("not_found", 404, f"no pattern {name!r}") from None
+
+    @app.post("/api/v1/patterns")
+    def save_pattern(body: Pattern):
+        try:
+            return store.save(body).model_dump()
+        except FileExistsError:
+            raise ApiError("board_rejected", 409, f"pattern {body.name!r} exists: a saved pattern never changes, "
+                           "use a new name") from None
+
     @app.get("/api/v1/study")
     def get_study():
         return hub.study.status() if hub.study else {"state": "none"}
@@ -891,6 +914,13 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             raise ApiError("board_rejected", 409, f"study is {old.state}: stop it first")
         if hub.vicon is None:
             raise ApiError("not_connected", 409, "Vicon not connected: the study needs the plates (POST /api/v1/vicon/connect)")
+        for k, b in enumerate(body.blocks, 1):        # the pattern's content goes into the protocol (logged, D50)
+            if b.pattern:
+                try:
+                    b.pattern_items = [it.model_dump() for it in store.get(b.pattern).items]
+                except KeyError:
+                    raise ApiError("invalid", 422, f"block {k}: pattern {b.pattern!r} not found on this PC "
+                                   "(make it in BumpemPattern)") from None
         try:
             hub.study = Study(body, list(hub.vicon.plates), study_send, hub.broadcast, hub.log_command,
                               to_pc=hub.vicon_clock.to_pc, now=hub.pc)
@@ -944,10 +974,16 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         if not sync["in_sync"]:
             raise ApiError("board_rejected", 409, "clocks not in sync: " + "; ".join(sync["problems"]))
         blk, p = st.p.blocks[i], hub.call(b.get)
+        want = st.p.subject.baseline_n
+        if want is not None and abs(p["baseline_n"] - want) > 0.01:
+            raise ApiError("board_rejected", 409, f"board baseline {p['baseline_n']:g} N, the protocol wants {want:g} N: "
+                           "Release, then Arm on BumpemActivation (it sets the baseline)")
         study_mods.clear()
         study_mods.update(m for m in geometry.MODULE_ANGLE_DEG if p.get(f"ch_{m}", 0) >= 1)
         limit = p["fmax_n"] - p["baseline_n"]
-        for a in set(blk.directions_deg):
+        angles = ({float(it["angle_deg"]) for it in blk.pattern_items[:blk.n_perturbations]} if blk.pattern_items
+                  else set(blk.directions_deg))
+        for a in angles:
             try:
                 amps = geometry.split(a, st.amplitude_n(blk), study_mods)
             except ValueError as e:

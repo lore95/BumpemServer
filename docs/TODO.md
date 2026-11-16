@@ -37,8 +37,7 @@ In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`
 - [ ] 🟠 **Test block without a person in the harness** (ropes on a fixed point): pulls land at the set phase in the recording · `lab`
 
 ## 3 · Study protocol (no lab needed)
-- [ ] 🟢 **Parameter list** for the protocol page (replaces the placeholder fields): per parameter subject or block, unit, limits, required, example · `Mac` (user brings the list)
-- [ ] 🟢 Walking, running or both? (contact thresholds and gait phase depend on it) · `supervisor`
+- [ ] 🟢 Check the cadence assumed by BumpemSetUp's duration check (walking 108, running 168 steps/min) against your subjects; Start re-checks with the measured gait anyway · `lab`
 - [ ] 🟢 Check the protocol template opens cleanly in Excel on the lab PC (German Excel may put everything in one column) · `lab`
 
 ## 4 · Software and repos (no lab needed)
@@ -72,6 +71,7 @@ Only if possible; the software sync (PC clock, ~1–2 ms) and the one-pull delay
 
 ## Done (recent first)
 - [x] Study runner + study page (D44, D45, U14, U15; 2026-11-05): gait pattern per belt (SLAP logic, thresholds from plate noise), blocks, random / predefined steps, phase of stance or stride, simulator-tested
+- [x] Final protocol fields, BumpemPattern (saved direction + gap patterns), amplitude N / % BW, duration check (D50, 2026-11-16)
 - [x] Software clock sync on the station PC + kept connections with alerts (D49, 2026-11-05)
 - [x] All four channels on by default: `bumpem serve --modules` default ABCD; the lab `.bat` files already pass ABCD (2026-11-05)
 - [x] New 3 mm ropes spliced and fitted on the towers (reported 2026-11-05)

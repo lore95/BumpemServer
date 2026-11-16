@@ -15,13 +15,13 @@ STANCE = 0.25                               # SimReader: contact 0.25 s (half si
 
 def block(**kw):
     b = {"speed_ms": 2.5, "n_perturbations": 3, "directions_deg": [90], "intensity_pct_bw": 10, "phase1_ms": 50,
-         "dur_ms": 400, "phase2_ms": 50, "trigger_side": "left", "gait_phase_pct": 25, "timing_mode": "random",
+         "dur_ms": 400, "phase2_ms": 50, "trigger_side": "left", "gait_phase_pct": 25, "gait_phase_of": "stance", "timing_mode": "random",
          "interval_min_steps": 4, "interval_max_steps": 4}
     return {**b, **kw}
 
 
 def protocol(*blocks):
-    return Protocol(subject={"subject_id": "S1", "mass_kg": 80}, blocks=list(blocks or [block()]))
+    return Protocol(subject={"subject_id": "S1", "mass_kg": 80, "mode": "running"}, blocks=list(blocks or [block()]))
 
 
 class Run:
@@ -240,3 +240,101 @@ def test_gait_cancelled_when_board_leaves_armed():
             time.sleep(0.05)
         s = c.get(f"{api}/study").json()
         assert s["state"] == "loaded" and "ESTOP" in s["message"]
+
+
+# ---------------------------------------------------------------- D50: patterns, amplitude modes, duration, mode
+def pblock(items, **kw):
+    b = {k: v for k, v in block(**kw).items() if k not in ("timing_mode", "interval_min_steps", "interval_max_steps",
+                                                         "directions_deg", "intensity_pct_bw")}
+    return {**b, "pattern": "p", "pattern_items": [{"angle_deg": a, "gap_steps": g} for a, g in items],
+            "amplitude_mode": "newton", "amplitude": 40, **kw}
+
+
+def test_pattern_same_for_every_participant():
+    items = [(90, 3), (-90, 4), (180, 2)]
+    runs = []
+    for seed in (1, 2):                                            # two participants, different random generators
+        r = Run(protocol(pblock(items, trigger_side="any", n_perturbations=3)))
+        r.st.rng = random.Random(seed)
+        r.ready(); r.st.start(); r.run(6)
+        runs.append([(d["angle_deg"], d["step"]) for k, d in r.rows if k == "PERT"])
+        assert r.st.state == "finished" and all(p["amplitude_n"] == 40 for p in r.sent)
+    assert runs[0] == runs[1] == [(90, 3), (-90, 7), (180, 9)]
+
+
+def test_pattern_shorter_than_block_refused():
+    with pytest.raises(ValueError, match="has 2 perturbations, the block wants 3"):
+        Run(protocol(pblock([(90, 3), (-90, 4)], n_perturbations=3)))
+
+
+def test_amplitude_modes():
+    r = Run(protocol(block(), block(intensity_pct_bw=None, amplitude_mode="percent_bw", amplitude=10),
+                     block(intensity_pct_bw=None, amplitude_mode="newton", amplitude=33.3)))
+    assert [r.st.amplitude_n(b) for b in r.st.p.blocks] == [78.48, 78.48, 33.3]
+    with pytest.raises(ValueError, match="100 % body weight"):
+        protocol(block(intensity_pct_bw=None, amplitude_mode="percent_bw", amplitude=120))
+
+
+def test_duration_check_and_end():
+    r = Run(protocol(block(duration_s=20, n_perturbations=20)))   # gaps 4 (+1 for the left foot) at ~2.78 steps/s
+    r.ready()
+    with pytest.raises(RuntimeError, match="at most 11 fit"):
+        r.st.start()
+    r = Run(protocol(block(duration_s=10, n_perturbations=3, interval_min_steps=30, interval_max_steps=30)))
+    r.ready()
+    r.st.fit_check = lambda *a, **k: None                          # e.g. the subject slowed down: time runs out
+    r.st.start(); r.run(11)
+    assert r.st.state == "finished" and "duration 10 s reached: 0 of 3" in r.st.message
+
+
+def test_warmup_steps_not_counted():
+    r = Run(protocol(pblock([(90, 2)], trigger_side="any", n_perturbations=1, warmup_s=2)))
+    r.ready(); r.st.start(); r.run(4)
+    assert [d["step"] for k, d in r.rows if k == "PERT"] == [2]   # 2 steps after the warm-up, not from the start
+
+
+def test_mode_plausibility_message():
+    r = Run(Protocol(subject={"mass_kg": 80, "mode": "walking"}, blocks=[block()]))   # the simulator runs
+    r.ready()
+    assert r.st.state == "ready" and "does not look like walking" in r.st.message
+
+
+def test_patterns_api_and_pattern_study(tmp_path):
+    from fastapi.testclient import TestClient
+    from bumpem.server import create_app
+    with TestClient(create_app(patterns=str(tmp_path / "patterns"))) as c:
+        api = "/api/v1"
+        pat = {"name": "lat-2", "items": [{"angle_deg": 270, "gap_steps": 2}, {"angle_deg": 90, "gap_steps": 2}],
+               "rules": {"seed": 7}}
+        saved = c.post(f"{api}/patterns", json=pat).json()
+        assert saved["items"][0]["angle_deg"] == -90 and saved["created"]
+        assert c.post(f"{api}/patterns", json=pat).status_code == 409             # never overwritten
+        assert c.post(f"{api}/patterns", json={**pat, "name": "bad name"}).status_code == 422
+        assert c.get(f"{api}/patterns").json()[0] == {"name": "lat-2", "n": 2, "created": saved["created"], "note": "",
+                                                       "angles": [-90.0, 90.0], "gap_min": 2, "gap_max": 2}
+        assert c.get(f"{api}/patterns/nope").status_code == 404
+        c.post(f"{api}/connect", json={"port": "sim"}); c.post(f"{api}/vicon/connect", json={"host": "sim"})
+        b = {k: v for k, v in pblock([]).items() if k != "pattern_items"}
+        body = {"subject": {"mass_kg": 30, "mode": "running", "baseline_n": 7}, "blocks": [{**b, "pattern": "nope"}]}
+        assert "not found" in c.post(f"{api}/study", json=body).json()["error"]["message"]
+        body["blocks"] = [{**b, "pattern": "lat-2", "n_perturbations": 2, "trigger_side": "any"}]
+        assert c.post(f"{api}/study", json=body).status_code == 200
+        assert c.get(f"{api}/study/protocol").json()["blocks"][0]["pattern_items"][1] == {"angle_deg": 90.0, "gap_steps": 2}
+        c.patch(f"{api}/params", json={"fmax_n": 100}); c.post(f"{api}/arm")
+        end = time.monotonic() + 4
+        while c.get(f"{api}/status").json()["state"] != "ARMED" and time.monotonic() < end:
+            time.sleep(0.05)
+        c.post(f"{api}/study/gait", json={"duration_s": 5})
+        end = time.monotonic() + 8
+        while c.get(f"{api}/study").json()["state"] == "gait" and time.monotonic() < end:
+            time.sleep(0.2)
+        r = c.post(f"{api}/study/start")
+        assert r.status_code == 409 and "baseline 5 N, the protocol wants 7 N" in r.json()["error"]["message"]
+        c.patch(f"{api}/params", json={"baseline_n": 7})
+        assert c.post(f"{api}/study/start").json()["state"] == "running"
+        end = time.monotonic() + 5
+        while c.get(f"{api}/study").json()["state"] == "running" and time.monotonic() < end:
+            time.sleep(0.2)
+        s = c.get(f"{api}/study").json()
+        assert s["state"] == "finished" and s["done"] == 2, s
+        c.post(f"{api}/estop")
