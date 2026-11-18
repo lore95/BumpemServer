@@ -21,6 +21,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `docs/handbook/` | LaTeX handbook for future students (Overleaf zip + PDF built locally, not in git): hardware review, parts, cabling, software, procedures, faults |
 | `docs/TODO.md` | Daily checklist for lab and software work (ordered, with commands) |
 | `docs/makerspace-list.md` | Parts and jobs for the next makerspace visit: carrier board v1, e-stop (BACO button), another project's LED parts, B cable / B cable / pin-2 wire |
+| `hardware/carrier/teileliste_de.py` → `hardware/carrier/fab/bumpem-carrier-teileliste-de.pdf` | German parts list for soldering the carrier board v1 as built (D23), with tools |
 | `docs/QUESTIONS.md` | Open questions for the previous student (answers go back into the docs) |
 | `docs/API.md` | Server HTTP/WebSocket API, contract for every client (1.0-draft) |
 | `docs/hardware-photos/` | Lab photos with notes (`README.md` lists what each shows and what is unknown) |
