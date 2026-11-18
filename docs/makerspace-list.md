@@ -11,8 +11,7 @@ Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 
 | ☐ | 4 | resistor 1 MΩ, 0.25 W, 1 %, axial | D1–D4 places (pull-up to 3.3 V) | "1 M" (brown-black-black-yellow-brown) |
 | ☐ | 2 | female header 1 × 24, 2.54 mm (or cut from 1 × 40) | Teensy socket | "Buchsenleiste 1x24 2,54" |
 | ☐ | 2 | female header 1 × 6, 2.54 mm | DAC socket | "Buchsenleiste 1x6 2,54" |
-| ☐ | 4 + 2 spare | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header: **again, the first ones melted while soldering** | J1–J4 | — |
-| ☐ | 2 | male pin strip 1 × 24 (spare) | keeps the sockets straight while soldering (not soldered in) | "Stiftleiste 1x40" |
+| ☐ | 4 | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header: **again, the first ones melted while soldering** | J1–J4 | — |
 
 ## 2 · Other project (not Bump'em): LED circuit on a breadboard
 From that project's own guide (resistor R3 = 150 Ω). Only the parts below; the rest is in that guide.

@@ -23,11 +23,9 @@ TEXT = {
         rows=[
             ("4", "Widerstand 1 kΩ, 0,25 W, 1 %, axial", "R1–R4", "braun-schwarz-schwarz-BRAUN-braun; Richtung egal"),
             ("4", "Widerstand 1 MΩ, 0,25 W, 1 %, axial", "Plätze D1–D4", "braun-schwarz-schwarz-GELB-braun; statt der Dioden (keine BAT85); Richtung egal"),
-            ("–", "nichts", "R5–R8", "LEER lassen"),
             ("2", "Buchsenleiste 1 × 24, RM 2,54 mm, 8,5 mm hoch", "Teensy-Sockel", "oder aus Buchsenleiste 1 × 40 schneiden"),
             ("2", "Buchsenleiste 1 × 6, RM 2,54 mm", "DAC-Sockel", ""),
-            ("4 + 2", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEU: Grundleiste mit Gewindeflansch (alte geschmolzen), 2 Reserve; Öffnung zum Platinenrand"),
-            ("2", "Stiftleiste 1 × 24 (Hilfsmittel)", "–", "NICHT einlöten: hält die Buchsen beim Löten gerade"),
+            ("4", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEU: Grundleiste mit Gewindeflansch (alte geschmolzen); Öffnung zum Platinenrand"),
             ("1", "Breadboard-Netzteil-Modul MB102 (3,3 V / 5 V)", "anderes Projekt", "ANDERES PROJEKT (nicht Bump'em): steckt auf die Breadboard-Schienen, Jumper auf 5 V"),
             ("1", "Steckernetzteil 9 V DC, Hohlstecker 5,5 × 2,1 mm", "anderes Projekt", "ANDERES PROJEKT: Versorgung für das MB102 (6,5–12 V)"),
         ],
@@ -53,11 +51,9 @@ TEXT = {
         rows=[
             ("4", "Resistor 1 kΩ, 0.25 W, 1 %, axial", "R1–R4", "brown-black-black-BROWN-brown; either way round"),
             ("4", "Resistor 1 MΩ, 0.25 W, 1 %, axial", "D1–D4 places", "brown-black-black-YELLOW-brown; instead of the diodes (no BAT85); either way round"),
-            ("–", "nothing", "R5–R8", "leave EMPTY"),
             ("2", "Female header 1 × 24, 2.54 mm pitch, 8.5 mm tall", "Teensy socket", "or cut from a 1 × 40 female header"),
             ("2", "Female header 1 × 6, 2.54 mm pitch", "DAC socket", ""),
-            ("4 + 2", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEW: board header with threaded flange (old ones melted), 2 spare; opening towards the board edge"),
-            ("2", "Male pin strip 1 × 24 (aid)", "–", "do NOT solder in: keeps the sockets straight while soldering"),
+            ("4", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEW: board header with threaded flange (old ones melted); opening towards the board edge"),
             ("1", "Breadboard power module MB102 (3.3 V / 5 V)", "other project", "OTHER PROJECT (not Bump'em): plugs onto the breadboard rails, jumper on 5 V"),
             ("1", "Plug-in power supply 9 V DC, barrel plug 5.5 × 2.1 mm", "other project", "OTHER PROJECT: powers the MB102 (6.5–12 V)"),
         ],
@@ -91,7 +87,7 @@ def make(t):
             ax.text(x + 0.07, y + h / 2, wrap(s, {2: 34, 3: 13, 4: 44}.get(c, 10)), va="center", fontsize=8.2,
                     weight="bold" if r == 0 or c == 1 else "normal", color=WARN if bad else DARK)
             x += widths[c]
-    y = 0.42
+    y = 0.89 - 0.46 * (len(t["rows"]) + 1) * h / 11 - 0.04      # just below the table
     fig.text(0.07, y, t["important"], fontsize=11.5, weight="bold", va="top"); y -= 0.025
     for s in t["notes"]:
         s = wrap("•  " + s, 100)
