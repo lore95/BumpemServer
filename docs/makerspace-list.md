@@ -13,7 +13,7 @@ Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 
 | ☐ | 2 | female header 1 × 6, 2.54 mm | DAC socket | "Buchsenleiste 1x6 2,54" |
 | ☐ | 4 + 2 spare | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header: **again, the first ones melted while soldering** | J1–J4 | — |
 | — | — | Phoenix MSTB 2,5/5-STF-5,08 cable plugs: **already have them, don't buy** | | |
-| ☐ | 4 + 4 | M3 × 16 screw + M3 nut (no spacers: the printed carrier plate has 10 mm standoffs, nuts in its back pockets) | board corners → carrier plate | "Zylinderschraube M3x16", "Mutter M3" |
+| — | — | M3 × 16 screws + M3 nuts for the printed carrier plate: **already have them, don't buy** | board corners → carrier plate | |
 | — | — | wire-end ferrules 0.5 mm²: **already have them, don't buy** (20 needed) | module wires into the plugs | "Aderendhülsen 0,5 mm²" |
 | ☐ | 2 | male pin strip 1 × 24 (spare) | keeps the sockets straight while soldering (not soldered in) | "Stiftleiste 1x40" |
 

@@ -21,7 +21,7 @@ ROWS = [  # Anzahl, Bauteil, Platz, Hinweis
     ("2", "Buchsenleiste 1 × 6, RM 2,54 mm", "DAC-Sockel", ""),
     ("4 + 2", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEU: Grundleiste mit Gewindeflansch (alte geschmolzen), 2 Reserve; Öffnung zum Platinenrand"),
     ("–", "Phoenix MSTB 2,5/5-STF-5,08 (1778014)", "Modulkabel", "Stecker schon vorhanden: NICHT kaufen"),
-    ("4 + 4", "Schraube M3 × 16 + Mutter M3", "4 Ecklöcher", "keine Abstandsbolzen: die gedruckte Trägerplatte hat 10-mm-Stützen, Muttern in den Taschen hinten"),
+    ("–", "Schraube M3 × 16 + Mutter M3", "4 Ecklöcher", "schon vorhanden: NICHT kaufen (Platine auf die gedruckte Trägerplatte)"),
     ("–", "Aderendhülsen 0,5 mm²", "Modulkabel", "schon vorhanden: NICHT kaufen (20 nötig: 5 Adern × 4 Kabel)"),
     ("2", "Stiftleiste 1 × 24 (Hilfsmittel)", "–", "NICHT einlöten: hält die Buchsen beim Löten gerade"),
 ]
