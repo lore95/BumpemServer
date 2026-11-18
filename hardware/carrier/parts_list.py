@@ -11,15 +11,14 @@ from matplotlib.patches import Rectangle
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parents[1] / "scripts"))
-from install_guide import A4, DARK, MUTED, WARN, wrap  # noqa: E402
+from install_guide import A4, DARK, MUTED, wrap  # noqa: E402
 
 TEXT = {
     "de": dict(
         out="bumpem-carrier-teileliste-de.pdf",
         title="Trägerplatine Bump'em: Teileliste zum Löten",
         sub="Stand 18.11.2026 · nur was noch fehlt (Stecker, Aderendhülsen, Schrauben sind schon da)",
-        cols=["☐", "Anz.", "Bauteil", "Platz", "Hinweis"],
-        red=("LEER", "NICHT", "keine BAT85", "NEU:", "ANDERES"),
+        cols=["☐", "Anz.", "Bauteil", "Platz"],
         rows=[
             ("4", "Widerstand 1 kΩ, 0,25 W, 1 %, axial", "R1–R4", "braun-schwarz-schwarz-BRAUN-braun; Richtung egal"),
             ("4", "Widerstand 1 MΩ, 0,25 W, 1 %, axial", "Plätze D1–D4", "braun-schwarz-schwarz-GELB-braun; statt der Dioden (keine BAT85); Richtung egal"),
@@ -46,8 +45,7 @@ TEXT = {
         out="bumpem-carrier-parts-list-en.pdf",
         title="Bump'em carrier board: parts list for soldering",
         sub="18 Nov 2026 · only what is still missing (cable plugs, ferrules, screws are already there)",
-        cols=["☐", "Qty", "Part", "Goes to", "Note"],
-        red=("EMPTY", "NOT", "no BAT85", "NEW:", "OTHER"),
+        cols=["☐", "Qty", "Part", "Goes to"],
         rows=[
             ("4", "Resistor 1 kΩ, 0.25 W, 1 %, axial", "R1–R4", "brown-black-black-BROWN-brown; either way round"),
             ("4", "Resistor 1 MΩ, 0.25 W, 1 %, axial", "D1–D4 places", "brown-black-black-YELLOW-brown; instead of the diodes (no BAT85); either way round"),
@@ -78,14 +76,13 @@ def make(t):
     fig.text(0.07, 0.955, t["title"], fontsize=17, weight="bold", va="top")
     fig.text(0.07, 0.915, t["sub"], fontsize=9.5, color=MUTED, va="top")
     ax = fig.add_axes((0.05, 0.43, 0.9, 0.46)); ax.axis("off"); ax.set_xlim(0, 10); ax.set_ylim(0, 11)
-    widths, h = [0.45, 0.7, 3.4, 1.35, 4.1], 0.92
-    for r, row in enumerate([t["cols"]] + [("☐",) + x for x in t["rows"]]):
+    widths, h = [0.45, 0.8, 5.6, 3.15], 0.92
+    for r, row in enumerate([t["cols"]] + [("☐",) + x[:3] for x in t["rows"]]):     # note column dropped (user, 2026-11-18)
         x, y = 0, 11 - (r + 1) * h
         for c, s in enumerate(row):
             ax.add_patch(Rectangle((x, y), widths[c], h, fc="#f6f8fa" if r == 0 else "white", ec="#8c959f", lw=0.8))
-            bad = r > 0 and any(k in s for k in t["red"])
-            ax.text(x + 0.07, y + h / 2, wrap(s, {2: 34, 3: 13, 4: 44}.get(c, 10)), va="center", fontsize=8.2,
-                    weight="bold" if r == 0 or c == 1 else "normal", color=WARN if bad else DARK)
+            ax.text(x + 0.07, y + h / 2, wrap(s, {2: 58, 3: 30}.get(c, 10)), va="center", fontsize=8.2,
+                    weight="bold" if r == 0 or c == 1 else "normal", color=DARK)
             x += widths[c]
     y = 0.89 - 0.46 * (len(t["rows"]) + 1) * h / 11 - 0.04      # just below the table
     fig.text(0.07, y, t["important"], fontsize=11.5, weight="bold", va="top"); y -= 0.025
