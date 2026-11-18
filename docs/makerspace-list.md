@@ -11,10 +11,10 @@ Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 
 | ☐ | 4 | resistor 1 MΩ, 0.25 W, 1 %, axial | D1–D4 places (pull-up to 3.3 V) | "1 M" (brown-black-black-yellow-brown) |
 | ☐ | 2 | female header 1 × 24, 2.54 mm (or cut from 1 × 40) | Teensy socket | "Buchsenleiste 1x24 2,54" |
 | ☐ | 2 | female header 1 × 6, 2.54 mm | DAC socket | "Buchsenleiste 1x6 2,54" |
-| ☐ | 4 | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header | J1–J4 | — |
-| ☐ | 4 | Phoenix MSTB 2,5/5-STF-5,08 (1778014), cable plug | one per module cable | — |
+| ☐ | 4 + 2 spare | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header: **again, the first ones melted while soldering** | J1–J4 | — |
+| — | — | Phoenix MSTB 2,5/5-STF-5,08 cable plugs: **already have them, don't buy** | | |
 | ☐ | 4 | M3 spacer + M3 screw | board corners → carrier plate | "Abstandsbolzen M3" |
-| ☐ | 20 | wire-end ferrules 0.25–0.5 mm² | module wires into the plugs | "Aderendhülsen 0,5 mm²" |
+| — | — | wire-end ferrules 0.5 mm²: **already have them, don't buy** (20 needed) | module wires into the plugs | "Aderendhülsen 0,5 mm²" |
 | ☐ | 2 | male pin strip 1 × 24 (spare) | keeps the sockets straight while soldering (not soldered in) | "Stiftleiste 1x40" |
 
 ## 2 · Other project (not Bump'em): LED circuit on a breadboard
