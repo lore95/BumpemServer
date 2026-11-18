@@ -265,3 +265,8 @@ Decision: `bumpem/delays.py` measures each pulse of a recording: command (server
 Reason: user (2026-11-16): start testing the delays; keep a log of errors to feed to Claude. The user's own test that morning: Stop rec pressed after the gait pattern, all 3 blocks ran unrecorded; uvicorn printed "Unexpected ASGI message 'websocket.send', after sending 'websocket.close'".
 Alternatives: a separate delay-test mode (the study's own pulls measure exactly what matters, ropes tied off, no harness); logging to the console only (lost when the window closes).
 Measured on the Mac simulator: command 4–11 ms, timing error 8–16 ms → System delay 11 ms (sim; the lab adds USB, ESCON, motor and Vicon).
+
+## D52 — 2026-11-18 — DAC under the carrier board; plate standoffs 19 mm
+Decision: carrier v1's U2 footprint has the breakout's two pin rows swapped top-to-bottom (left-to-right order right), so the Adafruit MCP4728 only fits mirrored. The 2 × 6 female sockets go on the bottom of the board; the DAC plugs in from below, chip facing the plate, each pin under its own label; its male pins stay as they are. Printed carrier plate: standoffs 10 → 19 mm (DAC ≈ 15.6 mm below the board: socket 8.5 + header plastic 2.5 + PCB 1.6 + STEMMA QT plugs ~3; heights estimated, not measured), screws M3 × 16 → M3 × 25 (end 0.6 mm above the plate back, through the nut).
+Reason: user (2026-11-18), photo `docs/hardware-photos/IMG_0382.HEIC`: labels on board and breakout mismatch; user chose the socket underneath (DAC stays swappable) and a reprint.
+Alternatives: new DAC with its pins soldered from the chip side, face down on top (another DAC); move the pins of this DAC (already resoldered once: pads at risk); DAC soldered straight under the board, no socket (no reprint, not swappable).

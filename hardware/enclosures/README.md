@@ -12,9 +12,9 @@ Overview with renders: `out/parts-overview.pdf`. **Assembly guide** (what goes o
 | `out/rsp2000_brackets.stl` | 2 end brackets for the Mean Well RSP-2000-48 (case 952D): A 2 × M4, B 1 × M4 (M4 × 12 from the back), 10 mm air gap | ready (from datasheet) |
 | `out/rsp2000_bracket_B.stl` | bracket B alone (fan end, 1 × M4), 82 × 107 mm: 44 mm past the supply (A: 24) so the T-nuts fit (2026-10-22). `fit_check.stl` contains only A, so print this to complete one tower | ready |
 | `out/tower_set.stl` | **one tower's 4 parts on one bed** like `fit_check.stl` (`make_stl.py`): RS-15 plate, IAA100 mount, 48 V A + B, 200 × 166 × 18 mm | to print, 4 times |
-| `out/second_print.stl` | **second print file, once** (`make_stl.py`): carrier board plate + 4 ground bar plates on one bed, 242 × 167 × 18 mm | to print, once |
+| `out/second_print.stl` | **second print file, once** (`make_stl.py`): carrier board plate + 4 ground bar plates on one bed, 242 × 167 × 27 mm | to print, once |
 | `out/ground_bar_mount.stl` | one-slot plate for the ONPIRA V 1x12 ground distributor (77 × 11 mm board, 2 × 3 mm holes at the ends; hole spacing not published), 117 × 32 × 14 mm: 2 pads 6 mm beside the key, slots fit 62–74 mm spacing, M3 × 12 into M3 nuts sliding in back channels. 4 in `second_print.stl` | ready (from listing) |
-| `out/carrier_plate.stl` | plate for the carrier PCB (154 × 96, `hardware/carrier/`), both slots, 204 × 86 × 18 mm: 4 standoffs 10 mm, M3 × 16 into M3 nuts in back pockets; 2 M6 diagonal past the board ends. Once, on the tower with the board | ready (from KiCad), print once |
+| `out/carrier_plate.stl` | plate for the carrier PCB (154 × 96, `hardware/carrier/`), both slots, 204 × 86 × 27 mm: 4 standoffs **19 mm** (2026-11-18, D52: the DAC plugs in from below the board), **M3 × 25** into M3 nuts in back pockets; 2 M6 diagonal past the board ends. Once, on the tower with the board | **reprint** (the 10 mm version is too low) |
 | `out/rs15_plate.stl` | plate for the Mean Well RS-15-24, 2 × M3 × 6 from the back, 128 × 51 × 14 mm (M6 holes moved out 2026-10-22) | ready, reprint |
 | `parts.py` | concepts: signal connector plate, cable clip, power-strip hooks | sizes missing |
 

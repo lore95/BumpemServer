@@ -62,7 +62,7 @@ def page_overview(pdf):
     y -= 0.01
     fig.text(0.07, y, "Per tower / for all 4 towers", fontsize=11, weight="bold"); y -= 0.022
     y = text(fig, 0.07, y, "Printed: 1 DIN-rail mount, 1 24 V plate, 1 pair of 48 V brackets, 1 ground bar plate  /  4, 4, 4 pairs, 4.", 100)
-    y = text(fig, 0.07, y, "Plus once, on the tower with the carrier board: 1 carrier board plate, 2 x M6x16, 2 T-nuts, 4 x M3x16 + 4 M3 nuts.", 100)
+    y = text(fig, 0.07, y, "Plus once, on the tower with the carrier board: 1 carrier board plate, 2 x M6x16, 2 T-nuts, 4 x M3x25 + 4 M3 nuts.", 100)
     y = text(fig, 0.07, y, "Screws: 10 x M6x16 button head, 10 slot-10 T-nuts, 2 x M3x6, 3 x M4x12, 2 x M3x12 + 2 M3 nuts  /  40, 40, 8, 12, 8 + 8.", 100)
     y -= 0.012
     fig.text(0.07, y, "Before you start", fontsize=11, weight="bold"); y -= 0.022
