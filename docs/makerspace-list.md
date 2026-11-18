@@ -1,6 +1,6 @@
 # Makerspace list (next visit)
 
-Written 2026-11-16. Tick what you have. Skip anything already soldered on your board.
+Written 2026-11-16, updated 2026-11-18: only what is still missing (Phoenix cable plugs, ferrules, board screws are there).
 
 ## 1 · Carrier board v1 (the PCB from the maker)
 Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 MΩ in the D1–D4 places, not BAT85; R5–R8 stay empty.**
@@ -12,9 +12,6 @@ Guide: `hardware/carrier/fab/bumpem-carrier-soldering.pdf`. As built (D23): **1 
 | ☐ | 2 | female header 1 × 24, 2.54 mm (or cut from 1 × 40) | Teensy socket | "Buchsenleiste 1x24 2,54" |
 | ☐ | 2 | female header 1 × 6, 2.54 mm | DAC socket | "Buchsenleiste 1x6 2,54" |
 | ☐ | 4 + 2 spare | Phoenix MSTB 2,5/5-GF-5,08 (1776537), board header: **again, the first ones melted while soldering** | J1–J4 | — |
-| — | — | Phoenix MSTB 2,5/5-STF-5,08 cable plugs: **already have them, don't buy** | | |
-| — | — | M3 × 16 screws + M3 nuts for the printed carrier plate: **already have them, don't buy** | board corners → carrier plate | |
-| — | — | wire-end ferrules 0.5 mm²: **already have them, don't buy** (20 needed) | module wires into the plugs | "Aderendhülsen 0,5 mm²" |
 | ☐ | 2 | male pin strip 1 × 24 (spare) | keeps the sockets straight while soldering (not soldered in) | "Stiftleiste 1x40" |
 
 ## 2 · Other project (not Bump'em): LED circuit on a breadboard
@@ -24,9 +21,8 @@ From that project's own guide (resistor R3 = 150 Ω). Only the parts below; the 
 |---|---|---|---|
 | ☐ | small pack | "2N2222A TO-92" | transistor |
 | ☐ | small pack | "LED 5mm rot" | |
-| ☐ | 1 | **5 V supply, pick ONE:** | |
-| ☐ | | a) "MB102 Breadboard Netzteil Modul" + any USB charger | plugs straight onto the breadboard rails (easiest). Set the jumper to **5 V**. |
-| ☐ | | b) "Batteriehalter 3x AA mit Kabel" + 3 AA batteries | 4.5 V: R3 stays 150 Ω, nothing in the guide changes |
+| ☐ | 1 | "MB102 Breadboard Netzteil Modul" (3.3 V / 5 V) | plugs onto the breadboard rails; jumper on **5 V** |
+| ☐ | 1 | 9 V DC plug-in power supply, barrel 5.5 × 2.1 mm | feeds the MB102 (6.5–12 V) |
 
 ## 3 · Other jobs that need a soldering station (if time)
 | ☐ | Part | For |

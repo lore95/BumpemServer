@@ -20,10 +20,9 @@ ROWS = [  # Anzahl, Bauteil, Platz, Hinweis
     ("2", "Buchsenleiste 1 × 24, RM 2,54 mm, 8,5 mm hoch", "Teensy-Sockel", "oder aus Buchsenleiste 1 × 40 schneiden"),
     ("2", "Buchsenleiste 1 × 6, RM 2,54 mm", "DAC-Sockel", ""),
     ("4 + 2", "Phoenix Contact MSTB 2,5/5-GF-5,08 (1776537)", "J1–J4", "NEU: Grundleiste mit Gewindeflansch (alte geschmolzen), 2 Reserve; Öffnung zum Platinenrand"),
-    ("–", "Phoenix MSTB 2,5/5-STF-5,08 (1778014)", "Modulkabel", "Stecker schon vorhanden: NICHT kaufen"),
-    ("–", "Schraube M3 × 16 + Mutter M3", "4 Ecklöcher", "schon vorhanden: NICHT kaufen (Platine auf die gedruckte Trägerplatte)"),
-    ("–", "Aderendhülsen 0,5 mm²", "Modulkabel", "schon vorhanden: NICHT kaufen (20 nötig: 5 Adern × 4 Kabel)"),
     ("2", "Stiftleiste 1 × 24 (Hilfsmittel)", "–", "NICHT einlöten: hält die Buchsen beim Löten gerade"),
+    ("1", "Breadboard-Netzteil-Modul MB102 (3,3 V / 5 V)", "anderes Projekt", "ANDERES PROJEKT (nicht Bump'em): steckt auf die Breadboard-Schienen, Jumper auf 5 V"),
+    ("1", "Steckernetzteil 9 V DC, Hohlstecker 5,5 × 2,1 mm", "anderes Projekt", "ANDERES PROJEKT: Versorgung für das MB102 (6,5–12 V)"),
 ]
 TOOLS = ["Lötstation + Lötzinn 0,5–0,8 mm", "Flussmittel", "Entlötlitze + Entlötpumpe",
          "Seitenschneider", "Abisolierzange", "Crimpzange für Aderendhülsen", "Multimeter (Durchgangsprüfer)",
@@ -33,7 +32,7 @@ TOOLS = ["Lötstation + Lötzinn 0,5–0,8 mm", "Flussmittel", "Entlötlitze + E
 def main():
     fig = plt.figure(figsize=A4)
     fig.text(0.07, 0.955, "Trägerplatine Bump'em: Teileliste zum Löten", fontsize=17, weight="bold", va="top")
-    fig.text(0.07, 0.915, "Stand 18.11.2026 · Platine v1 · so wie gebaut (D23). Abhaken, was da ist; schon Gelötetes überspringen.",
+    fig.text(0.07, 0.915, "Stand 18.11.2026 · nur was noch fehlt (Stecker, Aderendhülsen, Schrauben sind schon da)",
              fontsize=9.5, color=MUTED, va="top")
     ax = fig.add_axes((0.05, 0.43, 0.9, 0.46)); ax.axis("off"); ax.set_xlim(0, 10); ax.set_ylim(0, 11)
     widths, h = [0.45, 0.7, 3.4, 1.35, 4.1], 0.92
@@ -42,7 +41,7 @@ def main():
         x, y = 0, 11 - (r + 1) * h
         for c, t in enumerate(row):
             ax.add_patch(Rectangle((x, y), widths[c], h, fc="#f6f8fa" if r == 0 else "white", ec="#8c959f", lw=0.8))
-            bad = r > 0 and ("LEER" in t or "NICHT" in t or "keine BAT85" in t or "NEU:" in t)
+            bad = r > 0 and ("LEER" in t or "NICHT" in t or "keine BAT85" in t or "NEU:" in t or "ANDERES" in t)
             ax.text(x + 0.07, y + h / 2, wrap(t, {2: 34, 3: 13, 4: 44}.get(c, 10)), va="center", fontsize=8.2,
                     weight="bold" if r == 0 or c == 1 else "normal", color=WARN if bad else DARK)
             x += widths[c]
