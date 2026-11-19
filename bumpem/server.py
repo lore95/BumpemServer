@@ -31,6 +31,7 @@ from . import protocol as P
 from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
 from .patterns import Pattern, PatternStore
+from . import session
 from .study import Protocol, Study
 
 SERVER_VERSION = "0.6.0"
@@ -156,6 +157,9 @@ class Hub:
         self._test_lock = threading.Lock()    # one test pull at a time
         self._ping_stop = threading.Event()   # replaced per connection, so an old ping thread can't be revived
         self.study: Study | None = None       # docs/API.md "Study"
+        self.study_t0: datetime | None = None  # when the study was loaded: session date + time in the zip name (D53)
+        self.study_stems: list[str] = []       # recordings made while it was loaded
+        self.last_export: Path | None = None
 
     # --- connection ---
     def connect(self, port: str) -> None:
@@ -292,6 +296,8 @@ class Hub:
             if self.log is not None:
                 raise ApiError("board_rejected", 409, "already recording (POST /api/v1/log/stop first)")
             self.log = ForceLog(self.log_dir, label)
+            if self.study is not None:
+                self.study_stems.append(self.log.stem)
             t = self.board.last.t_ms if self.board and self.board.last else 0
             pc = self.pc()
             self.log.event(t, "CLOCK", json.dumps({"pc_s": round(pc, 4), "wall": _wall()}), pc)
@@ -987,6 +993,8 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
                               report=lambda level, msg: hub.errlog.write(level, "study", msg))
         except ValueError as e:
             raise ApiError("invalid", 422, str(e)) from None
+        hub.study_t0 = datetime.now()
+        hub.study_stems = [hub.log.stem] if hub.log is not None else []     # a recording already running counts
         st = hub.study.status()
         hub.broadcast({"type": "study", **st})
         return st
@@ -1066,6 +1074,50 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         st.stop()
         return st.status()
 
+    @app.post("/api/v1/study/export")
+    def study_export():
+        st = study_need()
+        if st.state in ("running", "gait"):
+            raise ApiError("board_rejected", 409, f"study is {st.state}: wait for the block to end, or stop it")
+        if hub.log is not None:
+            raise ApiError("board_rejected", 409, "still recording: Stop rec first, so the last file is complete")
+        params = None
+        if hub.board is not None:
+            try:
+                params = hub.call(hub.board.get)
+            except Exception:                        # board gone: the zip still has the recordings
+                params = None
+        saved = json.loads(hub.settings_path.read_text()) if hub.settings_path and hub.settings_path.is_file() else None
+        t0 = hub.study_t0 or datetime.now()
+        days = sorted({t0.strftime("%Y%m%d"), datetime.now().strftime("%Y%m%d")})
+        subj = st.p.subject
+        res = session.export(hub.log_dir, session.zip_name(subj.subject_id, subj.study_name, t0), hub.study_stems,
+                             {"protocol.json": st.protocol(), "study.json": {**st.status(), "loaded": t0.isoformat(timespec="seconds"),
+                                                                             "exported": _wall(), "recordings": hub.study_stems},
+                              "params.json": params, "settings.json": saved},
+                             [hub.errlog.path(d) for d in days])
+        hub.last_export = Path(res["file"])
+        hub.log_command("STUDY", {"export": res["name"]})
+        return res
+
+    @app.get("/api/v1/study/export")
+    def study_export_file():
+        f = hub.last_export
+        if f is None or not f.is_file():
+            raise ApiError("not_found", 404, "no session zip since the server started (POST /api/v1/study/export)")
+        return FileResponse(f, media_type="application/zip", filename=f.name)
+
+    @app.get("/api/v1/studies")
+    def studies():
+        return session.saved(hub.log_dir)
+
+    @app.get("/api/v1/studies/{name}/protocol")
+    def studies_protocol(name: str):
+        p = session.saved_protocol(hub.log_dir, name)
+        if p is None:
+            raise ApiError("not_found", 404, f"no saved session {name!r} in the log folder")
+        return p
+
     # --- live stream ---
     @app.websocket("/api/v1/stream")
     async def stream(ws: WebSocket, telemetry_hz: float = Query(30, gt=0, le=1000)):
@@ -1108,7 +1160,6 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
 
     # --- browser UI (same origin as the API) ---
     if ui_dir:
-        from pathlib import Path
         if Path(ui_dir).is_dir():
             app.mount("/ui", StaticFiles(directory=ui_dir, html=True), name="ui")
 

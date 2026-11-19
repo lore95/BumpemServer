@@ -55,6 +55,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/patterns.py` | Saved perturbation patterns (D50): directions + step gaps, JSON per pattern in `patterns/`, never overwritten |
 | `bumpem/clocksync.py` | Device clock → station-PC clock fit (D49): board `t_ms`, Vicon frames → `pc_s`; `/sync` |
 | `bumpem/study.py` | Study runner (D44): protocol models, gait pattern per belt, blocks, perturbation at a gait phase; `/api/v1/study` |
+| `bumpem/session.py` | Session zip of a loaded study (D53): name, files, export; saved session zips + their protocol for BumpemSetUp |
 | `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
 | `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers); `ForceLog` = the server's recordings; `ViconLog` = force plates while armed |
 | `bumpem/vicon.py` | Vicon force plates (D31, D32): `ViconReader` (DataStream SDK, device data only, Fz per plate per subsample; untested on the lab system), `SimReader` (`sim`: two belts, running) |

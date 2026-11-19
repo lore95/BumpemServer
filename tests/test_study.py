@@ -1,5 +1,6 @@
 """bumpem/study.py: gait pattern, block runner, perturbation timing (docs/API.md "Study", D44)."""
 import random
+import zipfile
 import time
 from pathlib import Path
 
@@ -151,7 +152,7 @@ def test_server_study_with_simulated_board_and_plates(tmp_path):
     from bumpem.server import create_app
     with TestClient(create_app(log_dir=str(tmp_path))) as c:
         api = "/api/v1"
-        body = {"subject": {"subject_id": "S1", "mass_kg": 30},
+        body = {"subject": {"subject_id": "S1", "study_name": "Knee study", "mass_kg": 30},
                 "blocks": [block(n_perturbations=2, interval_min_steps=1, interval_max_steps=1)]}
         assert c.post(f"{api}/study", json=body).status_code == 409          # no Vicon yet
         assert c.post(f"{api}/connect", json={"port": "sim"}).status_code == 200
@@ -191,6 +192,32 @@ def test_server_study_with_simulated_board_and_plates(tmp_path):
             assert [p["pulse_id"] for p in rep["pulses"]] and rep["recommended_latency_ms"] is not None
             assert all(p.get("timing_error_ms") is not None and p.get("command_ms") is not None for p in rep["pulses"]), rep["text"]
             assert Path(rep["file"]).is_file() and "recommended System delay" in rep["text"]
+
+        c.post(f"{api}/log/start", json={"label": "after"})                  # D53: refused while recording
+        assert c.post(f"{api}/study/export").status_code == 409
+        c.post(f"{api}/log/stop")
+        ex = c.post(f"{api}/study/export").json()                             # D53: session zip
+        assert ex["name"].startswith("S1_Knee-study_") and ex["name"].endswith(".zip") and ex["recordings"] == 2, ex
+        with zipfile.ZipFile(ex["file"]) as z:
+            names = {n.split("/", 1)[1] for n in z.namelist()}
+        assert {"protocol.json", "study.json", "params.json"} <= names
+        for kind in ("force_", "events_", "vicon_", "delay_"):
+            assert any(n.startswith(kind) and "e2e" in n for n in names), (kind, names)
+        assert c.get(f"{api}/study/export").headers["content-type"] == "application/zip"
+        saved = c.get(f"{api}/studies").json()
+        assert saved[0]["subject_id"] == "S1" and saved[0]["study_name"] == "Knee study" and saved[0]["blocks"] == 1
+        assert c.get(f"{api}/studies/{saved[0]['name']}/protocol").json()["subject"]["mass_kg"] == 30
+        assert c.get(f"{api}/studies/nothing.zip/protocol").status_code == 404
+
+
+def test_session_zip_name_and_ids():
+    from datetime import datetime
+    from bumpem.session import zip_name
+    t = datetime(2026, 11, 19, 14, 30)
+    assert zip_name("S014", "Knee study", t) == "S014_Knee-study_2026-11-19_1430"
+    assert zip_name("S014", "", t) == "S014_2026-11-19_1430" and zip_name("", "", t) == "subject_2026-11-19_1430"
+    with pytest.raises(ValueError):                                           # an ID, never a name with spaces
+        Protocol(subject={"subject_id": "Mario Rossi", "mass_kg": 80}, blocks=[block()])
 
 
 def test_contact_detector_hysteresis():

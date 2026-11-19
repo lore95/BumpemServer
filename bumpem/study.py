@@ -27,7 +27,8 @@ MODE_LIMITS = {"walking": {"stride": (0.7, 1.8), "contact": (0.35, 1.5)},
 
 class Subject(BaseModel):
     model_config = ConfigDict(extra="allow")
-    subject_id: str = ""
+    subject_id: str = Field("", pattern=r"^[A-Za-z0-9_-]{0,40}$", description="ID in the lab's master file, never a name (D53)")
+    study_name: str = Field("", pattern=r"^[A-Za-z0-9 _-]{0,40}$", description="part of the session zip name (D53)")
     mass_kg: float = Field(gt=0, le=300)
     mode: Literal["walking", "running"] = "walking"
     baseline_n: float | None = Field(None, ge=0, le=50, description="rope tension between pulls; set before Arm")
