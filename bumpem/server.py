@@ -80,7 +80,8 @@ class TestPullBody(BaseModel):
 
 
 class ViconBody(BaseModel):
-    host: str = Field(pattern=r"^(sim|[A-Za-z0-9.\-]+:\d{1,5})$", description='Nexus address:port, or "sim"',
+    host: str = Field(pattern=r"^(sim|replay:[A-Za-z0-9_.\-]+|[A-Za-z0-9.\-]+:\d{1,5})$",
+                      description='Nexus address:port, "sim", or "replay:<name>" (recorded plates, D54)',
                       examples=["192.168.1.60:801"])
 
 

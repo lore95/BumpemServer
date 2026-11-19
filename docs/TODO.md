@@ -55,7 +55,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
 
 ## 3 · Software (`Claude`, no lab needed)
-- [ ] 🔴 Running step detection: minimum contact time, pause after touch-down, thresholds from body weight; replay the 2026-11-19 running file until the stride is ≈ 0.7 s
+- [ ] 🔴 Running step detection: minimum contact time, pause after touch-down, thresholds from body weight; test on the replay `--vicon replay:running_3.33ms` (D54) until the stride is ≈ 0.7 s
 - [ ] 🔴 Refuse Start when the gait pattern is implausible (or explicit "use anyway", logged)
 - [ ] 🟠 BumpemSetUp: warn when a block asks more than the towers deliver (≈ 60–90 N now)
 - [ ] 🟠 Participant ID must contain a digit
@@ -78,6 +78,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Vicon sync output (voltage, connector, permission) · `supervisor`; Teensy pin 2 is free (3.3 V max: divider for 5 V) · `Claude` `lab`
 
 ## Done (recent first)
+- [x] Replay of recorded plates as the Vicon source: walking + running of 2026-11-19 (D54)
 - [x] Session zip per study, study name, participant ID, Import saved study (D53, U26, 2026-11-19)
 - [x] First walking and running studies with a person, analysed (2026-11-19)
 - [x] kff 2 → 3.5 → 5.5 (delay tests 2026-11-18: 0.5 → 0.7 of the target at 10 / 20 N)

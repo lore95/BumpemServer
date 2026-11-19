@@ -53,3 +53,50 @@ def test_plate_names_fall_back_to_ids():
     r = ViconReader("nonames:801", lambda f, s: None, lambda m: None, sdk=FAKE)
     assert r.plates == ["Plate 1", "Plate 2"]
     r.close()
+
+
+def _replay_file(folder, n_frames=30, subs=10, rate=100):
+    """A tiny replay: plate Left = 100 × frame index, Right = sub index."""
+    p = folder / "tiny.csv"
+    with p.open("w") as f:
+        f.write("t_s,frame,sub,Fz_Left,Fz_Right\n")
+        for k in range(n_frames):
+            for s in range(subs):
+                f.write(f"{k / rate + s / (rate * subs):.4f},{k + 1},{s},{100.0 * k},{float(s)}\n")
+    return p
+
+
+def test_replay_plays_recorded_plates_and_loops(tmp_path):
+    from bumpem.vicon import ReplayReader
+    _replay_file(tmp_path)
+    frames = []
+    r = ReplayReader("tiny", lambda f, s: frames.append((f, s)), lambda m: None, folder=tmp_path)
+    assert r.plates == ["Left", "Right"] and r.rate_hz == 100 and r.host == "replay:tiny"
+    r.start()
+    assert wait(lambda: len(frames) > 35)                                        # 30 frames, then from the start again
+    r.close()
+    assert [f for f, _ in frames[:35]] == list(range(1, 36))                     # frame numbers keep counting
+    assert frames[0][1][3] == {"Left": 0.0, "Right": 3.0} and len(frames[0][1]) == 10
+    assert frames[30][1][0]["Left"] == 0.0 and frames[29][1][0]["Left"] == 2900.0   # looped
+
+
+def test_replay_names_and_missing_files(tmp_path):
+    from bumpem.vicon import ReplayReader
+    for bad in ("../x", ".hidden", "a/b"):
+        with pytest.raises(ValueError):
+            ReplayReader(bad, lambda f, s: None, lambda m: None, folder=tmp_path)
+    with pytest.raises(ValueError, match="no replay"):
+        ReplayReader("nothing", lambda f, s: None, lambda m: None, folder=tmp_path)
+
+
+def test_server_connects_a_replay(tmp_path, monkeypatch):
+    from fastapi.testclient import TestClient
+    import bumpem.vicon as V
+    from bumpem.server import create_app
+    _replay_file(tmp_path)
+    monkeypatch.setattr(V, "REPLAY_DIR", tmp_path)
+    with TestClient(create_app()) as c:
+        v = c.post("/api/v1/vicon/connect", json={"host": "replay:tiny"}).json()
+        assert v["connected"] and v["plates"] == ["Left", "Right"] and v["host"] == "replay:tiny"
+        assert c.post("/api/v1/vicon/connect", json={"host": "replay:nothing"}).status_code == 422
+        assert c.post("/api/v1/vicon/connect", json={"host": "replay:../x"}).status_code == 422

@@ -10,12 +10,15 @@ some frames after EnableDeviceData: wait for the plates. Connects to Nexus 2.8.1
 """
 from __future__ import annotations
 
+import csv
 import importlib
 import math
 import multiprocessing
 import random
+import re
 import threading
 import time
+from pathlib import Path
 from typing import Callable
 
 FrameFn = Callable[[int, list[dict[str, float]]], None]
@@ -204,5 +207,58 @@ class SimReader:
         self._stop.set()
 
 
+REPLAY_DIR = Path(__file__).resolve().parents[1] / "replays"   # recorded plates of real participants (local, not in git)
+
+
+class ReplayReader:
+    """Recorded force plates played back in real time, looped (host "replay:<name>", D54): `replays/<name>.csv` made by
+    scripts/make_replay.py from a vicon_*.csv: columns t_s, frame, sub, Fz_<plate>…; frame rate from t_s."""
+
+    def __init__(self, name: str, on_frame: FrameFn, on_end: EndFn, folder: Path | None = None):
+        if not re.fullmatch(r"[A-Za-z0-9_.-]+", name) or name.startswith("."):
+            raise ValueError(f"replay name {name!r}: letters, digits, . _ - only")
+        folder = folder or REPLAY_DIR
+        path = folder / f"{name}.csv"
+        if not path.is_file():
+            have = sorted(f.stem for f in folder.glob("*.csv"))
+            raise ValueError(f"no replay {name!r} in {folder} (have: {', '.join(have) or 'none'}; "
+                             "make one with scripts/make_replay.py)")
+        with path.open(newline="") as f:
+            rd = csv.DictReader(f)
+            self.plates = [c[3:] for c in rd.fieldnames or [] if c.startswith("Fz_")]
+            frames: list[list[dict[str, float]]] = []
+            t0s: list[float] = []
+            prev = None
+            for r in rd:
+                if r["frame"] != prev:
+                    frames.append([])
+                    t0s.append(float(r["t_s"]))
+                    prev = r["frame"]
+                frames[-1].append({p: float(r["Fz_" + p]) for p in self.plates})
+        if len(frames) < 10 or len(self.plates) < 2:
+            raise ValueError(f"replay {name!r}: needs at least 10 frames and two Fz_ columns")
+        dts = sorted(b - a for a, b in zip(t0s, t0s[1:]))
+        self.rate_hz = round(1 / dts[len(dts) // 2], 3)
+        self.host, self.latency_ms, self._frames, self._on_frame = f"replay:{name}", None, frames, on_frame
+        self.duration_s = len(frames) / self.rate_hz
+        self._stop = threading.Event()
+
+    def start(self) -> None:
+        threading.Thread(target=self._run, daemon=True).start()
+
+    def _run(self) -> None:
+        t0, frame, dt, n = time.monotonic(), 0, 1 / self.rate_hz, len(self._frames)
+        while not self._stop.wait(max(0.0, t0 + (frame + 1) * dt - time.monotonic())):
+            self._on_frame(frame + 1, self._frames[frame % n])   # loops; frame numbers keep counting (Vicon clock)
+            frame += 1
+
+    def close(self) -> None:
+        self._stop.set()
+
+
 def open_reader(host: str, on_frame: FrameFn, on_end: EndFn):
-    return SimReader(on_frame, on_end) if host == "sim" else ViconReader(host, on_frame, on_end)
+    if host == "sim":
+        return SimReader(on_frame, on_end)
+    if host.startswith("replay:"):
+        return ReplayReader(host[len("replay:"):], on_frame, on_end)
+    return ViconReader(host, on_frame, on_end)

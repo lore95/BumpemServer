@@ -114,7 +114,7 @@ def main(argv=None):
     sv.add_argument("--settings", default=str(root / "settings.json"),
                     help="saved board parameters, written to the board at connect (default: BumpemServer/settings.json; \"\" = off)")
     sv.add_argument("--vicon", help="Vicon Nexus address:port to read the force plates from at startup "
-                                     "(e.g. 192.168.1.60:801; 'sim' = simulated plates). The UI can connect later too")
+                                     "(e.g. 192.168.1.60:801; 'sim' = simulated plates; 'replay:<name>' = a participant's recorded plates from replays/, D54). The UI can connect later too")
     sv.add_argument("--log-dir", default=str(root / "Logs"), help="folder for recordings (default: BumpemServer/Logs)")
     sv.add_argument("--patterns", default=str(root / "patterns"),
                     help="folder of saved perturbation patterns (default: BumpemServer/patterns)")

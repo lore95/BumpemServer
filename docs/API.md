@@ -125,12 +125,13 @@ Everything that went wrong, in one file per day for Claude: `<log-dir>/errors_<Y
 
 ### Vicon force plates (`host`)
 The GRAIL belts' force plates, read from Vicon Nexus over Ethernet (DataStream SDK, `vicon_dssdk`; device data only, no markers: DECISIONS D31). Independent of the board connection.
-`bumpem serve --vicon HOST:PORT` connects at startup (e.g. `192.168.1.60:801`, `127.0.0.1:801` on the Nexus PC; `sim` = two simulated plates, running gait). The UI can also connect with its own address.
+`bumpem serve --vicon HOST:PORT` connects at startup (e.g. `192.168.1.60:801`, `127.0.0.1:801` on the Nexus PC; `sim` = two simulated plates, running gait; `replay:<name>` = a participant's recorded plates, `replays/<name>.csv`, played back in real time and looped: D54). The UI can also connect with its own address.
+- Replays: `python scripts/make_replay.py <vicon_*.csv> <name> --from S --to S` cuts a stretch of a recording (seconds from its start) into `replays/<name>.csv` (`t_s,frame,sub,Fz_<plate>…`, no names or clocks). `replays/` is not in git (participant data). `rate_hz` = the recording's frame rate; `latency_ms` none; frame numbers keep counting across the loop; at the loop point the gait jumps once.
 
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
 | GET | `/api/v1/vicon` | | `{"connected": true, "host": "192.168.1.60:801", "default_host": "…" or null, "rate_hz": 100, "plates": ["Left", "Right"], "message": null}` | host |
-| POST | `/api/v1/vicon/connect` | `{"host": "192.168.1.60:801"}` or `{"host": "sim"}` | same object. Waits up to 5 s for the first frame: no reply → 504 `board_timeout`; SDK missing, bad address or no plate with an `Fz` output → 422 `invalid` | host |
+| POST | `/api/v1/vicon/connect` | `{"host": "192.168.1.60:801"}`, `{"host": "sim"}` or `{"host": "replay:running_3.33ms"}` | same object. A replay that does not exist → 422 `invalid` (names the ones there). Waits up to 5 s for the first frame: no reply → 504 `board_timeout`; SDK missing, bad address or no plate with an `Fz` output → 422 `invalid` | host |
 | POST | `/api/v1/vicon/disconnect` | | same object (a running recording's Vicon file ends there) | host |
 
 - `plates`: Vicon device names that have an `Fz` output (Nexus names them). `message`: why the reader stopped (link lost), else null.

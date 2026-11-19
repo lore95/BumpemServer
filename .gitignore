@@ -50,3 +50,6 @@ docs/email-makerspace-stulz.txt
 docs/email-maxon-escon-repair.txt
 
 scripts/Pertubation_analog/
+
+# participant force-plate replays (D54): personal data, local only
+replays/
