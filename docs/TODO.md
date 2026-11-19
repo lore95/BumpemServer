@@ -1,88 +1,89 @@
 # To do
 
-Ordered by **urgency**: each section must be done before the one below it matters. Rewritten 2026-11-05.
-Tick items off and tell Claude what you found so `STATUS.md` stays current.
+Ordered by **urgency**: each section must be done before the one below it matters. Rewritten 2026-11-19 after the first walking and running studies.
+Tick items off and tell Claude what you found so `STATUS.md` stays current. PDF of this file: `scripts/todo_pdf.sh` → `docs/todo.pdf`.
 
-**Danger:** 🔴 injury or burnt hardware if skipped / done wrong · 🟠 damaged electronics or misleading data · 🟢 low.
+**Danger:** 🔴 injury or burnt hardware if skipped / done wrong · 🟠 damaged electronics or misleading data · 🟡 small data error · 🟢 low.
 **Needs:** `lab` (at the treadmill) · `subject` (a person on the treadmill) · `parts` · `electrician` / `supervisor` · `Mac` (no lab) · `Claude`.
 **status?** = no result recorded since the item was written: tell Claude whether it is done.
-Teensy on the Mac: `/dev/cu.usbmodem169222501`, good USB socket. Lab PC: double-click `.bat` files only.
 
 ---
 
+## Works now (2026-11-19)
+- **Carrier board** (JLC, plated): soldered, DAC in sockets underneath (D52), Teensy finds it at power-up, all 4 module cables plugged in.
+- **Lab PC:** server on COM3 + Vicon `192.168.1.60:801`, clocks in sync (Teensy ±0.3 ms, Vicon ±0.4 ms), no lost frames.
+- **All four towers pull.** Send → rope force rising ≈ 36 ms (delay test 2026-11-18; thesis 36 ms).
+- **Walking study:** stride 949–968 ms, contact ≈ 560 ms, pulls at 33 % of the cycle as set, the pattern's step gaps followed exactly.
+- **Delay test page** (pulls A → B → C → D, report with plates-vs-board timing) and **session zip** + **Import saved study** (update `BumpemUpdate_2026-11-19_1558`, built, not installed yet).
+
+## 0 · Not working now (found in the studies of 2026-11-19)
+Files: `tests/*_20261119_112556_*` (walking 1.7 m/s, 100 N), `tests/*_20261119_120754_*` (running 3.33 m/s, 150 N); kff 5.5, baseline 5 N.
+- [ ] 🔴 **Running: steps detected wrong.** Measured stride 325–347 ms, real ≈ 704 ms: steps counted ≈ 2×, pulls 65 ms after touch-down instead of ≈ 141 ms (20 % of the cycle), "right" also fired on left-foot landings. Causes: runner on / across the right belt (both plates > 300 N 19 % of the time, impossible in running), impact bounce (73 contacts < 60 ms on the left plate), thresholds left at 100 / 25 N (plate noise 28–37 N). Fix: one foot per belt (tape line) `lab` + ignore contacts < 60 ms, pause after each touch-down, running thresholds from body weight `Claude`
+- [ ] 🔴 **Start allowed with an implausible gait pattern:** the mode check flagged the running stride, the block started anyway. Fix: refuse Start (or explicit "use anyway") · `Claude`
+- [ ] 🔴 **Pulls never reach the asked force:** the motor command is at maximum (DAC 4095) for 130–180 ms in all 24 pulls. 100 N → 58–91 N net, 150 N → 58–90 N net; single towers at most B 56–74, C 49–98, A 82–96, D ≤ 111 N. Limit = driver current at full scale (ESCON 3.3 V = 9.9 A, `knowledge/control.md`), not kff. The saved amplitude (100 / 150 N) is not what the person felt: analyse the measured rope force. Fix: warn in BumpemSetUp above the deliverable force `Claude`; more current needs the ESCON scaling changed `supervisor` (technician; motor / driver limits first)
+- [ ] 🟠 **Participant ID was a first name** ("Carlo" in the events file and every file name). Fix: ID must contain a digit (e.g. S014) `Claude`; keep those files out of git
+- [ ] 🟠 **Pulls 20–25 ms late** (System delay 0). Walking: enter **25 ms** at Start `lab`. Running value unusable until the step detection works
+- [ ] 🟠 **Rope tension between pulls** 6.5–9 N for 5 N, ±2–4 N; **B slack (< 1 N) 3–4 % of the time** (jerk at the next pull). kff 5.5 also raises the rest tension. Fix: tune for the baseline (test together) `lab` `Claude`
+- [ ] 🟠 **B and C weakest;** diagonals off by up to 11° (B's side pulls less). Rope paths B and C (section 2)
+- [ ] 🟡 **Walking: 5 foot strikes missed**, 4 right before a pull (recovery step across the belts): the next pull one step late
+- [ ] 🟡 **Board settings:** calibration not applied (gains 1.0 / 2.12 / 1.0 / 1.0 instead of 1.013 / 2.075 / 0.953 / 0.998); max force 200 N above the fault limit 195 N
+- [ ] 🟡 **Plates not zeroed:** down to −70 N (running), −22 N (walking); foot-off threshold is 25 N
+- [ ] 🟢 Foot strikes not logged during the warm-up, foot-offs are (counts 172 vs 234: confusing) · `Claude`
+- [ ] 🟢 STOP 51 s into the running recording, before the study load, forces normal: on purpose? · status?
+- [ ] 🟢 Delay report: "scatter" overstated (adds each part's worst case), command delay shows negatives (below the method's resolution), lag meaningless while pulls fall short, gains missing in the header · `Claude`
+- [ ] 🟢 Plate and board data reach the server up to 15 ms late (95 %), both: Windows' 15.6 ms timer? (unverified) · `Claude`
+
 ## 1 · 🔴 Safety: before anyone is in the harness
-Blocks every session with a person. None of the study checks below need a person in the harness.
-- [ ] 🔴 **E-stop parts:** Hirose DF11-12DS housing + DF11 crimp terminals per RSP-2000 (CN501), or plan to solder · `parts` · status?
-- [ ] 🔴 **Wire the e-stop:** CN501 pin 7 + pin 11, one NO contact per 48 V supply (A, B, C, D) (`knowledge/wiring.md` → e-stop) · `lab` `parts`
+Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) **without the e-stop**. Nothing below is done.
+- [ ] 🔴 **E-stop parts:** Hirose DF11-12DS housing + DF11 crimp terminals per RSP-2000 (CN501), probably not at the makerspace (Reichelt / Mouser, or pre-crimped leads) · `parts`
+- [ ] 🔴 **Wire the e-stop, two-box version** (chosen 2026-11-16): box 1 → supplies A + B, box 2 → C + D, CN501 pin 7 + 11; mount side by side, label "PRESS BOTH". Not fail-safe (`docs/makerspace-list.md`) · `lab` `parts`
 - [ ] 🔴 **Test the e-stop** before every session: 48 V on, press → every ESCON LED off; release → back on · `lab`
-- [ ] 🔴 Ask the technician for a **fail-safe** e-stop (now a cut wire means the button does nothing) · `supervisor`
-- [ ] 🔴 **Electrician:** hand over `docs/electrician/power-requirements.pdf`: breakers / circuits for the towers' sockets (4 towers ≤ ~2.1 kW peak), cover for the RS-15-24's open 230 V terminals, earth ⏚ → chopper terminal 3 on tower B, RSP-2000 mains side · `electrician` · status?
-- [ ] 🔴 Electrical safety inspection (DGUV V3)? One power strip per tower, each on its own wall socket (no strip in a strip; RSP-2000 inrush 50 A) · `supervisor`
-- [ ] 🔴 **Tower B chopper → ESCON cable:** replace the 14 AWG wire with 1.5 mm² fine-stranded + insulated ferrules (48 V off, chopper < 1 V, photo both ends, + to +, − to −, no short) · `lab` `parts` (ordered 2026-10-19) · status? (B was driven on 2026-11-03)
+- [ ] 🔴 Technician to agree with the two-box version (a cut wire = button does nothing) · `supervisor`
+- [ ] 🔴 **Electrician:** `docs/electrician/power-requirements.pdf` (breakers, cover on the RS-15-24's 230 V terminals, earth → chopper terminal 3 on tower B, RSP-2000 mains side) · `electrician` · status?
+- [ ] 🔴 Electrical safety inspection (DGUV V3)? One power strip per tower, each on its own wall socket · `supervisor` · status?
+- [ ] 🔴 **Tower B chopper → ESCON cable:** 1.5 mm² fine-stranded + insulated ferrules instead of the 14 AWG wire · `lab` `parts` · status?
 
-## 2 · Next lab visit: accurate pulls, then the study (blocked: no lab access since 2026-11-05)
-In this order. Ask Claude for an update bundle first (`build_bundle.sh --update`: study page, calibration).
-- [ ] 🟢 Install the update on the D-Flow PC: `update.bat` → `apply_calibration.bat` (gains A 1.013, B 2.075, C 0.953, D 0.998) → `start_server.bat` · `lab` `Claude`
-- [ ] 🟢 **Connections + clocks:** `start_server.bat` connects COM3 and Vicon by itself: no red line on the pages? (Teensy on another port: Device Manager > Ports → change `set BOARD=COM3` in the .bat.) BumpemActivation's clock line "in sync ✓": note the Teensy and Vicon ± values for Claude · `lab`
-- [ ] 🟠 **Zero sensors** with the ropes installed and slack → **Save as default** (again after any rope / sensor change; ropes were changed, reported 2026-11-05) · `lab`
-- [ ] 🟠 **After moving a tower:** back at its place (front / left / back / right, same distance), rope at harness height, cables not pulled at the plugs, then Zero sensors. Mark the floor positions once so they can be found again · `lab`
-- [ ] 🟠 New ropes: with the tower at its furthest pull, ≥ 3 turns stay on each drum; splices hold after the first pulls (look at them before each session for a while) · `lab`
-- [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D (B reaches only 44–48 % of the target, C was stuck; B's drive shaft was worn at the collar, 2026-10-29) · `lab`
-- [ ] 🟠 **Pull strength:** kff 3.5 test with Record (14 / 34 N per tower, ropes on a fixed point) → send the CSVs → then `kp_pulse` stepwise (D34) · `lab`
+## 2 · Next lab visit
+- [ ] 🟢 Install `BumpemUpdate_2026-11-19_1558`: `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
+- [ ] 🟠 `apply_calibration.bat` (gains above), then max force 196 N / fault 200 N → Apply → **Save as default** · `lab`
+- [ ] 🟠 **Zero the plates in Nexus** before each session (look only in D-Flow) · `lab`
+- [ ] 🟠 **Zero sensors** with the ropes on and slack → Save as default (after any rope / sensor change) · `lab`
+- [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D; B's drum bolts, B's shaft at the collar (worn, 2026-10-29) · `lab`
+- [ ] 🟠 **Running: one foot per belt** (tape line in the middle), then record the gait pattern again: stride should be ≈ 0.7 s per side · `lab` `subject`
+- [ ] 🟠 **Delay test with kff 5.5** (2 rounds, 10 / 20 N): ratio ≈ 0.85–1.0? Save as default when right · `lab`
+- [ ] 🟢 System delay 25 ms for walking; check the delay report's recommendation after the next block · `lab`
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
-- [ ] 🟢 **Vicon in the UI:** Nexus Live → Ground force → `192.168.1.60:801` → Connect → Arm → Record → a `vicon_*.csv` in `Logs/`; Fz positive when standing · `lab`
-- [ ] 🟢 **Left belt:** stand on one belt, see which plate rises → pick it under "Left belt" on the study page; plates zeroed in Nexus before each session · `lab`
-- [ ] 🟠 **Contacts on real data:** someone runs (and walks) on the treadmill, not in the harness; protocol with 1 block → study page → Arm → Record gait pattern 20 s at each speed used → note thresholds, noise, stride, contact time → Release → send force, events, Vicon CSVs. Claude checks them against the SLAP script (CLAUDE.md rule 5) · `lab` `subject`
-- [ ] 🟠 **System delay (`latency_ms`) = board ↔ Vicon timing:** one sharp pull with someone standing on the plates, recorded → Claude measures plates → server → board → rope → enter it in "System delay" · `lab` `subject`
-- [ ] 🟠 **Test block without a person in the harness** (ropes on a fixed point): pulls land at the set phase in the recording · `lab`
 
-## 3 · Study protocol (no lab needed)
-- [ ] 🟢 Check the cadence assumed by BumpemSetUp's duration check (walking 108, running 168 steps/min) against your subjects; Start re-checks with the measured gait anyway · `lab`
-- [ ] 🟢 Check the protocol template opens cleanly in Excel on the lab PC (German Excel may put everything in one column) · `lab`
-
-## 4 · Software and repos (no lab needed)
+## 3 · Software (`Claude`, no lab needed)
+- [ ] 🔴 Running step detection: minimum contact time, pause after touch-down, thresholds from body weight; replay the 2026-11-19 running file until the stride is ≈ 0.7 s
+- [ ] 🔴 Refuse Start when the gait pattern is implausible (or explicit "use anyway", logged)
+- [ ] 🟠 BumpemSetUp: warn when a block asks more than the towers deliver (≈ 60–90 N now)
+- [ ] 🟠 Participant ID must contain a digit
+- [ ] 🟢 Log foot strikes in the warm-up; delay report fixes (section 0); Windows timer check
+- [ ] 🟢 Lab-week guide PDF still names an older update
 - [ ] 🟢 `git push` BumpemServer and BumpemUI (user runs `git -C … push`) · `Mac`
-- [ ] 🟢 `scripts/open_loop_test.sh`: finish your uncommitted edit (`AC` mode, usage text, ACD prompt), then commit · `Mac`
-- [ ] 🟢 Decide: firmware oversampling for the rope-force noise (D39; `PROTOCOL.md` first, re-flash) · `Claude` after the noise recording
-- [ ] 🟢 Decide: firmware boots with `ch_D = 1` (`PROTOCOL.md` first, re-flash) · `Claude`
-- [ ] 🟢 Validate the legacy `bumpem/gait.py` on a recorded MATLAB `Log_event_data_*.csv` (only if the previous student sends logs; the study uses the SLAP logic, D45) · `Claude`
+- [ ] 🟢 `scripts/open_loop_test.sh`: finish your uncommitted edit, then commit · `Mac`
+- [ ] 🟢 Decide: firmware oversampling (D39), firmware boots with `ch_D = 1` (`PROTOCOL.md` first, re-flash)
 
-## 5 · Hardware finish (status? most of these may be done: tell Claude)
-- [ ] 🟠 Carrier board: in use, or still the breadboard (2026-10-27)? If needed: order v1 (Aisler / JLCPCB, `hardware/carrier/fab/bumpem-carrier-gerbers.zip`) or mill the single-sided one (`hardware/carrier/milled/fab/`), solder with its guide, meter checks (3.3 V ↔ GND no short, each MSTB pin → its socket pin), then one module at a time (ferrules, Pull 10 N → only that rope moves) · `lab` · status?
+## 4 · Hardware finish
+- [ ] 🟠 **Driver current:** read the ESCON scaling of all four (look only, upload the files) and decide with the technician whether to raise the current at full scale (motor and driver limits, heat) · `lab` `supervisor`
 - [ ] 🟠 **Amplifier range** per module: pull hard, IAA100 output ≤ 3.3 V (`knowledge/calibration.md`) · `lab`
-- [ ] 🟢 Tower B: label the old ESCON "faulty: USB + enable" (repair quote only as a spare); motor test 3d (red wire ↔ motor body: OL) · `lab`
-- [ ] 🟢 Tower B: keep the 200 kg cell (gain 2.075 works) or buy a 100 kg DYMH-103 like A / C / D? · `supervisor`
+- [ ] 🟢 **Reprint the carrier plate** (19 mm standoffs, `hardware/enclosures/out/carrier_plate.stl`) + 4 × M3 × 25 · `parts`
+- [ ] 🟢 Fix the DAC rows in `hardware/carrier/gen_carrier.py` before any new board order (D52) · `Claude`
+- [ ] 🟢 Update the soldering guide PDF to as-built (1 MΩ in the D1–D4 places, R5–R8 empty) · `Claude`
+- [ ] 🟢 Tower B: label the old ESCON "faulty: USB + enable"; keep the 200 kg cell or buy a 100 kg DYMH-103 · `supervisor`
+- [ ] 🟢 Pull direction: measure tower positions and rope height vs harness height (geometry assumes 0 / 90 / 180 / −90°, horizontal ropes) · `lab`
 
-## 6 · Before final testing
-- [ ] 🟢 ESCON configs of C and D: upload in ESCON Studio (look only) → `escon/`; confirm 0–10 V = 0–30 A like A / B; then decide `i_full` / `kt` (`knowledge/control.md`) · `lab`
-- [ ] 🟢 Screenshot each ESCON's firmware version (look only) · `lab`
-- [ ] 🟢 Pull direction: measure tower positions and rope height vs harness height (geometry assumes 0 / 90 / 180 / −90°, horizontal ropes; `bumpem/geometry.py`) · `lab`
-
-## Later · optional: hardware clock sync (Vicon ↔ Teensy, sub-millisecond)
-Only if possible; the software sync (PC clock, ~1–2 ms) and the one-pull delay measurement come first. No new PCB needed: the Teensy has free pins.
-- [ ] 🟢 Ask the Vicon administrator: does the Lock / sync box have a free **sync output** (pulse per frame or at capture start)? Its voltage and connector? May we use it? · `supervisor`
-- [ ] 🟠 **Voltage:** Teensy 4.1 pins take **3.3 V max** (not 5 V tolerant). A 5 V TTL output needs a divider or level shifter (Claude designs it from the output's datasheet) · `Claude`
-- [ ] 🟠 Wiring, no carrier change: thin wire (0.14–0.25 mm²) soldered onto the **top of the Teensy's pin 2 joint** (free; carrier uses 14–19 and 27–30; avoid 0, 1, 13) + ground on the neighbouring GND pad. Unpowered, ESD care, meter check for bridges to the next pin, glue / tape as strain relief; 5 V output only through the divider · `lab` `parts`
-- [ ] 🟢 Firmware: timestamp each sync pulse in µs and report it (`PROTOCOL.md` first, then code, then the Python mirror; re-flash only after confirming) · `Claude`
-- [ ] 🟢 Server: put rope forces and plates on one timeline from the pulses; compare with the software sync · `Claude`
-
-## Scheduled
-- [ ] 🟢 Call with the previous student: `QUESTIONS.md`, ask for recorded MATLAB logs
+## Later · optional: hardware clock sync (Vicon ↔ Teensy)
+- [ ] 🟢 Vicon sync output (voltage, connector, permission) · `supervisor`; Teensy pin 2 is free (3.3 V max: divider for 5 V) · `Claude` `lab`
 
 ## Done (recent first)
-- [x] Study runner + study page (D44, D45, U14, U15; 2026-11-05): gait pattern per belt (SLAP logic, thresholds from plate noise), blocks, random / predefined steps, phase of stance or stride, simulator-tested
-- [x] Final protocol fields, BumpemPattern (saved direction + gap patterns), amplitude N / % BW, duration check (D50, 2026-11-16)
-- [x] Software clock sync on the station PC + kept connections with alerts (D49, 2026-11-05)
-- [x] All four channels on by default: `bumpem serve --modules` default ABCD; the lab `.bat` files already pass ABCD (2026-11-05)
-- [x] New 3 mm ropes spliced and fitted on the towers (reported 2026-11-05)
-- [x] All printed parts mounted (incl. RSP-2000 brackets); every tower carries all its own components, so it moves as one unit (reported 2026-11-05)
-- [x] Load cells calibrated with weights (2026-11-03): A 1.013, B 2.075, C 0.953, D 0.998 (`calibration/`, D42 / D43)
-- [x] Settings re-applied after a board restart + UI warning (D41, 2026-11-03)
-- [x] Closed-loop pull tests on A, B, C, D (2026-11-03, tests 1–3): firmware defaults found, kff 2 too weak → kff 3.5 next
-- [x] Tower B driven by the Teensy with its new ESCON and 24 V amplifier (2026-11-03 tests)
-- [x] Vicon: server on the D-Flow PC, Nexus at 192.168.1.60:801, SDK shipped as a wheel (D36), `vicon_check` connects (2026-11-02)
-- [x] Offline bundle + update path for the lab PC (D28, D35; 2026-11-02)
-- [x] ESCON J6 wiring fixed on all four towers (2026-10-28)
-- [x] Replacement ESCON for B configured from A's `.edc` (2026-10-15)
-- [x] Recording + saved settings (2026-10-12); 3 mm rope ordered (2026-10-19)
-- [x] Earlier (2026-09-29 … 10-08): firmware v1, open-loop tests A / C / D, broken tower diagnosed, "no reply" = USB socket, carrier board designed, makerspace meeting
+- [x] Session zip per study, study name, participant ID, Import saved study (D53, U26, 2026-11-19)
+- [x] First walking and running studies with a person, analysed (2026-11-19)
+- [x] kff 2 → 3.5 → 5.5 (delay tests 2026-11-18: 0.5 → 0.7 of the target at 10 / 20 N)
+- [x] Delay test page with plates-vs-board timing (U24, U25, 2026-11-18)
+- [x] Carrier board (JLC) soldered and working; DAC underneath (D52, 2026-11-18)
+- [x] Welcome page (U23), delay report + error log (D51), final protocol + BumpemPattern (D50) (2026-11-16)
+- [x] Lab PC connections + clock sync in use (D49); Vicon recorded with the board; left / right plates mapped
+- [x] Study runner + study page (D44, D45, U14, U15)
+- [x] New 3 mm ropes; printed parts mounted; load cells calibrated (D42 / D43); settings re-applied after a board restart (D41)
