@@ -51,7 +51,10 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟠 **Zero sensors** with the ropes on and slack → Save as default (after any rope / sensor change) · `lab`
 - [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D; B's drum bolts, B's shaft at the collar (worn, 2026-10-29) · `lab`
 - [ ] 🟠 **Running: one foot per belt** (tape line in the middle), then record the gait pattern again: stride should be ≈ 0.7 s per side · `lab` `subject`
-- [ ] 🟠 **Ceiling test, each tower (planned 2026-11-20):** ropes on a fixed anchor that holds > 150 N, nobody attached, stand clear. Delay test page: one tower ticked at a time, force **100 N**, rounds 2, pull duration **500 ms**, gap 3000 ms → the DAC is at full scale (9.9 A) the whole pull: plateau = that tower's real maximum, vs ≈ 118 N in theory = its friction loss. Send the report (.html) · `lab`
+- [ ] 🔴 **C's drum slips on its shaft** (marker check 2026-11-20). Which joint: drum ↔ collar or collar ↔ shaft? Fix with the collar guide (`hardware/motor_unit/`: 3 × #6-32 × 1/2" bolts + washers, threadlocker, clean bore), marker check again after 10–20 N pulls. No high-force pulls on C until then · `lab` `parts`
+- [ ] 🟠 **Marker check B and D** (line across shaft, collar, drum hub; pull by hand; offset = slip). B slipped in October · `lab`
+- [ ] 🟠 Repeat the ceiling test on A and C after C's fix (A: 57 / 75 N, 7 sudden drops per pull without slipping: cause open) · `lab`
+- [ ] 🟠 **Ceiling test, each tower (A + C done 2026-11-20 with C slipping; B, D open):** ropes on a fixed anchor that holds > 150 N, nobody attached, stand clear. Delay test page: one tower ticked at a time, force **100 N**, rounds 2, pull duration **500 ms**, gap 3000 ms → the DAC is at full scale (9.9 A) the whole pull: plateau = that tower's real maximum, vs ≈ 118 N in theory = its friction loss. Send the report (.html) · `lab`
 - [ ] 🟠 **Delay test with kff 5.5** (2 rounds, 10 / 20 N): ratio ≈ 0.85–1.0? Save as default when right · `lab`
 - [ ] 🟢 System delay 25 ms for walking; check the delay report's recommendation after the next block · `lab`
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
