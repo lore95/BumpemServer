@@ -95,8 +95,9 @@ if __name__ == "__main__":
     with Pages(out) as pdf:
         page(pdf, "Fix a slipping shaft collar (joint 3)", [
             "#What this fixes",
-            "The silver collar that holds the printed drum turns on the steel drive shaft when the rope",
-            "gets tight. The motor then spins faster but the rope stays loose.",
+            "The silver collar that holds the printed drum turns on the drive shaft when the rope",
+            "gets tight. The motor then spins faster but the rope stays loose. The IBMS shafts are",
+            "ALUMINIUM (soft): they wear where the collar clamps (B 2026-10, C and D 2026-11-20).",
             "#Before you start",
             "1. In the UI: Release (treadmill stopped), then stop the server (Ctrl+C).",
             "2. Switch this tower's 48 V OFF (and the 24 V). Wait 1 minute.",
@@ -133,6 +134,8 @@ if __name__ == "__main__":
             "    Oil or grease here is the most common reason a clamp slips.",
             "3. Look at the slit with the screw loose. If its two sides already touch, the collar is worn",
             "    or too big for the shaft: it cannot clamp. Replace it (same size, 3/8 in bore).",
+            "    Measure the shaft with a caliper under the collar and 2 cm away: thinner under the",
+            "    collar, or a shiny ring / groove = worn shaft → new shaft (steel, with a flat or key).",
             "4. One drop of blue threadlocker on the screw thread.",
             "5. Put the collar back where it was (against the drum, same position as in your photo).",
             "6. Tighten firmly: hold the drum, turn the key until it is hard to turn. Short key end only,",
