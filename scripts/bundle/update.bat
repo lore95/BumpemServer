@@ -50,6 +50,9 @@ if errorlevel 8 goto :copyfail
 robocopy "%SRC%\BumpemUI" "%DEST%\BumpemUI" /E /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 goto :copyfail
 for %%f in (settings.json force_logger_cal.json) do if exist "%OLD%\BumpemServer\%%f" copy /y "%OLD%\BumpemServer\%%f" "%DEST%\BumpemServer\" >nul
+rem ESCONs on 3.3 V = 20 A since 2026-11-20: saved control values to match (only while still on the old range)
+set PYTHONUTF8=1
+"%PYEXE%" "%DEST%\BumpemServer\scripts\escon_20A_settings.py" --settings "%DEST%\BumpemServer\settings.json" || (echo Setting the 20 A control values failed: do not pull, send this window to Claude & pause)
 if exist "%OLD%\BumpemServer\Logs\" robocopy "%OLD%\BumpemServer\Logs" "%DEST%\BumpemServer\Logs" /E /MOVE /NFL /NDL /NJH /NJS /NP >nul
 if errorlevel 8 (echo Logs could not be moved back: they are in %OLD%\BumpemServer\Logs & pause)
 rem saved perturbation patterns (D50): copied, the backup keeps them too
