@@ -47,6 +47,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Install `BumpemUpdate_2026-11-19_1558`: `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
 - [ ] 🟠 `apply_calibration.bat` (gains above), then max force 196 N / fault 200 N → Apply → **Save as default** · `lab`
 - [ ] 🟠 **Zero the plates in Nexus** before each session (look only in D-Flow) · `lab`
+- [ ] 🟠 **After any rope change: rope wound neatly on every drum** (side by side, no crossing turns): a badly wound rope catches and releases, the tower then jumps 0–15 N while holding (C, 2026-11-20) · `lab`
 - [ ] 🟠 **Zero sensors** with the ropes on and slack → Save as default (after any rope / sensor change) · `lab`
 - [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D; B's drum bolts, B's shaft at the collar (worn, 2026-10-29) · `lab`
 - [ ] 🟠 **Running: one foot per belt** (tape line in the middle), then record the gait pattern again: stride should be ≈ 0.7 s per side · `lab` `subject`
