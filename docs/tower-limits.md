@@ -6,7 +6,8 @@ Measured 2026-11-20 on the Mac, ropes on a fixed (slightly wobbly) anchor, nobod
 
 | | Limit |
 |---|---|
-| **Pull amplitude (A, B, D)** | **≤ 50 N** above the 4 N rest tension |
+| **Board cap** | **75 N** pull (Max force 79 N = 75 + 4 N rest): the board refuses more (D56) |
+| **Pull amplitude (A, B, D)** | **≤ 50 N** above the 4 N rest tension: above it the pages warn that the force may not be reached |
 | **Pull amplitude (C)** | **≤ 20 N** (50 N not tested yet on the 20 A range) |
 | Diagonal pulls | split over two towers (45°: 50 N → 35 N each): same limits per tower |
 | Marker lines | check on all four towers before and after every session; a broken line = stop, lower the limit |
@@ -18,7 +19,7 @@ Why 50 N and not 100 N: creep and slip start between 75 and 120 N depending on t
 | | Value |
 |---|---|
 | ESCON set value (all four) | 0 V → 0 A, 3.3 V → **20 A** (`escon/module*_2026-11-20_20A.edc`, D55) |
-| Board | `i_full` 20, **kff 0.9**, kp 0.08, **kd 0.2** (track and pulse), rest 4 N, max 196 N, fault 200 N |
+| Board | `i_full` 20, **kff 0.9**, kp 0.08, **kd 0.2** (track and pulse), rest 4 N, max 79 N since D56 (196 N during these tests), fault 200 N |
 | Pull | 50 ms ramp up, 500 ms hold, 50 ms ramp down; force = rope load cell |
 
 ## Per tower

@@ -21,7 +21,7 @@ def test_old_range_gets_the_20A_values_and_keeps_the_rest(tmp_path):
     p = json.loads(f.read_text())["params"]
     assert {k: p[k] for k in ("i_full", "kff", "kp_track", "kp_pulse", "kd_track", "kd_pulse")} == \
         {"i_full": 20.0, "kff": 0.9, "kp_track": 0.08, "kp_pulse": 0.08, "kd_track": 0.2, "kd_pulse": 0.2}
-    assert (p["gain_B"], p["offset_A"], p["fmax_n"]) == (2.12, -3.5, 196.0)
+    assert (p["gain_B"], p["offset_A"], p["fmax_n"]) == (2.12, -3.5, 79.0)
     assert json.loads((tmp_path / "settings.json.bak").read_text())["params"] == OLD
     assert "kff: 5.5 -> 0.9" in out
 

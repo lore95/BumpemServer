@@ -39,6 +39,16 @@ MODES = ("production", "testing")
 LOST_S, RETRY_S = 2.0, 5.0          # target not heard from this long = lost; retry period (D49)
 SYNC_LIMITS = {"board": 2.0, "vicon": 5.0}   # max clock jitter, ms, for the study handshake
 TEST_PARAMS = {"kp_track": 0, "kd_track": 0, "kp_pulse": 0, "kd_pulse": 0, "kff": 2, "baseline_n": 0, "arm_ms": 0}   # open loop, no hold tension
+RELIABLE_N = 50.0     # largest pull per rope the towers reach without slipping (docs/tower-limits.md, D56): above it, a warning
+
+
+def force_warning(amps: dict[str, float], where: str = "") -> str | None:
+    """A warning when the pull on one rope is above RELIABLE_N, else None."""
+    if not amps or max(amps.values()) <= RELIABLE_N:
+        return None
+    m = max(amps, key=amps.get)
+    return (f"{where}{amps[m]:.0f} N on rope {m} is above {RELIABLE_N:g} N: the towers may not reach that force "
+            "(aluminium shafts slip, docs/tower-limits.pdf)")
 API_VERSION = "1.0"
 SETTINGS_SKIP = ("ch_A", "ch_B", "ch_C", "ch_D", "wd_ms", "loop_ms", "tel_div")   # owned by --modules / the server / timing
 
@@ -729,7 +739,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
     def info():
         b = hub.board
         return {"server": SERVER_VERSION, "api": API_VERSION, "mode": mode, "port": hub.port,
-                "board": hub.call(b.info) if b else None}
+                "board": hub.call(b.info) if b else None, "reliable_n": RELIABLE_N}
 
     @app.get("/api/v1/ports")
     def ports():
@@ -905,7 +915,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         amps = {k.upper(): v for k, v in body.amps.items()}
         pid = send_pulse(amps, body.delay_ms, body.rise_ms, body.dur_ms, body.fall_ms)
         hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "sent_pc": round(hub.last_sent_pc, 4), **body.model_dump(exclude={"amps"})})
-        return {"pulse_id": pid}
+        return {"pulse_id": pid, "warning": force_warning(amps)}
 
     # --- host layer ---
     @app.get("/api/v1/geometry")
@@ -925,7 +935,7 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
             raise ApiError("invalid", 422, str(e)) from None
         pid = send_pulse(amps, body.delay_ms, body.phase1_ms, body.dur_ms, body.phase2_ms)
         hub.log_command("CMD", {"pulse_id": pid, "amps": amps, "sent_pc": round(hub.last_sent_pc, 4), **body.model_dump()})
-        return {"pulse_id": pid, "amps": amps}
+        return {"pulse_id": pid, "amps": amps, "warning": force_warning(amps)}
 
     @app.post("/api/v1/test/pull")
     def test_pull(body: TestPullBody):
@@ -998,7 +1008,17 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         hub.study_stems = [hub.log.stem] if hub.log is not None else []     # a recording already running counts
         st = hub.study.status()
         hub.broadcast({"type": "study", **st})
-        return st
+        warnings = []
+        for k, b in enumerate(body.blocks, 1):
+            angles = {float(it["angle_deg"]) for it in b.pattern_items} if b.pattern_items else set(b.directions_deg)
+            amp, rope = hub.study.amplitude_n(b), {}
+            for a in angles if amp > 0 else ():
+                for m, v in geometry.split(a, amp).items():
+                    rope[m] = max(rope.get(m, 0.0), v)
+            w = force_warning(rope, f"block {k}: ")
+            if w:
+                warnings.append(w)
+        return {**st, "warnings": warnings}
 
     @app.get("/api/v1/study/protocol")
     def study_protocol():

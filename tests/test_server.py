@@ -85,10 +85,10 @@ def test_arm_pulse_abort_estop(sim):
     assert sim.post("/api/v1/arm").status_code == 200
     wait_state(sim, "ARMED")
     r1 = sim.post("/api/v1/pulse", json={"amps": {"c": 10}, "rise_ms": 0, "dur_ms": 50, "fall_ms": 0})
-    assert r1.json() == {"pulse_id": 1}
+    assert r1.json() == {"pulse_id": 1, "warning": None}
     time.sleep(0.2)
     r2 = sim.post("/api/v1/pulse", json={"amps": {"C": 10}, "rise_ms": 0, "dur_ms": 1000, "fall_ms": 0})
-    assert r2.json() == {"pulse_id": 2}
+    assert r2.json() == {"pulse_id": 2, "warning": None}
     assert sim.post("/api/v1/abort").status_code == 200
     assert sim.post("/api/v1/estop").status_code == 200
     wait_state(sim, "ESTOP")
@@ -130,7 +130,7 @@ def test_perturbation_split_and_reach(sim):
     r = sim.post("/api/v1/perturbation", json={"angle_deg": 135, "amplitude_n": 20,
                                                "phase1_ms": 0, "dur_ms": 300, "phase2_ms": 0})
     assert r.status_code == 200
-    assert r.json() == {"pulse_id": 1, "amps": {"A": 14.14, "D": 14.14}}
+    assert r.json() == {"pulse_id": 1, "amps": {"A": 14.14, "D": 14.14}, "warning": None}
     end = time.time() + 2
     while time.time() < end:                       # board target reaches baseline + split amplitude
         t = sim.get("/api/v1/status").json()["telemetry"]["target"]
@@ -414,3 +414,17 @@ def test_thinned_telemetry_is_median_of_samples():
     assert out["measured"] == {"A": 4.2, "C": 5.0} and out["t_ms"] == 30 and samples[1]["measured"]["A"] == 95.0
     thin.add(samples[0])
     assert thin.take(samples[0])["measured"]["A"] == 4.0                # starts over after each message
+
+
+def test_reliable_force_warning(sim):
+    """D56: pulls above reliable_n per rope are sent, with a warning; info says the value."""
+    assert sim.get("/api/v1/info").json()["reliable_n"] == 50
+    sim.patch("/api/v1/params", json={"arm_ms": 0, "ch_A": 1, "ch_B": 1, "ch_C": 1, "ch_D": 1})
+    sim.post("/api/v1/arm")
+    wait_state(sim, "ARMED")
+    r = sim.post("/api/v1/perturbation", json={"angle_deg": 135, "amplitude_n": 60, "phase1_ms": 0, "dur_ms": 100,
+                                               "phase2_ms": 0})
+    assert r.status_code == 200 and r.json()["warning"] is None             # 42 N per rope on a diagonal
+    time.sleep(0.4)                                                         # one pulse at a time
+    r = sim.post("/api/v1/pulse", json={"amps": {"C": 60}, "delay_ms": 0, "rise_ms": 0, "dur_ms": 100, "fall_ms": 0})
+    assert r.status_code == 200 and r.json()["warning"].startswith("60 N on rope C is above 50 N")

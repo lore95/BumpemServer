@@ -39,7 +39,7 @@ HTTP 4xx/5xx with:
 ### Connection
 | Method | Path | Body | Returns | Status |
 |---|---|---|---|---|
-| GET | `/api/v1/info` | | `{"server": "0.5.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null}` | board |
+| GET | `/api/v1/info` | | `{"server": "0.5.0", "api": "1.0", "mode": "production" \| "testing", "port": "sim", "board": {...INFO fields} or null, "reliable_n": 50}` | board |
 | GET | `/api/v1/ports` | | `["/dev/tty.usbmodem123", ...]` | board |
 | POST | `/api/v1/connect` | `{"port": "COM7"}` or `{"port": "sim"}` | `info` | board |
 | POST | `/api/v1/disconnect` | | `{}` | board |
@@ -172,14 +172,15 @@ Channel form (`board`): exactly one protocol v1 `PULSE`. The server assigns the 
 ```json
 POST /api/v1/pulse
 {"amps": {"A": 65.71, "B": 65.71}, "delay_ms": 0, "rise_ms": 50, "dur_ms": 600, "fall_ms": 0}
-→ {"pulse_id": 12}
+→ {"pulse_id": 12, "warning": null}
 ```
 Perturbation form (`host`): the server converts angle → channel amplitudes, then sends one `PULSE`.
 ```json
 POST /api/v1/perturbation
 {"angle_deg": 135, "amplitude_n": 20, "phase1_ms": 50, "dur_ms": 400, "phase2_ms": 50, "delay_ms": 0}
-→ {"pulse_id": 13, "amps": {"A": 14.14, "D": 14.14}}
+→ {"pulse_id": 13, "amps": {"A": 14.14, "D": 14.14}, "warning": null}
 ```
+- **Reliable force** (D56): `reliable_n` (`/info`, 50 N until the steel shafts, `docs/tower-limits.md`) = the largest pull per rope the towers reach without slipping. Above it the pull is still sent (up to the board's Max force, 79 N = 75 N pull + 4 N rest since 2026-11-20) and the reply's `warning` says the force may not be reached; `null` otherwise. A study load lists every block above it in `warnings` (per rope, all four towers assumed on).
 - `amplitude_n`: resultant force above baseline along `angle_deg`. `phase1_ms` / `phase2_ms`: ramp up / ramp down (acceleration phases one and two, `perturbation_definitions.md`); `dur_ms` start → end, ramps included; `delay_ms`: board-side delay before the start.
 - Split: on a module's axis that module alone gets `amplitude_n`. Between two neighbouring modules (90° apart) the first gets `amplitude_n·cos(Δ)`, the second `amplitude_n·sin(Δ)`, Δ = angle past the first module. At 45° each gets `amplitude_n/√2`, the rule of the original firmware (`legacy/Arduino_Script.ino:82`). Assumes horizontal cables at right angles.
 - An angle needing a module whose channel is off → 422 `invalid`, message names the module. Force limits stay on the board (`fmax_n` → 409 `board_rejected`).
@@ -213,7 +214,7 @@ One subject and a list of blocks (BumpemUI `BumpemSetUp.html`, run from `BumpemA
 | Method | Path | Body | Returns |
 |---|---|---|---|
 | GET | `/api/v1/study` | | status (below); `"state": "none"` when no study is loaded |
-| POST | `/api/v1/study` | protocol (below) | status. Replaces the loaded study; 409 `board_rejected` while a block runs or the gait recording runs |
+| POST | `/api/v1/study` | protocol (below) | status + `"warnings": ["block 2: 60 N on one rope is above 50 N: …"]` (reliable force, below). Replaces the loaded study; 409 `board_rejected` while a block runs or the gait recording runs |
 | DELETE | `/api/v1/study` | | status (`none`); 409 while a block runs |
 | GET | `/api/v1/study/protocol` | | the loaded protocol as accepted (numbers as numbers, defaults filled in, `plates` resolved); 404 `not_found` when none |
 | POST | `/api/v1/study/gait` | `{"duration_s": 20}` (5–120) | status (`gait`). Needs Vicon (409 `not_connected`) and the board ARMED (409 `board_rejected`: Arm first, so the recording holds it). Leaving ARMED during it cancels it. Records both plates, sets the contact thresholds from the swing noise, then stride and stance time per side → `ready`. Fewer than 5 strides on a side → back to the previous state with a `message` |

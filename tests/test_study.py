@@ -158,8 +158,11 @@ def test_server_study_with_simulated_board_and_plates(tmp_path):
         assert c.post(f"{api}/connect", json={"port": "sim"}).status_code == 200
         assert c.post(f"{api}/vicon/connect", json={"host": "sim"}).status_code == 200
         assert c.post(f"{api}/study", json={**body, "blocks": [block(interval_min_steps=9)]}).status_code == 422
+        heavy = c.post(f"{api}/study", json={**body, "blocks": [block(directions_deg=[90, 45], intensity_pct_bw=25)]}).json()
+        assert heavy["warnings"] == ["block 1: 74 N on rope A is above 50 N: the towers may not reach that force "
+                                     "(aluminium shafts slip, docs/tower-limits.pdf)"]          # D56: 30 kg × 25 % × g
         s = c.post(f"{api}/study", json=body).json()
-        assert s["state"] == "loaded" and s["plates"] == {"left": "Left", "right": "Right"}
+        assert s["state"] == "loaded" and s["plates"] == {"left": "Left", "right": "Right"} and s["warnings"] == []
         p = c.get(f"{api}/study/protocol").json()
         assert p["subject"]["mass_kg"] == 30 and p["blocks"][0]["gait_phase_of"] == "stance" and p["plates"]["left"] == "Left"
         r = c.post(f"{api}/study/gait", json={"duration_s": 5})
