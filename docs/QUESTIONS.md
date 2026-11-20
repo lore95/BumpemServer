@@ -149,3 +149,9 @@ Ask them to send these if they still have them:
 **7.1** Which rope is on the modules (material, diameter, brand)? Stanford used braided Kevlar string (build guide p. 12), the thesis does not say.
 **7.2** What is the breakaway link (thesis p. 17: "mechanical breakaway cable")? Stanford: Berkley FireLine with a surgeon's knot (guide p. 18). Which line / strength here?
 **7.3** When were the ropes last replaced, and are spare ropes in the lab?
+
+## 8. Drive shafts and collars (added 2026-11-20)
+The drums slip on their shafts with the stronger 20 A setting (C at 75 N, D at 100 N, B creeps at 120 N; `docs/tower-limits.md`).
+- [ ] Where were the **drive shafts, shaft collars, bearings and couplers** bought? Order records, invoices or supplier part numbers?
+- [ ] What are the shafts made of (the user found **aluminium**; Stanford's parts list names a "3/8in x 3in Linear Shaft") and what size (3/8 in = 9.525 mm or 10 mm)?
+- [ ] Were they bought as one long rod and cut, or as finished shafts?
