@@ -79,5 +79,6 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `scripts/apply_calibration.py` | Weight-calibration CSV (BumpemUI `calibrate.html`) → per-sensor gain (least squares through the tara, full-scale points left out, D43) → `gain_X` in settings.json, offsets scaled, 0.5–3 range checked, `.bak` + `_applied.txt` report (`apply_calibration.bat`, D42) |
 | `scripts/vicon_check.py` | Read-only Vicon report (`vicon_check.bat`): this PC's addresses, TCP 801 on candidate Nexus addresses, SDK load/version/connect (+ devices, Fz if connected), every `ViconDataStreamSDK*.dll` on C: with FileVersion, D-Flow/Motek settings lines mentioning Vicon/801 → `vicon_check_<stamp>.txt` |
 | `scripts/vicon_probe.py` | Read-only Vicon DataStream check: frame rate, devices + outputs, subjects, live Fz per plate (which plate is the left belt). Needs `vicon_dssdk`; untested on the lab system |
-| `scripts/todo_pdf.sh` | `docs/TODO.md` → `docs/todo.pdf` (A4; pandoc + Chrome headless, Mac) |
+| `scripts/todo_pdf.sh` | `docs/TODO.md` → `docs/todo.pdf` (A4; pandoc + Chrome headless, Mac); any other page with `IN OUT TITLE` arguments |
+| `docs/tower-limits.md` / `.pdf` | Force limits per tower for studies until the steel shafts are in (2026-11-20 tests, 20 A range) |
 | `scripts/make_replay.py` | Cut a stretch of a `vicon_*.csv` into `replays/<name>.csv` for `--vicon replay:<name>` (D54; replays are local, gitignored) |
