@@ -47,3 +47,9 @@ The firmware's `U = ides * 3.3/30` assumes **3.3 V → 30 A**. If the IBMS drive
 Consistency check (not proof): 9.9 A × kt / rc gives 79 N with the firmware's kt = 0.1524, or 118 N with the config's 226.8 mNm/A, which brackets the thesis 100 N peaks (81.7–114.9 N, `results.md`).
 So peak force may be set by this 9.9 A ceiling. Confirm by reading each driver's configuration with ESCON Studio before changing `i_full` or `kff`.
 **Confirmed 2026-10-01 on module A's driver** (`escon/moduleA_left_2026-10-01.edc`): set value 0–10 V → 0–30 A. So the current at DAC full scale (3.3 V) is **9.9 A**: firmware `i_full` should be **9.9**, not 30 (or the ESCON scaling changed instead). Decide after the first test; changing it raises the commanded current about 3× for the same force target.
+
+## Stanford build guide on force (added 2026-11-20, `docs/reference/stanford-bumpem-build-guide.pdf`)
+- p. 35: "comfortably apply perturbations of up to 200N" open- and closed-loop.
+- p. 35–36: k_t measured = **0.89 × the maxon nominal** (motor used near stall); magnetic saturation from ≈ 30 A, so a bigger driver adds nothing. Measured on a treadmill handrail with 1–2 s open-loop pulls.
+- p. 16–17: the ESCON file maps input voltage to current: "Ensure the mapping defined in the configuration file is appropriate for your controller". Stanford's controller (Speedgoat IO111 analog out) reaches 10 V = 30 A; the IBMS Teensy DAC stops at 3.3 V = 9.9 A.
+- Numbers: k_t ≈ 0.89 × 0.2268 ≈ 0.202 N·m/A, rc 0.01905 m → **200 N needs ≈ 19 A**; 9.9 A gives ≈ 105 N before friction (measured 2026-11-20 on fixed anchors: A 57–75 N, C slipping).
