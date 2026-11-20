@@ -95,3 +95,6 @@ Uploaded by the user (originals `tests/ParamMotor{A,B,C,D}.edc`); first backup e
 - C and D are auto-tuned (C current controller 187 / 1047 µs, D 188 / 1053 µs; not the Stanford 170 / 20000 µs), so the accidental Download on C did not leave untuned gains.
 - Tuning torque constant: A 226.1, B 219.4, C 224.0, D 218.8 mNm/A.
 - Only other difference: B's data recorder is set up (4 variables, trigger); no effect on control.
+
+## 20 A files to download: `module*_2026-11-20_20A.edc` (made 2026-11-20, not yet on any driver)
+Each is that driver's own backup above with **three values changed** (nothing else, checked with diff): Second Source 10 V → **3.3 V** (0x4140/07 = 3300), Second Target 30 A → **20 A** (0x4140/08 = 200000), slope 3 → **6.06061 A/V** (0x4140/01 = 606061). Each file keeps its own driver's tuning, so **a file only goes to its own tower** (A's file into A's driver, etc.). Before the first pull: firmware `i_full` 20 and kff, kp, kd ÷ 3. Back to the old range: download the `module*_2026-11-20.edc` backup of that tower.
