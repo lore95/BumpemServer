@@ -55,7 +55,10 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟠 **Marker check B and D** (line across shaft, collar, drum hub; pull by hand; offset = slip). B slipped in October · `lab`
 - [ ] 🟠 Repeat the ceiling test on A and C after C's fix (A: 57 / 75 N, 7 sudden drops per pull without slipping: cause open) · `lab`
 - [ ] 🟠 **Ceiling test, each tower (A + C done 2026-11-20 with C slipping; B, D open):** ropes on a fixed anchor that holds > 150 N, nobody attached, stand clear. Delay test page: one tower ticked at a time, force **100 N**, rounds 2, pull duration **500 ms**, gap 3000 ms → the DAC is at full scale (9.9 A) the whole pull: plateau = that tower's real maximum, vs ≈ 118 N in theory = its friction loss. Send the report (.html) · `lab`
-- [ ] 🟠 **Delay test with kff 5.5** (2 rounds, 10 / 20 N): ratio ≈ 0.85–1.0? Save as default when right · `lab`
+- [ ] 🔴 **ESCONs are on 3.3 V → 20 A (2026-11-20): the board settings must match on every PC before any pull.** `i_full` 20, kff 0.9, kp 0.08, kd 0.2 (A on target at 20 / 50 / 100 N on the Mac). The lab PC's and the Mac's saved settings still hold `i_full` 30 / kff 5.5–7.5 and re-apply on reconnect: about 4× too strong. Set the values, check them, **Save as default** · `lab` `Claude`
+- [ ] 🟠 **Start overshoot on a solid anchor:** 50 and 100 N on A on a load-rated point. Wobbly anchor (2026-11-20): 50 N → 72 N peak, 100 N → 144 N peak in the first ~100 ms. Gone on a solid anchor = anchor; else tune kp / ramp · `lab`
+- [ ] 🟠 **C flips 17 ↔ 27 N every 10 ms at 20 N** even at kd 0.2 (A: calm): check C's rope seating, attachment, shaft under load · `lab`
+- [ ] 🟠 **Delay test with the 20 A settings** (2 rounds, 10 / 20 N): ratio ≈ 0.85–1.0? · `lab`
 - [ ] 🟢 System delay 25 ms for walking; check the delay report's recommendation after the next block · `lab`
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
 
@@ -83,6 +86,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Vicon sync output (voltage, connector, permission) · `supervisor`; Teensy pin 2 is free (3.3 V max: divider for 5 V) · `Claude` `lab`
 
 ## Done (recent first)
+- [x] ESCON range 3.3 V → 20 A on all four (backups + 20 A files `escon/`); A pulls 20 / 50 / 100 N on target (23.3 / 53.6 / 100.4 N, 14.3 A) with kff 0.9, kd 0.2 (2026-11-20)
 - [x] Replay of recorded plates as the Vicon source: walking + running of 2026-11-19 (D54)
 - [x] Session zip per study, study name, participant ID, Import saved study (D53, U26, 2026-11-19)
 - [x] First walking and running studies with a person, analysed (2026-11-19)
