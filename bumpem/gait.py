@@ -1,5 +1,6 @@
 """Foot-strike / toe-off detection. GaitDetector: exact port of legacy/MATLAB_script.m (lines 83-125).
 ContactDetector + fit_thresholds: per-plate touch-down / foot-off as scripts/Pertubation_analog/AAPertAnalogTrig_SLAP.m (study, D45).
+RunningDetector: running, touch-down / foot-off on the sum of both belts, side from the weight shift (D57).
 
 Feed one sample at a time: event = det.update(t_s, fz_total).
 """
@@ -108,3 +109,70 @@ def fit_thresholds(t: list[float], fz: list[float]) -> dict:
     if abs(n_new - n_old) <= 1:
         out.update(td_n=round(td, 1), fo_n=round(fo, 1), stable=True, events=new)
     return out
+
+
+TD_BW, FO_BW = 0.25, 0.10                 # running: touch-down / foot-off on the belt sum, fraction of body weight (D57)
+SIDE_S = 0.02                             # running: a touch-down counts, and gets its side, this long after it
+SIDE_SHIFT = 0.15                         # running: change of the left-belt share that decides the side
+
+
+@dataclass
+class RunningDetector:
+    """Running (D57): contacts on the sum of both belts, as legacy/MATLAB_script.m (Fz_total): a flight phase between
+    every step, so a foot on the other belt or across the middle is still one contact. A touch-down counts once the sum
+    stays above `fo_n` for SIDE_S (shorter = noise); its side from the share of the force on the left belt over that
+    time: up by more than SIDE_SHIFT against the previous contact = left, down = right, else the opposite of the
+    previous side (running alternates). Assumes the left foot lands further left than the right one.
+
+    update(t, left, right) → [(TD | FO, "left" | "right", event time)]; a touch-down carries its own sample time."""
+    td_n: float
+    fo_n: float
+    in_contact: bool | None = None            # None: waiting for the sum to drop below td_n
+    t_td: float = 0.0
+    sum_left: float = 0.0
+    sum_all: float = 0.0
+    side: str | None = None                   # current contact's side, once decided
+    prev_share: float | None = None
+    prev_side: str | None = None
+
+    @classmethod
+    def for_mass(cls, mass_kg: float) -> "RunningDetector":
+        bw = mass_kg * 9.81
+        return cls(round(TD_BW * bw, 1), round(FO_BW * bw, 1))
+
+    def reset(self) -> "RunningDetector":
+        return RunningDetector(self.td_n, self.fo_n)
+
+    def update(self, t: float, left: float, right: float) -> list[tuple[str, str, float]]:
+        f = left + right
+        if self.in_contact is None:
+            if f < self.td_n:
+                self.in_contact = False
+            return []
+        if not self.in_contact:
+            if f <= self.td_n:
+                return []
+            self.in_contact, self.t_td, self.sum_left, self.sum_all, self.side = True, t, 0.0, 0.0, None
+        if f < self.fo_n:
+            self.in_contact = False
+            return [(FO, self.side, t)] if self.side else []
+        if self.side is None:
+            self.sum_left += left
+            self.sum_all += f
+            if t - self.t_td >= SIDE_S:
+                share = self.sum_left / self.sum_all
+                d = None if self.prev_share is None else share - self.prev_share
+                if d is None:
+                    self.side = "left" if share > 0.5 else "right"
+                elif abs(d) > SIDE_SHIFT:
+                    self.side = "left" if d > 0 else "right"
+                else:
+                    self.side = "right" if self.prev_side == "left" else "left"
+                self.prev_share, self.prev_side = share, self.side
+                return [(TD, self.side, self.t_td)]
+        return []
+
+
+def running_contacts(t: list[float], left: list[float], right: list[float], td_n: float, fo_n: float) -> list[tuple[str, str, float]]:
+    d = RunningDetector(td_n, fo_n)
+    return [e for ti, a, b in zip(t, left, right) for e in d.update(ti, a, b)]

@@ -1,5 +1,5 @@
 """Study runner (docs/API.md "Study", DECISIONS D44, D45): one subject + blocks, touch-down / foot-off per belt from
-the Vicon plates (as scripts/Pertubation_analog/AAPertAnalogTrig_SLAP.m), each perturbation at a phase of the stance
+the Vicon plates (as scripts/Pertubation_analog/AAPertAnalogTrig_SLAP.m; running: on the sum of both belts, D57), each perturbation at a phase of the stance
 (or stride) after a touch-down of the trigger side.
 
 Pure logic: the server feeds plate samples (`on_samples`, Vicon frame clock) and gives it `send` (one perturbation → pulse id),
@@ -15,7 +15,7 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .gait import FO, TD, ContactDetector, fit_thresholds
+from .gait import FO, TD, ContactDetector, RunningDetector, fit_thresholds, running_contacts
 
 G = 9.81
 MIN_STRIDES = 5          # per side, for a gait pattern
@@ -128,6 +128,7 @@ class Study:
         self._t = 0.0                              # latest plate time (Vicon frame clock)
         self.latency_ms = 0.0                      # plates → board → rope, subtracted from the delay
         self._det = {s: ContactDetector() for s in SIDES}   # 100 / 25 N until a gait pattern sets the plate's own
+        self._run = RunningDetector.for_mass(protocol.subject.mass_kg) if protocol.subject.mode == "running" else None
         for k, b in enumerate(protocol.blocks, 1):
             if b.pattern_items is not None and len(b.pattern_items) < b.n_perturbations:
                 raise ValueError(f"block {k}: pattern {b.pattern} has {len(b.pattern_items)} perturbations, "
@@ -295,11 +296,26 @@ class Study:
         t_end = samples[-1][0]
         if t_end < self._t - 0.5:                  # frame numbers restarted (Vicon reconnected)
             self._det = {s: ContactDetector(d.td_n, d.fo_n) for s, d in self._det.items()}
+            if self._run is not None:
+                self._run = self._run.reset()
             if self.state == "gait":
                 self.stop("Vicon restarted during the gait pattern: record it again")
         off = (host_s - t_end) if host_s is not None else 0.0
         for t, fz in samples:
             self._t = t
+            if self._run is not None:                       # running: both belts summed (D57)
+                v = [fz.get(self.plates[side]) for side in SIDES]
+                if None not in v:
+                    rec = self._rec
+                    if rec is not None:
+                        for side, x in zip(SIDES, v):
+                            rec[side][0].append(t)
+                            rec[side][1].append(x)
+                    for e, side, te in self._run.update(t, *v):
+                        self._contact(side, e, te, t_end, te + off)
+                if self.state == "gait" and t >= self._gait_until:
+                    self._gait_done()
+                continue
             for side in SIDES:
                 v = fz.get(self.plates[side])
                 if v is None:
@@ -368,17 +384,24 @@ class Study:
         self._changed()
 
     def _gait_done(self) -> None:
-        """Thresholds from each plate's swing noise (gait.fit_thresholds), then stride (TD → TD, 0.5–1.5 × median as
+        """Thresholds from each plate's swing noise (gait.fit_thresholds; running: the belt sum's, D57), then stride (TD → TD, 0.5–1.5 × median as
         the SLAP script) and stance (TD → FO) per side."""
         with self._lock:
             rec, self._rec = self._rec, None
             if rec is None:
                 return
             n = sum(len(rec[s][0]) for s in SIDES) / 2
-            res: dict[str, Any] = {"speed_ms": self._gait_speed, "rate_hz": round(n / max(1e-9, self._t - self._gait_t0))}
+            res: dict[str, Any] = {"speed_ms": self._gait_speed, "rate_hz": round(n / max(1e-9, self._t - self._gait_t0)),
+                                   "detector": "plates" if self._run is None else "sum"}
+            if self._run is None:
+                fits = {side: fit_thresholds(*rec[side]) for side in SIDES}
+            else:
+                ev = running_contacts(rec["left"][0], rec["left"][1], rec["right"][1], self._run.td_n, self._run.fo_n)
+                fits = {side: {"events": [(k, t) for k, s, t in ev if s == side], "td_n": self._run.td_n,
+                               "fo_n": self._run.fo_n, "noise_sd_n": None, "stable": True} for side in SIDES}
             short, unstable = [], []
             for side in SIDES:
-                f = fit_thresholds(*rec[side])
+                f = fits[side]
                 tds = [t for k, t in f["events"] if k == TD]
                 d = [b - a for a, b in zip(tds, tds[1:])]
                 if d:
@@ -400,8 +423,9 @@ class Study:
                                 "Subject on both belts, Vicon plates right?")
                 self._report("warn", self.message)
             else:
-                for side in SIDES:                 # the plate's own thresholds from now on
-                    self._det[side] = ContactDetector(res[side]["td_n"], res[side]["fo_n"])
+                for side in SIDES:                 # the plate's own thresholds from now on (walking)
+                    if self._run is None:
+                        self._det[side] = ContactDetector(res[side]["td_n"], res[side]["fo_n"])
                 self.gait = res
                 notes = [f"low thresholds unstable on {', '.join(unstable)} (extra or missed touch-downs): "
                          "100 / 25 N kept there"] if unstable else []

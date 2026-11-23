@@ -1,4 +1,6 @@
 """bumpem/study.py: gait pattern, block runner, perturbation timing (docs/API.md "Study", D44)."""
+import math
+import statistics
 import random
 import zipfile
 import time
@@ -7,12 +9,15 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("pydantic")
-from bumpem.gait import FO, TD, ContactDetector, fit_thresholds  # noqa: E402
+from bumpem.gait import FO, TD, ContactDetector, RunningDetector, fit_thresholds, running_contacts  # noqa: E402
 from bumpem.study import Protocol, Study, default_plates  # noqa: E402
 from bumpem.vicon import SimReader  # noqa: E402
 
 STRIDE, RIGHT_OFFSET = 0.72, 0.36           # SimReader: stride 0.72 s, right foot half a stride later
 STANCE = 0.25                               # SimReader: contact 0.25 s (half sine, peak 1500 N)
+TD_RUN, FO_RUN = 196.2, 78.5                # running, 80 kg: 25 / 10 % body weight on the belt sum (D57)
+TD_S = math.asin(TD_RUN / 1500) / math.pi * STANCE                       # the sum crosses TD_RUN this late
+STANCE_RUN = STANCE - TD_S - math.asin(FO_RUN / 1500) / math.pi * STANCE  # TD_RUN → FO_RUN
 
 
 def block(**kw):
@@ -85,15 +90,16 @@ def test_gait_pattern_then_random_block():
     for side in ("left", "right"):
         g = s["gait"][side]
         assert g["stride_ms"] == pytest.approx(STRIDE * 1000, abs=2) and g["n"] >= 5
-        assert g["td_n"] == 20 and g["fo_n"] == 10                   # no noise: the lowest thresholds
-        assert g["stance_ms"] == pytest.approx(STANCE * 1000, abs=3)
+        assert (g["td_n"], g["fo_n"], g["noise_sd_n"]) == (TD_RUN, FO_RUN, None)   # running: from body weight
+        assert g["stance_ms"] == pytest.approx(STANCE_RUN * 1000, abs=2)
+    assert s["gait"]["detector"] == "sum"
     r.st.start()
     r.run(12)
     assert len(r.sent) == 3 and r.st.state == "finished"
     for k, p in enumerate(r.sent):
         assert p["amplitude_n"] == pytest.approx(78.48) and p["angle_deg"] == 90
-        assert p["delay_ms"] == pytest.approx(0.25 * STANCE * 1000, abs=2)   # 25 % of the stance
-        assert (p["t"] % STRIDE) < 0.005                         # at a left touch-down (20 N: ~1 ms after contact)
+        assert (p["t"] % STRIDE) == pytest.approx(TD_S + 0.02, abs=0.002)   # left touch-down, confirmed 20 ms later
+        assert (p["t"] % STRIDE) * 1000 + p["delay_ms"] == pytest.approx((TD_S + 0.25 * STANCE_RUN) * 1000, abs=2)
     steps = [d["step"] for k, d in r.rows if k == "PERT"]
     assert steps[1] - steps[0] in (4, 5) and steps[2] - steps[1] in (4, 5)   # 4 steps due, then the next left strike
 
@@ -253,11 +259,13 @@ def test_thresholds_from_swing_noise():
 def test_phase_of_cycle_and_next_contact():
     r = Run(protocol(block(gait_phase_of="cycle", n_perturbations=1)))
     r.ready(); r.st.start(); r.run(4)
-    assert r.sent[0]["delay_ms"] == pytest.approx(0.25 * STRIDE * 1000, abs=2)
-    r = Run(protocol(block(gait_phase_pct=60, n_perturbations=1)))   # 60 % stance = 150 ms, latency 200 ms: next contact
+    p = r.sent[0]                                                    # pull at touch-down + 25 % of the stride
+    assert (p["t"] % STRIDE) * 1000 + p["delay_ms"] == pytest.approx((TD_S + 0.25 * STRIDE) * 1000, abs=2)
+    r = Run(protocol(block(gait_phase_pct=60, n_perturbations=1)))   # 60 % stance ≈ 140 ms, latency 200 ms: next contact
     r.ready(); r.st.start(latency_ms=200); r.run(4)
     pert = [d for k, d in r.rows if k == "PERT"][0]
-    assert pert["next_contact"] == 1 and pert["delay_ms"] == pytest.approx(0.6 * STANCE * 1000 - 200 + STRIDE * 1000, abs=3)
+    assert pert["next_contact"] == 1 and pert["age_ms"] == pytest.approx(20, abs=1.5)
+    assert pert["delay_ms"] == pytest.approx(0.6 * STANCE_RUN * 1000 - pert["age_ms"] - 200 + STRIDE * 1000, abs=3)
     assert any(k == "FO" for k, _ in r.rows)
 
 
@@ -338,6 +346,55 @@ def test_mode_plausibility_message():
     r = Run(Protocol(subject={"mass_kg": 80, "mode": "walking"}, blocks=[block()]))   # the simulator runs
     r.ready()
     assert r.st.state == "ready" and "does not look like walking" in r.st.message
+    assert r.st.gait["detector"] == "plates" and r.st.gait["left"]["td_n"] == 20   # walking: per plate
+
+
+def _run_belts(steps, blip_at=None):
+    """Running on two belts: contact 0.2 s, flight 0.15 s; each step = its left-belt share (rest on the right belt)."""
+    t, left, right = [], [], []
+    for k, share in enumerate(steps):
+        for i in range(350):
+            f = 1500 * math.sin(math.pi * i / 200) if i < 200 else 0.0
+            if blip_at == k and 260 <= i < 268:                      # 8 ms of noise in the flight phase
+                f = 400.0
+            t.append(round(k * 0.35 + i / 1000, 3))
+            left.append(share * f)
+            right.append((1 - share) * f)
+    return t, left, right
+
+
+def test_running_detector_sum_and_side():
+    """Both feet on the right belt (left foot 30 % on the left belt), one unclear step, a noise blip (D57)."""
+    d = RunningDetector.for_mass(80)
+    assert (d.td_n, d.fo_n) == (TD_RUN, FO_RUN)
+    shares = [0.0, 0.3, 0.0, 0.3, 0.0, 0.25, 0.2, 0.3]               # steps 7, 8: shift < 0.15, sides alternate
+    ev = running_contacts(*_run_belts(shares, blip_at=2), TD_RUN, FO_RUN)
+    tds = [(s, t) for k, s, t in ev if k == TD]
+    assert [s for s, _ in tds] == ["right", "left"] * 4              # one touch-down per step, blip ignored
+    t0 = math.asin(TD_RUN / 1500) / math.pi * 0.2
+    assert all(abs(t - k * 0.35 - t0) < 0.002 for k, (_, t) in enumerate(tds))   # the touch-down's own sample time
+    assert [s for k, s, _ in ev if k == FO] == ["right", "left"] * 4
+    ev = running_contacts(*_run_belts([0.3, 0.0, 0.3]), TD_RUN, FO_RUN)   # first contact: share > 0.5 = left
+    assert [s for k, s, _ in ev if k == TD] == ["right", "right", "left"]   # wrong once, right from the second
+
+
+REPLAY = Path(__file__).resolve().parents[1] / "replays" / "running_3.33ms.csv"
+
+
+@pytest.mark.skipif(not REPLAY.is_file(), reason="participant replay (local only, D54)")
+def test_running_replay_steps():
+    """Participant of 2026-11-19 at 3.33 m/s, runner across the right belt: per-plate detection gave a stride of
+    325-347 ms; the summed belts give the real ≈ 704 ms, alternating sides (D57)."""
+    import csv
+    rows = [r for r in csv.DictReader(REPLAY.open()) if float(r["t_s"]) > 9]   # standing still until 9 s
+    t = [float(r["t_s"]) for r in rows]
+    ev = running_contacts(t, [float(r["Fz_Left"]) for r in rows], [float(r["Fz_Right"]) for r in rows], 200, 80)
+    sides = [s for k, s, _ in ev if k == TD]
+    assert 165 <= len(sides) <= 180                                  # 61 s at ≈ 352 ms per step
+    assert sum(a != b for a, b in zip(sides, sides[1:])) >= len(sides) - 5
+    for side in ("left", "right"):
+        td = [x for k, s, x in ev if k == TD and s == side]
+        assert statistics.median(b - a for a, b in zip(td, td[1:])) == pytest.approx(0.704, abs=0.015)
 
 
 def test_patterns_api_and_pattern_study(tmp_path):

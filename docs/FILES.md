@@ -45,7 +45,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/protocol.py` | v1 message types, parser, command builders (mirrors PROTOCOL.md) |
 | `bumpem/device.py` | `Board` client (request/ack, telemetry, estop) over `SerialLink` or sim |
 | `bumpem/sim.py` | `SimLink`: simulated board speaking protocol v1 |
-| `bumpem/gait.py` | FS/TO detector, port of MATLAB logic; `ContactDetector` + `fit_thresholds` (SLAP script, study D45) |
+| `bumpem/gait.py` | FS/TO detector, port of MATLAB logic; `ContactDetector` + `fit_thresholds` (SLAP script, study D45); `RunningDetector` (running: summed belts, side from the weight shift, D57) |
 | `bumpem/experiment.py` | Perturbation sequence + FS target generation (v0 letters; superseded by `study.py`) |
 | `scripts/lab_week_guide.py` → `docs/lab-week-guide.pdf` | Lab week guide after 2026-11-05: day by day (install, ropes, kff 3.5, gait pattern, test block, safety), fill-in tables; copy in `../bumpemInstallation/` |
 | `scripts/estop_guide.py` → `docs/estop-guide.pdf` | E-stop guide (proposal, technician checks first): one NC button + 24 V 4-pole relay → CN501 pin 7 + 11 of each RSP-2000; parts, drawings, wiring, steps, test table. Photos `docs/hardware-photos/2026-11-16_estop-*` (local only, gitignored; PDF has them) |

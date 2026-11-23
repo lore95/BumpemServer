@@ -18,7 +18,7 @@ Tick items off and tell Claude what you found so `STATUS.md` stays current. PDF 
 
 ## 0 · Not working now (found in the studies of 2026-11-19)
 Files: `tests/*_20261119_112556_*` (walking 1.7 m/s, 100 N), `tests/*_20261119_120754_*` (running 3.33 m/s, 150 N); kff 5.5, baseline 5 N.
-- [ ] 🔴 **Running: steps detected wrong.** Measured stride 325–347 ms, real ≈ 704 ms: steps counted ≈ 2×, pulls 65 ms after touch-down instead of ≈ 141 ms (20 % of the cycle), "right" also fired on left-foot landings. Causes: runner on / across the right belt (both plates > 300 N 19 % of the time, impossible in running), impact bounce (73 contacts < 60 ms on the left plate), thresholds left at 100 / 25 N (plate noise 28–37 N). Fix: one foot per belt (tape line) `lab` + ignore contacts < 60 ms, pause after each touch-down, running thresholds from body weight `Claude`
+- [x] ~~🔴 **Running: steps detected wrong.** Measured stride 325–347 ms, real ≈ 704 ms: steps counted ≈ 2×, pulls 65 ms after touch-down instead of ≈ 141 ms (20 % of the cycle), "right" also fired on left-foot landings. Causes: runner on / across the right belt (both plates > 300 N 19 % of the time, impossible in running), impact bounce (73 contacts < 60 ms on the left plate), thresholds left at 100 / 25 N (plate noise 28–37 N). Fix: one foot per belt (tape line) `lab` + ignore contacts < 60 ms, pause after each touch-down, running thresholds from body weight `Claude`~~ → fixed with the summed belts (D57, 2026-11-23)
 - [ ] 🔴 **Start allowed with an implausible gait pattern:** the mode check flagged the running stride, the block started anyway. Fix: refuse Start (or explicit "use anyway") · `Claude`
 - [ ] 🔴 **Pulls never reach the asked force:** the motor command is at maximum (DAC 4095) for 130–180 ms in all 24 pulls. 100 N → 58–91 N net, 150 N → 58–90 N net; single towers at most B 56–74, C 49–98, A 82–96, D ≤ 111 N. Limit = driver current at full scale (ESCON 3.3 V = 9.9 A, `knowledge/control.md`), not kff. The saved amplitude (100 / 150 N) is not what the person felt: analyse the measured rope force. Fix: warn in BumpemSetUp above the deliverable force `Claude`; more current needs the ESCON scaling changed `supervisor` (technician; motor / driver limits first)
 - [ ] 🟠 **Participant ID was a first name** ("Carlo" in the events file and every file name). Fix: ID must contain a digit (e.g. S014) `Claude`; keep those files out of git
@@ -50,7 +50,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟠 **After any rope change: rope wound neatly on every drum** (side by side, no crossing turns): a badly wound rope catches and releases, the tower then jumps 0–15 N while holding (C, 2026-11-20) · `lab`
 - [ ] 🟠 **Zero sensors** with the ropes on and slack → Save as default (after any rope / sensor change) · `lab`
 - [ ] 🟠 **Rope paths B and C:** power off, pull each rope by hand vs A / D; B's drum bolts, B's shaft at the collar (worn, 2026-10-29) · `lab`
-- [ ] 🟠 **Running: one foot per belt** (tape line in the middle), then record the gait pattern again: stride should be ≈ 0.7 s per side · `lab` `subject`
+- [ ] 🟠 **Running (D57, after the next update): check left / right once:** record a short running block with video (or foot markers) and compare the page's left steps with the real left foot; gait pattern stride ≈ 0.7 s per side. Feet may land on either belt · `lab` `subject`
 - [ ] 🔴 **C's drum slips on its shaft** (marker check 2026-11-20; slips again at 75 N on the 20 A range: holds only 58 N, 2026-11-20). Marker line broken after the 75 N pull (size not measured). User: the shaft profile will be changed anyway (new shaft). Collars are **clamp type** (user, 2026-11-20). D slips too (100 N, also after tightening): same fix. Before: caliper on the shaft under the collar vs 2 cm away (wear). Which joint: drum ↔ collar or collar ↔ shaft? Fix with the collar guide (`hardware/motor_unit/`: 3 × #6-32 × 1/2" bolts + washers, threadlocker, clean bore), marker check again after 10–20 N pulls. No high-force pulls on C until then · `lab` `parts`
 - [ ] 🟠 **Marker check B and D** (line across shaft, collar, drum hub; pull by hand; offset = slip). B slipped in October · `lab`
 - [ ] 🟠 Repeat the ceiling test on A and C after C's fix (A: 57 / 75 N, 7 sudden drops per pull without slipping: cause open) · `lab`
@@ -63,7 +63,8 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Rope-force noise: one recording at rest + one pull, for the oversampling decision (D39) · `lab`
 
 ## 3 · Software (`Claude`, no lab needed)
-- [ ] 🔴 Running step detection: minimum contact time, pause after touch-down, thresholds from body weight; test on the replay `--vicon replay:running_3.33ms` (D54) until the stride is ≈ 0.7 s
+- [x] Running step detection: summed belts, side from the weight shift (D57, 2026-11-23; replay stride 701 / 700 ms)
+- [ ] 🟢 New update package with D57 for the lab PC · `Claude`
 - [ ] 🔴 Refuse Start when the gait pattern is implausible (or explicit "use anyway", logged)
 - [ ] 🟠 BumpemSetUp: warn when a block asks more than the towers deliver (≈ 60–90 N now)
 - [ ] 🟠 Participant ID must contain a digit
