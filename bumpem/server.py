@@ -32,7 +32,8 @@ from .datalog import ForceLog, ViconLog
 from .device import Board, BoardError
 from .patterns import Pattern, PatternStore
 from . import session
-from .study import Protocol, Study
+from .gaitcheck import GaitCheck, GaitCheckBody
+from .study import Protocol, Study, default_plates
 
 SERVER_VERSION = "0.6.0"
 MODES = ("production", "testing")
@@ -168,6 +169,7 @@ class Hub:
         self._test_lock = threading.Lock()    # one test pull at a time
         self._ping_stop = threading.Event()   # replaced per connection, so an old ping thread can't be revived
         self.study: Study | None = None       # docs/API.md "Study"
+        self.gaitcheck: GaitCheck | None = None   # docs/API.md "Gait check" (D58)
         self.study_t0: datetime | None = None  # when the study was loaded: session date + time in the zip name (D53)
         self.study_stems: list[str] = []       # recordings made while it was loaded
         self.last_export: Path | None = None
@@ -380,6 +382,8 @@ class Hub:
             v.close()
             if self.study is not None:
                 self.study.vicon_lost()
+            if self.gaitcheck is not None:
+                self.gaitcheck.stop("Vicon lost")
 
     def _vicon_lost(self, reader, message: str) -> None:   # reader thread
         if self.vicon is reader:
@@ -391,6 +395,8 @@ class Hub:
             reader.close()
             if self.study is not None:
                 self.study.vicon_lost()
+            if self.gaitcheck is not None:
+                self.gaitcheck.stop("Vicon lost")
 
     def _vicon_open(self) -> None:           # caller holds self._lock
         if self.log is not None and self.vlog is None and self.vicon is not None:
@@ -430,6 +436,9 @@ class Hub:
         st = self.study
         if st is not None:
             st.on_samples(list(zip(dev, subs)), host_s)
+        gc = self.gaitcheck
+        if gc is not None:
+            gc.on_samples(list(zip(dev, subs)), host_s)
 
     # --- station-PC clock, kept connections, sync (docs/API.md "Automatic connection", "Clocks and sync") ---
     def pc(self) -> float:
@@ -1032,6 +1041,38 @@ def create_app(wd_ms: int = 1000, board: str | None = None, ui_dir: str | None =
         hub.study = None
         hub.broadcast({"type": "study", "state": "none"})
         return {"state": "none"}
+
+    # --- gait check (docs/API.md "Gait check", D58): plates only, no board ---
+    @app.get("/api/v1/gaitcheck")
+    def get_gaitcheck():
+        return hub.gaitcheck.status() if hub.gaitcheck else {"running": False}
+
+    @app.post("/api/v1/gaitcheck")
+    def start_gaitcheck(body: GaitCheckBody):
+        v = hub.vicon
+        if v is None:
+            raise ApiError("not_connected", 409, "Vicon not connected: the gait check needs the plates (POST /api/v1/vicon/connect)")
+        try:
+            plates = hub.study.plates if hub.study else default_plates(list(v.plates))
+        except ValueError as e:
+            raise ApiError("invalid", 422, str(e)) from None
+        old, hub.gaitcheck = hub.gaitcheck, None
+        if old is not None:
+            old.stop("restarted")
+        gc = GaitCheck(body, plates, hub.broadcast, hub.log_command, hub.vicon_clock.to_pc, hub.pc)
+        hub.gaitcheck = gc
+        st = gc.status()
+        hub.broadcast({"type": "gaitcheck", "event": "STATUS", **st})
+        hub.log_command("GAITCHECK", {"start": body.model_dump(), "plates": plates})
+        return st
+
+    @app.delete("/api/v1/gaitcheck")
+    def stop_gaitcheck():
+        gc = hub.gaitcheck
+        if gc is None:
+            return {"running": False}
+        gc.stop()
+        return gc.status()
 
     @app.post("/api/v1/study/gait")
     def study_gait(body: GaitBody | None = None):

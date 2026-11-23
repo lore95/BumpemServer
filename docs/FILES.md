@@ -54,6 +54,7 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `scripts/collect_for_claude.py` + `bundle/collect_for_claude.bat` | Zip of error logs, delay reports, newest recordings, version, settings for Claude (D51) |
 | `bumpem/patterns.py` | Saved perturbation patterns (D50): directions + step gaps, JSON per pattern in `patterns/`, never overwritten |
 | `bumpem/clocksync.py` | Device clock → station-PC clock fit (D49): board `t_ms`, Vicon frames → `pc_s`; `/sync` |
+| `bumpem/gaitcheck.py` | Gait check (D58): live TD / FO / phase from the plates without the board; `/api/v1/gaitcheck` |
 | `bumpem/study.py` | Study runner (D44): protocol models, gait pattern per belt, blocks, perturbation at a gait phase; `/api/v1/study` |
 | `bumpem/session.py` | Session zip of a loaded study (D53): name, files, export; saved session zips + their protocol for BumpemSetUp |
 | `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |

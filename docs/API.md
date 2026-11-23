@@ -260,6 +260,22 @@ Status:
 ```
 `state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `ends_in_s`: seconds left of `duration_s` while running, else null. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409). `gait.detector`: `plates` (walking: per belt) or `sum` (running: both belts; `td_n` / `fo_n` the same on both sides, `noise_sd_n` null).
 
+### Gait check (`host`, both modes, D58)
+Touch-down, foot-off and phase moments live, for checking the detection against a high-speed video of the participant and the screen. Reads the plates only: no board, no pulls, no study needed (a running study is not affected).
+
+| Method | Path | Body | Response |
+|---|---|---|---|
+| GET | `/api/v1/gaitcheck` | | status (below); `{"running": false}` before the first start |
+| POST | `/api/v1/gaitcheck` | `{"mode": "walking" \| "running", "mass_kg": 80, "trigger_side": "left" \| "right" \| "any", "gait_phase_pct": 20, "gait_phase_of": "cycle" \| "stance"}` (defaults walking, left, 20, cycle) | status. Starts (or restarts) the check. Needs Vicon (409 `not_connected`). Plates: the loaded study's, else as the study's default |
+| DELETE | `/api/v1/gaitcheck` | | status (`running` false) |
+
+- Detection as the study: walking per plate, 100 / 25 N for the first 10 s, then the thresholds from that stretch's swing noise (`gait.fit_thresholds`, as the gait pattern; unstable → 100 / 25 N kept); running on the sum of both belts, 25 / 10 % body weight (D57).
+- Phase: after a touch-down of `trigger_side`, at `gait_phase_pct` of that side's mean stride (or contact) time over its last 10 (stride: those within 0.5–1.5 × the median), once it has 3. This is when a study pull would start at the rope (study delay with `latency_ms` right). Already past (phase shorter than the touch-down's age): the same phase of the side's next contact, as the study.
+- Vicon lost: the check stops (`message`).
+- A running recording gets every stream item below as a `GAITCHECK` row in the events file.
+
+Status: `{"running": true, "message": null, "mode": "running", "mass_kg": 84, "trigger_side": "left", "gait_phase_pct": 20, "gait_phase_of": "cycle", "detector": "sum", "fitted": true, "thresholds": {"left": {"td_n": 206.0, "fo_n": 82.4}, "right": {...}}, "steps": 120, "left": {"stride_ms": 701.2, "stride_sd_ms": 4.8, "contact_ms": 205.1, "n": 10}, "right": {...}, "plates": {"left": "Left", "right": "Right"}}`. `fitted`: walking thresholds set from the first 10 s (running: always true). Side values null until there are any.
+
 ## Live stream (WebSocket)
 `ws://127.0.0.1:8000/api/v1/stream?telemetry_hz=30`
 
@@ -272,8 +288,12 @@ Server → client, one JSON object per message:
 {"type": "vicon", "host_s": 12.345, "frame": 5021, "fz": {"Left": 812.4, "Right": 3.1}}   // mean over the frame's subsamples
 {"type": "gait", "t_s": 12.345, "event": "FS", "side": "left", "step": 212}  // study loaded: every valid foot strike
 {"type": "study", "state": "running", ...}                                      // study status (GET /study) on every change
+{"type": "gaitcheck", "event": "TD", "side": "left", "t_pc": 81.234, "step": 57, "stride_ms": 702.0}   // gait check (D58): touch-down
+{"type": "gaitcheck", "event": "FO", "side": "left", "t_pc": 81.440, "contact_ms": 206.0}               // foot-off
+{"type": "gaitcheck", "event": "PHASE", "side": "left", "t_pc": 81.374, "phase_ms": 140.2, "next_contact": 0, "sent_pc": 81.375}   // phase moment
+{"type": "gaitcheck", "event": "STATUS", ...}                                   // gait check status (GET /gaitcheck) on start, stop, thresholds
 ```
-Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. In thinned telemetry, `measured` is the
+`t_pc`: the sample's time on the station-PC clock (seconds since the server started, as `host_s` and `pc_s`; PHASE: the planned moment), `sent_pc`: when the server sent it. Telemetry and `vicon` messages are each thinned to `telemetry_hz` for display. In thinned telemetry, `measured` is the
 **median of the board samples since the previous message** (per channel; removes single-sample spikes); `target`,
 `dac`, `state` are the latest sample's. Logs always keep the full rate, raw.
 
