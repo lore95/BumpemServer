@@ -44,7 +44,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🔴 **Tower B chopper → ESCON cable:** 1.5 mm² fine-stranded + insulated ferrules instead of the 14 AWG wire · `lab` `parts` · status?
 
 ## 2 · Next lab visit
-- [ ] 🟢 Install `BumpemUpdate_2026-11-20_1503` (sets the 20 A control values and the 75 N cap, D55, D56): `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
+- [ ] 🟢 Install `BumpemUpdate_2026-11-23_1347` (sets the 20 A control values and the 75 N cap, D55, D56; running steps on the summed belts, D57; replaces `_2026-11-20_1503`): `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
 - [ ] 🟠 `apply_calibration.bat` (gains above), then max force 196 N / fault 200 N → Apply → **Save as default** · `lab`
 - [ ] 🟠 **Zero the plates in Nexus** before each session (look only in D-Flow) · `lab`
 - [ ] 🟠 **After any rope change: rope wound neatly on every drum** (side by side, no crossing turns): a badly wound rope catches and releases, the tower then jumps 0–15 N while holding (C, 2026-11-20) · `lab`
@@ -64,7 +64,6 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 
 ## 3 · Software (`Claude`, no lab needed)
 - [x] Running step detection: summed belts, side from the weight shift (D57, 2026-11-23; replay stride 701 / 700 ms)
-- [ ] 🟢 New update package with D57 for the lab PC · `Claude`
 - [ ] 🔴 Refuse Start when the gait pattern is implausible (or explicit "use anyway", logged)
 - [ ] 🟠 BumpemSetUp: warn when a block asks more than the towers deliver (≈ 60–90 N now)
 - [ ] 🟠 Participant ID must contain a digit
