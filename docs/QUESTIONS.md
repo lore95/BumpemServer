@@ -136,6 +136,7 @@ Ask them to send these if they still have them:
 
 **6.4** Was the treadmill (**D-Flow**) ever controlled by the scripts, or always by hand?
 > Answer:
+> Plan to control it from Bump'em (2026-11-24, not started): `docs/treadmill-plan.md`.
 
 *(→ `docs/knowledge/gait_detection.md`, `docs/knowledge/experiment.md`)*
 

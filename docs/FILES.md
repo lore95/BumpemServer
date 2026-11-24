@@ -78,5 +78,6 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `scripts/vicon_check.py` | Read-only Vicon report (`vicon_check.bat`): this PC's addresses, TCP 801 on candidate Nexus addresses, SDK load/version/connect (+ devices, Fz if connected), every `ViconDataStreamSDK*.dll` on C: with FileVersion, D-Flow/Motek settings lines mentioning Vicon/801 → `vicon_check_<stamp>.txt` |
 | `scripts/vicon_probe.py` | Read-only Vicon DataStream check: frame rate, devices + outputs, subjects, live Fz per plate (which plate is the left belt). Needs `vicon_dssdk`; untested on the lab system |
 | `scripts/todo_pdf.sh` | `docs/TODO.md` → `docs/todo.pdf` (A4; pandoc + Chrome headless, Mac); any other page with `IN OUT TITLE` arguments |
+| `docs/treadmill-plan.md` | Plan + handoff (not started): belt speeds and start / stop from Bump'em through a small D-Flow app (UDP, Lua Script module), steps, draft protocol and script, tests |
 | `docs/tower-limits.md` / `.pdf` | Force limits per tower for studies until the steel shafts are in (2026-11-20 tests, 20 A range) |
 | `scripts/make_replay.py` | Cut a stretch of a `vicon_*.csv` into `replays/<name>.csv` for `--vicon replay:<name>` (D54; replays are local, gitignored) |

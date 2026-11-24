@@ -89,6 +89,14 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🟢 Tower B: label the old ESCON "faulty: USB + enable"; keep the 200 kg cell or buy a 100 kg DYMH-103 · `supervisor`
 - [ ] 🟢 Pull direction: measure tower positions and rope height vs harness height (geometry assumes 0 / 90 / 180 / −90°, horizontal ropes) · `lab`
 
+## Later · optional: treadmill speed + start / stop from Bump'em (D-Flow app) · not started
+Handoff with the whole plan, draft protocol and Lua script: `docs/treadmill-plan.md`. Do in this order once we decide to.
+- [ ] 🟢 **Step 1, look only on the D-Flow PC:** photos of the D-Flow version, the module list (network / UDP module?), the Treadmill module's inputs + outputs, the install folder (`socket`, `core.dll`) → Claude picks the route · `lab`
+- [ ] 🟢 If LuaSocket would have to be added: OK of whoever is responsible for the D-Flow PC · `supervisor`
+- [ ] 🟢 Step 2: API.md → server (`/treadmill`, UDP, max speed, Release refused while belts move) → UI controls; fake D-Flow for tests · `Claude` `Mac`
+- [ ] 🔴 Step 3: new D-Flow application (Script → Treadmill module), existing apps unchanged · `lab`
+- [ ] 🔴 Step 4: first tests with **nobody on the treadmill**, someone at the GRAIL e-stop: 0.5 m/s, start / stop, L ≠ R, cable unplugged → belts ramp to a stop · `lab`
+
 ## Later · optional: hardware clock sync (Vicon ↔ Teensy)
 - [ ] 🟢 Vicon sync output (voltage, connector, permission) · `supervisor`; Teensy pin 2 is free (3.3 V max: divider for 5 V) · `Claude` `lab`
 
