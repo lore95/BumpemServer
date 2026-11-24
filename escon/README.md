@@ -88,7 +88,7 @@ Made from A's file: Download → auto-tuning → Store Parameters → power cycl
 Compared with A's file line by line: **all configuration identical** (current controller, DigIN2 = enable, AnIN2 = set value 0–10 V → 0–30 A, 30 A limit, 4.06 A nominal, 11 pole pairs, offset 0.0070 A, Hall rotor detection).
 25 values differ, all tuning/identification results, all within a few % of A's: R 0.938 Ω (A 0.909), L 0.943 mH (A 0.947), current controller P gain 192 / integral time 1005 µs (A 186 / 1041), speed controller gains, inertia.
 
-## All four drivers, before the current range change: `module{A_left,B_front,C_right,D_back}_2026-11-20.edc` (uploaded 2026-11-20)
+## All four drivers, before the current range change: `module{A_left,B_front,C_right,D_back}_2026-11-20.edc` (uploaded 2026-11-20) (files removed 2026-11-24 once the 20 A range was confirmed working; in git history)
 Uploaded by the user (originals `tests/ParamMotor{A,B,C,D}.edc`, removed 2026-11-24); first backup ever of C and D. Compared value by value (155 parameters):
 - **Configuration identical on all four** and unchanged since A's 2026-10-01 and B's 2026-10-15 uploads (A and B: every value the same as then): current controller, DigIN2 = enable, AnIN2 = set value, 30 A limit, 4.06 A nominal, 11 pole pairs, offset 0.0070 A, Hall rotor detection.
 - **Set value is stored as two points:** First Source 0 V → First Target 0 A, Second Source 10 V → Second Target 30 A (0x4140/05–08); the slope 0x4140/01 = 3 A/V follows from them. So in ESCON Studio the change is the second point: **3.3 V → 20 A** (slope 6.06 A/V).
