@@ -75,7 +75,7 @@ Motor connector read (2026-10-01, mirrored wire-side numbering): blue = motor pi
 **Module C fixed (2026-10-01):** blue (Hall GND) moved from J2 pin 4 to J3 pin 5 → LED green, no error.
 Module C Diagnostics after the fix (2026-10-01): **all tests passed**; LED green blinking (DISABLE, ready).
 
-## Module A (left) driver configuration: `moduleA_left_2026-10-01.edc` (uploaded 2026-10-01)
+## Module A (left) driver configuration: `moduleA_left_2026-10-01.edc` (uploaded 2026-10-01) (file removed 2026-11-24: same values as the 2026-11-20 backup, in git history)
 = Stanford config **plus auto-tuning results**. Identical: motor data (11 pole pairs, 4.06 A nominal, 30 A limit, 1960 rpm), current-controller mode, DigIN2 = enable, AnIN2 = set value, **set value 0–10 V → 0–30 A**, offset 0.0070 A, Hall rotor detection.
 26 values differ, all tuning/identification results: R 0.909 Ω, L 0.947 mH, rotor inertia, current controller P gain 186 / integral time 1041 µs (Stanford 170 / 20000), speed controller gains, Hall averaging. → auto-tuning was run after loading the Stanford file (manual §4.3.1 step 6).
 **Confirms the scaling mismatch** for this driver: DAC 3.3 V = 9.9 A, firmware assumes 30 A (`i_full`).
@@ -83,13 +83,13 @@ Module C: upload still to do; if its gains equal the Stanford file (e.g. integra
 
 **Module A (2026-10-02): first open-loop test pulled far too strong** (same settings as C, which was gentle). Cause found: **A's J3 green and grey swapped** (green = Hall supply on pin 3, grey = Hall 3 on pin 4) → Hall supply into Hall-3 output, wrong commutation. Fix: J3 = 1 yellow, 2 pink, 3 grey, 4 green, 5 blue (as C). Then Diagnostics on A (Hall test must pass: sensor 3 was tied to +5 V while swapped) before driving again.
 
-## Module B (front) driver configuration: `moduleB_front_2026-10-15.edc` (replacement ESCON 70/10, uploaded 2026-10-15)
+## Module B (front) driver configuration: `moduleB_front_2026-10-15.edc` (replacement ESCON 70/10, uploaded 2026-10-15) (file removed 2026-11-24: same values as the 2026-11-20 backup, in git history)
 Made from A's file: Download → auto-tuning → Store Parameters → power cycle → Controller Monitor checked → upload (saved as `parametersForMotorB.edc`, renamed).
 Compared with A's file line by line: **all configuration identical** (current controller, DigIN2 = enable, AnIN2 = set value 0–10 V → 0–30 A, 30 A limit, 4.06 A nominal, 11 pole pairs, offset 0.0070 A, Hall rotor detection).
 25 values differ, all tuning/identification results, all within a few % of A's: R 0.938 Ω (A 0.909), L 0.943 mH (A 0.947), current controller P gain 192 / integral time 1005 µs (A 186 / 1041), speed controller gains, inertia.
 
 ## All four drivers, before the current range change: `module{A_left,B_front,C_right,D_back}_2026-11-20.edc` (uploaded 2026-11-20)
-Uploaded by the user (originals `tests/ParamMotor{A,B,C,D}.edc`); first backup ever of C and D. Compared value by value (155 parameters):
+Uploaded by the user (originals `tests/ParamMotor{A,B,C,D}.edc`, removed 2026-11-24); first backup ever of C and D. Compared value by value (155 parameters):
 - **Configuration identical on all four** and unchanged since A's 2026-10-01 and B's 2026-10-15 uploads (A and B: every value the same as then): current controller, DigIN2 = enable, AnIN2 = set value, 30 A limit, 4.06 A nominal, 11 pole pairs, offset 0.0070 A, Hall rotor detection.
 - **Set value is stored as two points:** First Source 0 V → First Target 0 A, Second Source 10 V → Second Target 30 A (0x4140/05–08); the slope 0x4140/01 = 3 A/V follows from them. So in ESCON Studio the change is the second point: **3.3 V → 20 A** (slope 6.06 A/V).
 - C and D are auto-tuned (C current controller 187 / 1047 µs, D 188 / 1053 µs; not the Stanford 170 / 20000 µs), so the accidental Download on C did not leave untuned gains.

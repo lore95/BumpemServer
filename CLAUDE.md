@@ -63,7 +63,7 @@ When code and thesis disagree, code is what ran. Flag the conflict in STATUS.md.
 | Server API | `docs/API.md` (contract for all clients) |
 | Device / sim | `bumpem/device.py`, `bumpem/sim.py` |
 | Gait | `bumpem/gait.py` |
-| Experiment | `bumpem/experiment.py`, `bumpem/datalog.py` |
+| Study | `bumpem/study.py`, `bumpem/datalog.py` |
 | UI | `../BumpemUI` (separate client, future own repo — D10, D11) |
 
 ## Build / test

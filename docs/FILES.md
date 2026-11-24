@@ -46,7 +46,6 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/device.py` | `Board` client (request/ack, telemetry, estop) over `SerialLink` or sim |
 | `bumpem/sim.py` | `SimLink`: simulated board speaking protocol v1 |
 | `bumpem/gait.py` | FS/TO detector, port of MATLAB logic; `ContactDetector` + `fit_thresholds` (SLAP script, study D45); `RunningDetector` (running: summed belts, side from the weight shift, D57) |
-| `bumpem/experiment.py` | Perturbation sequence + FS target generation (v0 letters; superseded by `study.py`) |
 | `scripts/lab_week_guide.py` → `docs/lab-week-guide.pdf` | Lab week guide after 2026-11-05: day by day (install, ropes, kff 3.5, gait pattern, test block, safety), fill-in tables; copy in `../bumpemInstallation/` |
 | `scripts/estop_guide.py` → `docs/estop-guide.pdf` | E-stop guide (proposal, technician checks first): one NC button + 24 V 4-pole relay → CN501 pin 7 + 11 of each RSP-2000; parts, drawings, wiring, steps, test table. Photos `docs/hardware-photos/2026-11-16_estop-*` (local only, gitignored; PDF has them) |
 | `bumpem/delays.py` | Delay report of a recording (D51): command, rise, lag, ratio per pulse; study timing error → System delay; `bumpem delays`, `GET /log/delay` |
@@ -57,7 +56,6 @@ In git: code, tests, scripts, `.md` docs, ESCON `.edc` files, the cabling PNG. *
 | `bumpem/gaitcheck.py` | Gait check (D58): live TD / FO / phase from the plates without the board; `/api/v1/gaitcheck` |
 | `bumpem/study.py` | Study runner (D44): protocol models, gait pattern per belt, blocks, perturbation at a gait phase; `/api/v1/study` |
 | `bumpem/session.py` | Session zip of a loaded study (D53): name, files, export; saved session zips + their protocol for BumpemSetUp |
-| `bumpem/recovery.py` | Balance-recovery interface + fixed-wait stand-in (`TODO(recovery)`: lab algorithm) |
 | `bumpem/datalog.py` | CSV logs (MATLAB-compatible headers); `ForceLog` = the server's recordings; `ViconLog` = force plates while armed |
 | `bumpem/vicon.py` | Vicon force plates (D31, D32): `ViconReader` (DataStream SDK, device data only, Fz per plate per subsample; untested on the lab system), `SimReader` (`sim`: two belts, running) |
 | `bumpem/geometry.py` | Perturbation angle → per-module amplitudes (Vicon axes, D16), reachable directions |
