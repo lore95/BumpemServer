@@ -1,6 +1,7 @@
 """Printed tower parts. Mounting interface (key + M6 holes) from tower.py; device sizes marked PLACEHOLDER are not measured yet.
 Every part is modelled in mounting position: back face (key side) at z = 0, key pointing to -z into the profile slot."""
 import cadquery as cq
+import numpy as np
 
 import tower as P
 
@@ -155,6 +156,90 @@ def ground_bar_mount() -> cq.Workplane:
         part = part.cut(cq.Workplane("XY").slot2D(6.0 + 3.4, 3.4).extrude(P.PLATE_T + GND_PAD + 2).translate((cx, GND_DY, -1)))
         part = part.cut(cq.Workplane("XY").slot2D(6.0 + 5.9, 5.9).extrude(2.6).translate((cx, GND_DY, 0)))  # M3 nut channel, 5.5 AF
     return part
+
+
+# ---------- touch covers for the supplies (2026-11-24): box open towards the profile, held on the two side faces ----------
+COVER_T, VENT, NOTCH = 3.0, 3.0, (50.0, 30.0)                # wall, vent slot width (no finger fits), cable opening (w, h) mid end wall
+EAR_T, EAR_Z, SIDE_SLOT_Z = P.PLATE_T, 36.0, -P.SLOT_PITCH / 2  # ear on each side face: 5 mm under the M6 head, reaches 36 mm back
+EAR_Y = P.FACE / 2 + 0.3                                    # ear 0.3 mm off the side face; its key sits in the slot nearest the corner
+
+
+def _cover_section(iy: float, fz: float, c: float) -> list:
+    """Wall cross-section (y, z): side walls at +-iy, front at fz (inner faces), a 45 deg wall from each side wall in to the
+    profile corner (inner line y - z = c, below the supply), then an ear flat on the side face. Prints front down, no supports."""
+    t, e, o = COVER_T, EAR_T, c + COVER_T * 2 ** 0.5
+    yo, zo, ye = iy + t, fz + t, EAR_Y + e
+    right = [(EAR_Y, -EAR_Z), (ye, -EAR_Z), (ye, ye - o), (yo, yo - o), (yo, zo)]
+    inner = [(-EAR_Y, EAR_Y - c), (-iy, iy - c), (-iy, fz)]
+    return right + [(-y, z) for y, z in reversed(right)] + inner + [(-y, z) for y, z in reversed(inner)]
+
+
+def _end_wall(iy: float, fz: float, c: float) -> list:
+    """End wall outline: the section's outside, closed above the profile face."""
+    s = _cover_section(iy, fz, c)
+    return s[:10] + [(-EAR_Y, 0.3), (EAR_Y, 0.3)]
+
+
+def psu_cover(iy: float, fz: float, c: float, x0: float, x1: float, ends: tuple, ear_xs: list, sleeve: float = 0.0) -> cq.Workplane:
+    """Cover from x0 to x1 (outside). ends: which of x0 / x1 get an end wall with vents and the cable opening. ear_xs: M6 bolts,
+    one each side face (M6 x 16 + slot-10 T-nut, like the plates). sleeve: lip past x1 that slides into the next piece."""
+    t = COVER_T
+    part = cq.Workplane("YZ").polyline(_cover_section(iy, fz, c)).close().extrude(x1 - x0).translate((x0, 0, 0))
+    for x, d in ((x0, 1), (x1, -1)):
+        if (x == x0 and ends[0]) or (x == x1 and ends[1]):
+            w = cq.Workplane("YZ").polyline(_end_wall(iy, fz, c)).close().extrude(t).translate((x if d > 0 else x - t, 0, 0))
+            w = w.cut(cq.Workplane("XY").box(3 * t, NOTCH[0], NOTCH[1], centered=(True, True, False)).translate((x + d * t / 2, 0, -1)))
+            for z in np.arange(NOTCH[1] + 6, fz - 3, 7):        # vents above the opening, then beside it
+                w = w.cut(cq.Workplane("XY").box(3 * t, 2 * iy - 12, VENT).translate((x + d * t / 2, 0, z)))
+            for z in np.arange(6, NOTCH[1] - 2, 7):
+                for s in (-1, 1):
+                    w = w.cut(cq.Workplane("XY").box(3 * t, iy - NOTCH[0] / 2 - 12, VENT).translate((x + d * t / 2, s * (iy + NOTCH[0] / 2) / 2, z)))
+            part = part.union(w)
+    a, b = x0 + (t + 8 if ends[0] else 8), x1 - (t + 8 if ends[1] else 8)   # vents: slots along the profile (air flows end to end)
+    n = max(1, int((b - a + 10) // 50))
+    seg = (b - a - 10 * (n - 1)) / n
+    for i in range(n):
+        xc = a + seg / 2 + i * (seg + 10)
+        for y in np.arange(-(iy - 8), iy - 7.9, 8):
+            part = part.cut(cq.Workplane("XY").box(seg, VENT, 3 * t).translate((xc, y, fz + t / 2)))
+        for z in np.arange(iy - c + 10, fz - 5, 8):
+            part = part.cut(cq.Workplane("XY").box(seg, 2 * iy + 4 * t, VENT).translate((xc, 0, z)))
+    key = cq.Workplane("XY").box(x1 - x0, P.KEY_H + 0.3, KEY_W, centered=(False, True, True))
+    for s in (-1, 1):
+        part = part.union(key.translate((x0, s * (P.FACE / 2 - P.KEY_H / 2 + 0.15), SIDE_SLOT_Z)))
+        for x in ear_xs:
+            part = part.cut(cq.Workplane("XZ").circle(P.BOLT_HOLE / 2).extrude(30, both=True).translate((x, s * 50, SIDE_SLOT_Z)))
+    if sleeve:
+        def lip(out: float) -> cq.Workplane:                 # U along the side and front walls, `out` past their inner faces
+            p = [(iy + out, fz + out), (iy + out, iy - c + 2), (iy - t - 0.3, iy - c + 2), (iy - t - 0.3, fz - t - 0.3)]
+            return cq.Workplane("YZ").polyline(p + [(-y, z) for y, z in reversed(p)]).close()
+        part = part.union(lip(1.5).extrude(6.0).translate((x1 - 6, 0, 0)))          # fused into this piece's walls
+        part = part.union(lip(-0.3).extrude(sleeve).translate((x1, 0, 0)))           # 0.3 mm play inside the next piece
+    return part
+
+
+RSP_COVER = dict(iy=RSP["W"] / 2 + 5.5, fz=P.PLATE_T + GAP + RSP["H"] + 6, c=57.5,       # 5.5 mm beside, 6 mm in front of the supply
+                 x0=-24.0 - 6, x1=RSP["L"] + 44.0 + 6)                                  # past brackets A (24) and B (44) by 3 mm + wall
+
+
+def rsp_cover(half: int) -> cq.Workplane:
+    """48 V cover in two halves (one piece is 375 mm: longer than the bed), split mid-length; half 1 has the lip. 2 M6 per side each."""
+    r = RSP_COVER
+    xm = (r["x0"] + r["x1"]) / 2
+    if half == 1:
+        return psu_cover(r["iy"], r["fz"], r["c"], r["x0"], xm, (True, False), [r["x0"] + 15, xm - 20], sleeve=12.0)
+    return psu_cover(r["iy"], r["fz"], r["c"], xm + 0.3, r["x1"], (False, True), [xm + 20, r["x1"] - 15])
+
+
+RS15_X = (-RS15["L"] / 2 - 41.0, RS15["L"] / 2 + 24.0)       # rs15_holder plate ends (terminal end -x)
+RS15_COVER = dict(iy=48.0 + 4, fz=P.PLATE_T + RS15["H"] + 6, c=51.5,   # supply 51 wide on one slot: reaches 48 mm off the face centre
+                  x0=RS15_X[0] - 6, x1=RS15_X[1] + 6)
+
+
+def rs15_cover() -> cq.Workplane:
+    """24 V cover, one piece, symmetric: fits whichever slot the RS-15 plate is on."""
+    r = RS15_COVER
+    return psu_cover(r["iy"], r["fz"], r["c"], r["x0"], r["x1"], (True, True), [r["x0"] + 15, r["x1"] - 15])
 
 
 # name: (builder, status, what it is, still needed)

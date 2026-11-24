@@ -15,6 +15,11 @@ def flat(wp: cq.Workplane) -> cq.Workplane:
     return wp.translate((-bb.center.x, -bb.center.y, -bb.zmin))
 
 
+def front_down(wp: cq.Workplane) -> cq.Workplane:
+    """Covers: flipped, front wall on the bed, walls and ears straight up (no supports)."""
+    return flat(wp.rotate((0, 0, 0), (1, 0, 0), 180))
+
+
 def rsp_pair() -> cq.Workplane:
     a, b = flat(parts.rsp_bracket("A")), flat(parts.rsp_bracket("B"))
     bb = a.val().BoundingBox()
@@ -28,6 +33,9 @@ READY = {
     "rs15_plate": lambda: flat(parts.rs15_holder()),
     "ground_bar_mount": lambda: flat(parts.ground_bar_mount()),
     "carrier_plate": lambda: flat(parts.carrier_plate()),                 # once: the tower with the carrier board (2026-10-23)
+    "psu48_cover_1": lambda: front_down(parts.rsp_cover(1)),              # supply covers (2026-11-24): front wall on the bed
+    "psu48_cover_2": lambda: front_down(parts.rsp_cover(2)),
+    "psu24_cover": lambda: front_down(parts.rs15_cover()),
 }
 
 # Beds laid out like fit_check.stl: (name, part, rotate 90 deg, centre x, y)
