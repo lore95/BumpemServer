@@ -119,4 +119,13 @@ if __name__ == "__main__":
         bb = wp.val().BoundingBox()
         print(f"{name}.stl: {len(wp.solids().vals())} parts, {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm")
     write_3mf(d / "psu_covers.3mf", COVERS)
-    print(f"psu_covers.3mf: {', '.join(COVERS)}")
+    row, x = [], 0.0                                         # same 3 covers side by side as one STL / STEP (slicer: split to objects)
+    for name in COVERS:
+        wp = READY[name]()
+        bb = wp.val().BoundingBox()
+        row.append(wp.translate((x - bb.xmin, -bb.center.y, 0)).val())
+        x += bb.xlen + 10
+    both = cq.Workplane("XY").newObject([cq.Compound.makeCompound(row)])
+    for ext in ("stl", "step"):
+        cq.exporters.export(both, str(d / f"psu_covers.{ext}"))
+    print(f"psu_covers.3mf / .stl / .step: {', '.join(COVERS)}, {x - 10:.0f} mm in a row")
