@@ -14,7 +14,7 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, Field
 
-from .gait import FO, TD, ContactDetector, RunningDetector, fit_thresholds
+from .gait import FO, TD, RunningDetector, WalkingDetector, fit_thresholds
 
 SIDES = ("left", "right")
 FIT_S = 10.0          # walking: swing noise of the first 10 s sets the thresholds
@@ -45,7 +45,7 @@ class GaitCheck:
         self._publish, self._log, self._to_pc, self._now = publish, log, to_pc, now
         self._lock = threading.RLock()
         self._run = RunningDetector.for_mass(cfg.mass_kg) if cfg.mode == "running" else None
-        self._det = {s: ContactDetector() for s in SIDES}
+        self._walk = WalkingDetector(cfg.mass_kg)                        # walking (D60)
         self._rec: dict[str, tuple[list[float], list[float]]] | None = None if self._run else {s: ([], []) for s in SIDES}
         self._t0: float | None = None
         self.running, self.message, self.steps = True, None, 0
@@ -58,10 +58,12 @@ class GaitCheck:
     def status(self) -> dict[str, Any]:
         with self._lock:
             th = ({s: {"td_n": self._run.td_n, "fo_n": self._run.fo_n} for s in SIDES} if self._run else
-                  {s: {"td_n": self._det[s].td_n, "fo_n": self._det[s].fo_n} for s in SIDES})
+                  {s: {"td_n": self._walk.plates[s].td_n, "fo_n": self._walk.plates[s].fo_n} for s in SIDES})
             out = {"running": self.running, "message": self.message, **self.cfg.model_dump(),
                    "detector": "plates" if self._run is None else "sum", "fitted": self._rec is None, "thresholds": th,
-                   "steps": self.steps, "plates": self.plates}
+                   "steps": self.steps, "plates": self.plates,
+                   "restrikes": None if self._run else self._walk.restrikes,
+                   "alternation_breaks": None if self._run else self._walk.breaks}
             for s in SIDES:
                 d, c = _strides(self._td[s]), self._ct[s]
                 out[s] = {"stride_ms": round(statistics.fmean(d) * 1000, 1) if d else None,
@@ -103,7 +105,7 @@ class GaitCheck:
                 if self._run is not None:
                     ev = self._run.update(t, *v)
                 else:
-                    ev = [(e, s, t) for s, x in zip(SIDES, v) if (e := self._det[s].update(t, x))]
+                    ev = self._walk.update(t, *v)
                     rec = self._rec
                     if rec is not None:
                         for s, x in zip(SIDES, v):
@@ -123,7 +125,7 @@ class GaitCheck:
         for s in SIDES:
             f = fit_thresholds(*rec[s])
             if f["stable"]:
-                self._det[s] = ContactDetector(f["td_n"], f["fo_n"])
+                self._walk.set_thresholds(s, f["td_n"], f["fo_n"])
                 self._open[s] = None              # the new detector waits for the force to drop first
             else:
                 bad.append(s)

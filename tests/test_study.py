@@ -9,7 +9,8 @@ from pathlib import Path
 import pytest
 
 pytest.importorskip("pydantic")
-from bumpem.gait import FO, TD, ContactDetector, RunningDetector, fit_thresholds, running_contacts  # noqa: E402
+from bumpem.gait import (FO, TD, ContactDetector, RunningDetector, WalkingDetector, contacts, fit_thresholds,  # noqa: E402
+                         running_contacts, walking_contacts)
 from bumpem.study import Protocol, Study, default_plates  # noqa: E402
 from bumpem.vicon import SimReader  # noqa: E402
 
@@ -395,6 +396,72 @@ def test_running_replay_steps():
     for side in ("left", "right"):
         td = [x for k, s, x in ev if k == TD and s == side]
         assert statistics.median(b - a for a, b in zip(td, td[1:])) == pytest.approx(0.704, abs=0.015)
+
+
+def _foot(t, t0, peak=900.0, stance=0.6):
+    """Walking contact: heel strike to `peak` in 40 ms, flat, off in 100 ms."""
+    x = t - t0
+    if x < 0 or x > stance:
+        return 0.0
+    return peak * min(1.0, x / 0.04, (stance - x) / 0.1)
+
+
+def _walk(cross_at=None, share=0.3, seconds=5.0):
+    """Left foot every 1.0 s from 0.1, right 0.5 s later, stance 0.6 s. The left landing at `cross_at` straddles the
+    middle: `share` of it on the right belt, which then never unloads before the right foot lands on it."""
+    t = [k / 1000 for k in range(int(seconds * 1000))]
+    left, right = [], []
+    for ti in t:
+        lf = sum(_foot(ti, 0.1 + k) for k in range(int(seconds)))
+        rf = sum(_foot(ti, 0.6 + k) for k in range(int(seconds)))
+        x = sum(_foot(ti, c) for c in ([cross_at] if cross_at is not None else []))
+        left.append(lf - share * x)
+        right.append(rf + share * x)
+    return t, left, right
+
+
+def test_walking_step_across_the_middle():
+    """D60: the left foot at 2.1 s lands across the middle; the right belt stays loaded (> 25 N) until the right foot
+    lands at 2.6 s. Per plate that touch-down is missed; the re-strike finds it, side from the alternation."""
+    t, left, right = _walk(cross_at=2.1)
+    assert sum(k == TD for k, _ in contacts(t, right, 100, 25)) == 4                  # one of 5 right steps missed
+    d = WalkingDetector(80)
+    ev = [e for ti, a, b in zip(t, left, right) for e in d.update(ti, a, b)]
+    tds = [(s, x) for k, s, x in ev if k == TD]
+    assert [s for s, _ in tds] == ["left", "right"] * 5
+    assert d.restrikes == 1 and d.breaks == 0
+    assert dict((round(x, 1), s) for s, x in tds)[2.6] == "right"
+    assert [x for s, x in tds if s == "right"][2] == pytest.approx(2.6, abs=0.03)
+    t, left, right = _walk()
+    assert [s for k, s, _ in walking_contacts(t, left, right, 80) if k == TD] == ["left", "right"] * 5
+
+
+def test_walking_noise_near_a_low_threshold():
+    """D60: spikes shorter than CONFIRM_S, or a bounce within SWING_MIN_S of the foot-off, are no touch-down."""
+    t, left, right = _walk()
+    for k, ti in enumerate(t):
+        if 0.85 < ti % 1.0 < 0.852 or 0.72 < ti % 1.0 < 0.74:                          # 2 ms spike; bounce 20 ms after FO
+            left[k] += 60
+    th = {"left": (30, 15), "right": (30, 15)}
+    assert sum(k == TD for k, _ in contacts(t, left, 30, 15)) > 5                       # per plate: extra steps
+    assert [s for k, s, _ in walking_contacts(t, left, right, 80, th) if k == TD] == ["left", "right"] * 5
+
+
+WALK = Path(__file__).resolve().parents[1] / "replays" / "walking_1.7ms.csv"
+
+
+@pytest.mark.skipif(not WALK.is_file(), reason="participant replay (local only, D54)")
+def test_walking_replay_steps():
+    """Participant of 2026-11-19 at 1.7 m/s: every touch-down alternates, no re-strike on clean walking (D60)."""
+    import csv
+    rows = list(csv.DictReader(WALK.open()))
+    t = [float(r["t_s"]) for r in rows]
+    d = WalkingDetector(84)
+    ev = [e for ti, r in zip(t, rows) for e in d.update(ti, float(r["Fz_Left"]), float(r["Fz_Right"]))]
+    assert sum(k == TD for k, _, _ in ev) == 128 and d.breaks == 0 and d.restrikes == 0
+    for side in ("left", "right"):
+        td = [x for k, s, x in ev if k == TD and s == side]
+        assert statistics.median(b - a for a, b in zip(td, td[1:])) == pytest.approx(0.958, abs=0.01)
 
 
 def test_patterns_api_and_pattern_study(tmp_path):

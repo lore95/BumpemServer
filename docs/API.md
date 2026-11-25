@@ -258,7 +258,7 @@ Status:
           "right": {...}},
  "plates": {"left": "Left", "right": "Right"}}
 ```
-`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `ends_in_s`: seconds left of `duration_s` while running, else null. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409). `gait.detector`: `plates` (walking: per belt) or `sum` (running: both belts; `td_n` / `fo_n` the same on both sides, `noise_sd_n` null).
+`state`: `none` | `loaded` (no gait pattern yet) | `gait` (recording it; `gait.until_s` = seconds left) | `ready` | `running` | `stopped` | `block_done` | `finished`. `block` is 1-based. `next_in_steps`: steps until a perturbation is due (then it waits for the trigger foot), null when not running. `ends_in_s`: seconds left of `duration_s` while running, else null. `next_block` / `next_speed_ms`: the block Start would run and its speed; `gait_ok`: a gait pattern exists at that speed (else Start answers 409). `gait.detector`: `plates` (walking: per belt, plus a second foot landing on a loaded belt found by its sharp rise, side from the alternation, D60) or `sum` (running: both belts; `td_n` / `fo_n` the same on both sides, `noise_sd_n` null).
 
 ### Gait check (`host`, both modes, D58)
 Touch-down, foot-off and phase moments live, for checking the detection against a high-speed video of the participant and the screen. Reads the plates only: no board, no pulls, no study needed (a running study is not affected).
@@ -274,7 +274,7 @@ Touch-down, foot-off and phase moments live, for checking the detection against 
 - Vicon lost: the check stops (`message`).
 - A running recording gets every stream item below as a `GAITCHECK` row in the events file.
 
-Status: `{"running": true, "message": null, "mode": "running", "mass_kg": 84, "trigger_side": "left", "gait_phase_pct": 20, "gait_phase_of": "cycle", "detector": "sum", "fitted": true, "thresholds": {"left": {"td_n": 206.0, "fo_n": 82.4}, "right": {...}}, "steps": 120, "left": {"stride_ms": 701.2, "stride_sd_ms": 4.8, "contact_ms": 205.1, "n": 10}, "right": {...}, "plates": {"left": "Left", "right": "Right"}}`. `fitted`: walking thresholds set from the first 10 s (running: always true). Side values null until there are any.
+Status: `{"running": true, "message": null, "mode": "running", "mass_kg": 84, "trigger_side": "left", "gait_phase_pct": 20, "gait_phase_of": "cycle", "detector": "sum", "fitted": true, "thresholds": {"left": {"td_n": 206.0, "fo_n": 82.4}, "right": {...}}, "steps": 120, "restrikes": 0, "alternation_breaks": 0, "left": {"stride_ms": 701.2, "stride_sd_ms": 4.8, "contact_ms": 205.1, "n": 10}, "right": {...}, "plates": {"left": "Left", "right": "Right"}}`. `fitted`: walking thresholds set from the first 10 s (running: always true). Walking (D60): `restrikes` = touch-downs found on a belt still loaded by the other foot (a step across the middle; side from the L/R alternation), `alternation_breaks` = touch-downs on the same side twice in a row (a step missed); running: both null. Side values null until there are any.
 
 ## Live stream (WebSocket)
 `ws://127.0.0.1:8000/api/v1/stream?telemetry_hz=30`

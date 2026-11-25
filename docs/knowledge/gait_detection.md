@@ -32,3 +32,10 @@ Python port: `bumpem/gait.py` (must match this exactly; test against MATLAB logs
 
 ## Timing (thesis Table 5, 3.3 m/s)
 Stance 246.7 / 253.8 ms; stride 660 / 789 ms; onset delay 36.0 ± 4.9 ms (~14–15 % stance).
+
+## Walking in the IBMS study (D60, `bumpem/gait.py` WalkingDetector)
+Per plate touch-down above td_n / foot-off below fo_n (100 / 25 N, then fitted from the first swing noise), plus:
+- touch-down only after 5 ms above td_n, and not within 150 ms of that plate's foot-off (no event; the contact goes on);
+- **re-strike**: a foot landing across the middle keeps the other belt loaded, so that plate never reaches foot-off. A rise of 30 % body weight within 30 ms on a plate in contact (≥ 150 ms after its touch-down) = a new touch-down; side = opposite of the previous touch-down (walking alternates).
+Walking 2026-11-19, 1.7 m/s (`tests/vicon_20261119_112556_*`): same side twice in a row 143 → 2 (a stumble after a pull, stopping), 13 re-strikes; clean replay `walking_1.7ms`: 128 touch-downs, 0 re-strikes, 0 breaks.
+

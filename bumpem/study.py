@@ -15,7 +15,7 @@ from typing import Any, Callable, Literal
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
 
-from .gait import FO, TD, ContactDetector, RunningDetector, fit_thresholds, running_contacts
+from .gait import FO, TD, RunningDetector, WalkingDetector, fit_thresholds, running_contacts
 
 G = 9.81
 MIN_STRIDES = 5          # per side, for a gait pattern
@@ -127,7 +127,7 @@ class Study:
         self._gait_until, self._gait_prev, self._gait_speed, self._gait_t0 = 0.0, "loaded", 0.0, 0.0
         self._t = 0.0                              # latest plate time (Vicon frame clock)
         self.latency_ms = 0.0                      # plates → board → rope, subtracted from the delay
-        self._det = {s: ContactDetector() for s in SIDES}   # 100 / 25 N until a gait pattern sets the plate's own
+        self._walk = WalkingDetector(protocol.subject.mass_kg)   # 100 / 25 N until a gait pattern sets the plate's own (D60)
         self._run = RunningDetector.for_mass(protocol.subject.mass_kg) if protocol.subject.mode == "running" else None
         for k, b in enumerate(protocol.blocks, 1):
             if b.pattern_items is not None and len(b.pattern_items) < b.n_perturbations:
@@ -295,7 +295,7 @@ class Study:
             return
         t_end = samples[-1][0]
         if t_end < self._t - 0.5:                  # frame numbers restarted (Vicon reconnected)
-            self._det = {s: ContactDetector(d.td_n, d.fo_n) for s, d in self._det.items()}
+            self._walk = self._walk.reset()
             if self._run is not None:
                 self._run = self._run.reset()
             if self.state == "gait":
@@ -316,17 +316,15 @@ class Study:
                 if self.state == "gait" and t >= self._gait_until:
                     self._gait_done()
                 continue
-            for side in SIDES:
-                v = fz.get(self.plates[side])
-                if v is None:
-                    continue
+            v = [fz.get(self.plates[side]) for side in SIDES]   # walking: per plate + re-strike / alternation (D60)
+            if None not in v:
                 rec = self._rec
                 if rec is not None:
-                    rec[side][0].append(t)
-                    rec[side][1].append(v)
-                e = self._det[side].update(t, v)
-                if e:
-                    self._contact(side, e, t, t_end, t + off)
+                    for side, x in zip(SIDES, v):
+                        rec[side][0].append(t)
+                        rec[side][1].append(x)
+                for e, side, te in self._walk.update(t, *v):
+                    self._contact(side, e, te, t_end, te + off)
             if self.state == "gait" and t >= self._gait_until:
                 self._gait_done()
 
@@ -425,7 +423,7 @@ class Study:
             else:
                 for side in SIDES:                 # the plate's own thresholds from now on (walking)
                     if self._run is None:
-                        self._det[side] = ContactDetector(res[side]["td_n"], res[side]["fo_n"])
+                        self._walk.set_thresholds(side, res[side]["td_n"], res[side]["fo_n"])
                 self.gait = res
                 notes = [f"low thresholds unstable on {', '.join(unstable)} (extra or missed touch-downs): "
                          "100 / 25 N kept there"] if unstable else []

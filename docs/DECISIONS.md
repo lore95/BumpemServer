@@ -307,3 +307,8 @@ Decision: one slotted box per supply (`parts.psu_cover`), open towards the profi
 Reason: user (2026-11-24): the supplies' 230 V terminals are open; nobody should touch them by mistake, especially reaching in from above; cables need 5 cm in the middle. Supplies are on their own, side faces free, makerspace printer.
 Alternatives: one box around both supplies (they are far apart on the tower); fixing to the supply face (taken by the brackets); terminal caps only (the electrician's job, still useful).
 
+## D60 — 2026-11-25 — Walking: re-strike and L/R alternation on top of the per-plate detection
+Decision: `gait.WalkingDetector` (study and gait check, walking): the per-plate thresholds stay; a touch-down needs 5 ms above td_n and ≥ 150 ms since that plate's foot-off; a rise of 30 % body weight within 30 ms on a loaded plate (≥ 150 ms after its touch-down) is a touch-down, its side from the alternation. Gait check status reports `restrikes` and `alternation_breaks`.
+Reason: user (2026-11-25): in a walking gait test a foot landing on both belts broke the pattern. In the 2026-11-19 walking study such a step keeps the other belt above 25 N, so the next foot landing there was missed (one contact of 1–1.6 s); the fitted low thresholds (29 / 14.5 N) also gave 118 bounce touch-downs right after foot-off on the left plate. Alternation errors 143 → 2.
+Alternatives: belt sum as for running (no flight phase in walking: double support hides the touch-down); side from the force share alone (wrong for a foot fully on the other belt); side by alternation for every touch-down (one missed step would flip all sides after it).
+

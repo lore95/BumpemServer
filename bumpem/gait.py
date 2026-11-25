@@ -111,6 +111,103 @@ def fit_thresholds(t: list[float], fz: list[float]) -> dict:
     return out
 
 
+CONFIRM_S = 0.005                         # walking: a touch-down counts once the plate stays above td_n this long (D60)
+SWING_MIN_S = 0.15                        # walking: a rise this soon after the plate's foot-off is the same contact
+RESTRIKE_BW, RESTRIKE_S = 0.30, 0.03      # walking: rise of this share of body weight within this time on a loaded plate
+SETTLE_S = 0.15                           #          = a second foot landing on it; not within this time of its touch-down
+
+
+@dataclass
+class _Plate:
+    td_n: float
+    fo_n: float
+    in_contact: bool | None = None            # None: waiting for the force to drop below td_n
+    side: str = ""                            # foot on the plate (its own side, or the other after a re-strike)
+    t_td: float = float("-inf")
+    t_fo: float = float("-inf")
+    t_up: float | None = None                 # first sample above td_n, not yet confirmed
+    hist: list = field(default_factory=list)  # (t, fz) of the last RESTRIKE_S
+
+
+@dataclass
+class WalkingDetector:
+    """Walking (D60): each plate as ContactDetector (touch-down above td_n, foot-off below fo_n), plus
+    - a touch-down counts after CONFIRM_S above td_n (noise spikes near a low fitted threshold are no step), and not
+      within SWING_MIN_S of that plate's foot-off (the force bouncing around fo_n: the contact goes on, no event);
+    - re-strike: a foot landing across the middle keeps the other belt loaded, so that plate never reaches foot-off and
+      the next foot landing on it would be missed. A rise of RESTRIKE_BW body weight within RESTRIKE_S on a plate in
+      contact (SETTLE_S after its touch-down) is a touch-down; its side from the alternation (opposite of the last one).
+    Thresholds from 2026-11-19 walking (1.7 m/s): alternation breaks 143 → 2, no extra steps on the clean replay.
+
+    update(t, left, right) → [(TD | FO, "left" | "right", event time)]."""
+    mass_kg: float
+    plates: dict = field(default_factory=dict)
+    last_side: str | None = None
+    restrikes: int = 0                        # touch-downs found by re-strike
+    breaks: int = 0                           # touch-downs on the same side twice in a row (a step missed)
+
+    def __post_init__(self):
+        if not self.plates:
+            self.plates = {s: _Plate(SLAP_TD_N, SLAP_FO_N) for s in ("left", "right")}
+
+    def set_thresholds(self, side: str, td_n: float, fo_n: float) -> None:
+        """New thresholds for one plate; it waits for its force to drop below td_n again."""
+        self.plates[side] = _Plate(td_n, fo_n)
+
+    def reset(self) -> "WalkingDetector":
+        return WalkingDetector(self.mass_kg, {s: _Plate(p.td_n, p.fo_n) for s, p in self.plates.items()})
+
+    def _td(self, side: str, t: float) -> tuple[str, str, float]:
+        if side == self.last_side:
+            self.breaks += 1
+        self.last_side = side
+        return (TD, side, t)
+
+    def update(self, t: float, left: float, right: float) -> list[tuple[str, str, float]]:
+        out = []
+        for plate, f in (("left", left), ("right", right)):
+            p = self.plates[plate]
+            p.hist.append((t, f))
+            while p.hist[0][0] < t - RESTRIKE_S:
+                p.hist.pop(0)
+            if p.in_contact is None:
+                if f < p.td_n:
+                    p.in_contact = False
+                continue
+            if not p.in_contact:
+                if f <= p.td_n:
+                    p.t_up = None
+                    continue
+                if p.t_up is None:
+                    p.t_up = t
+                if t - p.t_up < CONFIRM_S:
+                    continue
+                p.in_contact, p.t_td = True, p.t_up
+                if p.t_up - p.t_fo < SWING_MIN_S:            # bounce after foot-off: the same contact, a re-strike may follow
+                    p.t_td -= SETTLE_S
+                    continue
+                p.side = plate
+                out.append(self._td(plate, p.t_up))
+            elif f < p.fo_n:
+                p.in_contact, p.t_fo, p.t_up = False, t, None
+                if p.side:
+                    out.append((FO, p.side, t))
+            elif t - p.t_td >= SETTLE_S and f - min(x for _, x in p.hist) > RESTRIKE_BW * self.mass_kg * 9.81:
+                side = {"left": "right", "right": "left"}.get(self.last_side, plate)
+                p.t_td, p.side = t, side
+                self.restrikes += 1
+                out.append(self._td(side, t))
+        return out
+
+
+def walking_contacts(t: list[float], left: list[float], right: list[float], mass_kg: float,
+                     thresholds: dict | None = None) -> list[tuple[str, str, float]]:
+    d = WalkingDetector(mass_kg)
+    for side, (td, fo) in (thresholds or {}).items():
+        d.set_thresholds(side, td, fo)
+    return [e for ti, a, b in zip(t, left, right) for e in d.update(ti, a, b)]
+
+
 TD_BW, FO_BW = 0.25, 0.10                 # running: touch-down / foot-off on the belt sum, fraction of body weight (D57)
 SIDE_S = 0.02                             # running: a touch-down counts, and gets its side, this long after it
 SIDE_SHIFT = 0.15                         # running: change of the left-belt share that decides the side
