@@ -44,7 +44,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
 - [ ] 🔴 **Tower B chopper → ESCON cable:** 1.5 mm² fine-stranded + insulated ferrules instead of the 14 AWG wire · `lab` `parts` · status?
 
 ## 2 · Next lab visit
-- [ ] 🟢 Install `BumpemUpdate_2026-11-23_1406` (sets the 20 A control values and the 75 N cap, D55, D56; running steps on the summed belts, D57; gait check page, D58; replaces `_2026-11-23_1356`, `_1347` and `_2026-11-20_1503`): `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
+- [ ] 🟢 Install `BumpemUpdate_2026-11-24_1559` (20 A control values and 75 N cap, D55, D56; running steps on the summed belts, D57; gait check page, D58; field help popups, U30; replaces all earlier updates): `update.bat` → `start_server.bat` → Firefox Ctrl + Shift + R · `lab`
 - [ ] 🟠 `apply_calibration.bat` (gains above), then max force 196 N / fault 200 N → Apply → **Save as default** · `lab`
 - [ ] 🟠 **Zero the plates in Nexus** before each session (look only in D-Flow) · `lab`
 - [ ] 🟠 **After any rope change: rope wound neatly on every drum** (side by side, no crossing turns): a badly wound rope catches and releases, the tower then jumps 0–15 N while holding (C, 2026-11-20) · `lab`
@@ -83,6 +83,7 @@ Studies with a person already ran on 2026-11-19 (100 N walking, 150 N running) *
   5. **Test** on a solid anchor: marker line after 50 / 100 / 150 N; no fade over the hold. Then raise the study limit (now ≤ 50 N).
 - [x] ~~Driver current: read the ESCON scaling of all four~~ → done 2026-11-20 (D55, `escon/`)
 - [ ] 🟠 **Amplifier range** per module: pull hard, IAA100 output ≤ 3.3 V (`knowledge/calibration.md`) · `lab`
+- [ ] 🔴 **Supply touch covers (D59):** print one set (`hardware/enclosures/out/psu_covers.stl` / `.step` / `.3mf`: 48 V in two halves + 24 V), fit on one tower (power strip unplugged), then 3 more sets; M6 × 16 + drop-in T-nuts (12 per tower); technician OK for a printed cover near 230 V · `parts` `lab` `supervisor`
 - [ ] 🟢 **Reprint the carrier plate** (19 mm standoffs, `hardware/enclosures/out/carrier_plate.stl`) + 4 × M3 × 25 · `parts`
 - [ ] 🟢 Fix the DAC rows in `hardware/carrier/gen_carrier.py` before any new board order (D52) · `Claude`
 - [ ] 🟢 Update the soldering guide PDF to as-built (1 MΩ in the D1–D4 places, R5–R8 empty) · `Claude`
