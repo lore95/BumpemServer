@@ -70,6 +70,40 @@ def bed(name: str) -> cq.Workplane:
     return flat(out)
 
 
+COVERS = ["psu48_cover_1", "psu48_cover_2", "psu24_cover"]   # one tower's covers; too big for one bed together (2026-11-25)
+
+
+def write_3mf(path: Path, names: list[str]) -> None:
+    """One 3MF with each part as its own named object, side by side: the slicer arranges them onto as many plates as it needs."""
+    import zipfile
+    objs, items, x = [], [], 0.0
+    for i, name in enumerate(names, 1):
+        shape = READY[name]().val()
+        verts, tris = shape.tessellate(0.02, 0.1)
+        bb = shape.BoundingBox()
+        ids, pts = {}, []                                    # weld: faces are tessellated apart, slicers want one closed mesh
+        for p in verts:
+            k = (round(p.x, 3), round(p.y, 3), round(p.z, 3))
+            if k not in ids:
+                ids[k] = len(pts); pts.append(k)
+        remap = [ids[(round(p.x, 3), round(p.y, 3), round(p.z, 3))] for p in verts]
+        v = "".join(f'<vertex x="{x:.3f}" y="{y:.3f}" z="{z:.3f}"/>' for x, y, z in pts)
+        t = "".join(f'<triangle v1="{remap[a]}" v2="{remap[b]}" v3="{remap[c]}"/>' for a, b, c in tris)
+        objs.append(f'<object id="{i}" name="{name}" type="model"><mesh><vertices>{v}</vertices><triangles>{t}</triangles></mesh></object>')
+        items.append(f'<item objectid="{i}" transform="1 0 0 0 1 0 0 0 1 {x - bb.xmin:.3f} 0 0"/>')
+        x += bb.xlen + 10
+    model = ('<?xml version="1.0" encoding="UTF-8"?><model unit="millimeter" xml:lang="en-US" '
+             'xmlns="http://schemas.microsoft.com/3dmanufacturing/core/2015/02">'
+             f'<resources>{"".join(objs)}</resources><build>{"".join(items)}</build></model>')
+    with zipfile.ZipFile(path, "w", zipfile.ZIP_DEFLATED) as z:
+        z.writestr("[Content_Types].xml", '<?xml version="1.0" encoding="UTF-8"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">'
+                   '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>'
+                   '<Default Extension="model" ContentType="application/vnd.ms-package.3dmanufacturing-3dmodel+xml"/></Types>')
+        z.writestr("_rels/.rels", '<?xml version="1.0" encoding="UTF-8"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">'
+                   '<Relationship Target="/3D/3dmodel.model" Id="rel0" Type="http://schemas.microsoft.com/3dmanufacturing/2013/01/3dmodel"/></Relationships>')
+        z.writestr("3D/3dmodel.model", model)
+
+
 if __name__ == "__main__":
     d = Path(__file__).parent / "out"
     d.mkdir(exist_ok=True)
@@ -84,3 +118,5 @@ if __name__ == "__main__":
         cq.exporters.export(wp, str(d / f"{name}.stl"))
         bb = wp.val().BoundingBox()
         print(f"{name}.stl: {len(wp.solids().vals())} parts, {bb.xlen:.0f} x {bb.ylen:.0f} x {bb.zlen:.0f} mm")
+    write_3mf(d / "psu_covers.3mf", COVERS)
+    print(f"psu_covers.3mf: {', '.join(COVERS)}")
